@@ -321,7 +321,7 @@ function ExecDashboard({api}) {
     .sort((a,b)=>new Date(a.target_date)-new Date(b.target_date));
 
   return (
-    <div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
+    <div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
 
       {/* ── SECTION: KPI Strip ── */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:10,marginBottom:16}}>
