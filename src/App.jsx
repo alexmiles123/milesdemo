@@ -169,6 +169,167 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing}) {
   );
 }
 
+
+// ─── AI PANEL ────────────────────────────────────────────────────────────────
+function AiPanel({ portfolio, tasks, csms }) {
+  const [messages,  setMessages]  = useState([]);
+  const [input,     setInput]     = useState("");
+  const [loading,   setLoading]   = useState(false);
+  const [open,      setOpen]      = useState(true);
+  const bottomRef = { current: null };
+
+  const totalArr   = portfolio.reduce((s,p)=>s+(p.arr||0),0);
+  const lateCount  = tasks.filter(t=>t.status==="late").length;
+  const atRisk     = portfolio.filter(p=>p.health!=="green").length;
+
+  const systemPrompt = `You are an expert PS (Professional Services) Operations analyst for Monument, a SaaS implementation company. You have direct access to live portfolio data and answer executive-level questions concisely and insightfully.
+
+LIVE PORTFOLIO DATA (as of today):
+- Total customers: ${portfolio.length}
+- Total ARR: $${(totalArr/1000).toFixed(0)}K
+- On Track: ${portfolio.filter(p=>p.health==="green").length} customers
+- At Risk: ${portfolio.filter(p=>p.health==="yellow").length} customers  
+- Critical: ${portfolio.filter(p=>p.health==="red").length} customers
+- ARR at Risk: $${(portfolio.filter(p=>p.health!=="green").reduce((s,p)=>s+(p.arr||0),0)/1000).toFixed(0)}K
+- Late tasks: ${lateCount}
+- Avg completion: ${portfolio.length ? Math.round(portfolio.reduce((s,p)=>s+(p.completion_pct||0),0)/portfolio.length) : 0}%
+
+CUSTOMER LIST:
+${portfolio.map(p=>`- ${p.customer}: ${p.stage}, ${p.health_label}, ${p.completion_pct}% complete, $${(p.arr/1000).toFixed(0)}K ARR, CSM: ${p.csm}, ${p.tasks_late||0} late tasks`).join("\n")}
+
+CSM SCORECARD:
+${csms.map(c=>`- ${c.csm}: ${c.total_accounts} accounts, $${((c.total_arr||0)/1000).toFixed(0)}K ARR, ${c.on_track} on track, ${c.at_risk} at risk, ${c.critical} critical, ${c.late_tasks} late tasks`).join("\n")}
+
+LATE TASKS SUMMARY:
+${tasks.filter(t=>t.status==="late").slice(0,20).map(t=>{
+  const proj = portfolio.find(p=>p.id===t.project_id);
+  const daysLate = Math.round((new Date()-new Date(t.proj_date))/86400000);
+  return \`- \${t.name} [\${proj?.customer||"Unknown"}] \${daysLate}d late, priority: \${t.priority}\`;
+}).join("\n")}
+
+Answer questions about this data concisely. Use bullet points for lists. Be direct and executive-level in your responses. If asked for recommendations, be specific and actionable. Format numbers clearly ($K, %, days).`;
+
+  const STARTERS = [
+    "Which CSM has the most ARR at risk?",
+    "What are the top 3 most overdue tasks?",
+    "Which customers need immediate attention?",
+    "Summarize overall portfolio health",
+    "Who is the highest performing CSM?",
+    "What is the average days late across all tasks?",
+  ];
+
+  const send = async (text) => {
+    const msg = text || input.trim();
+    if (!msg || loading) return;
+    setInput("");
+    const newMessages = [...messages, { role:"user", content:msg }];
+    setMessages(newMessages);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: systemPrompt,
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setMessages(prev => [...prev, { role:"assistant", content: data.content }]);
+    } catch(e) {
+      setMessages(prev => [...prev, { role:"assistant", content: "⚠ Error: " + e.message + ". Make sure ANTHROPIC_API_KEY is set in Vercel environment variables." }]);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ width: open ? 380 : 48, flexShrink:0, borderLeft:"1px solid "+G.border, background:G.surface, display:"flex", flexDirection:"column", transition:"width .25s ease", overflow:"hidden", position:"relative" }}>
+      
+      {/* Toggle button */}
+      <button onClick={()=>setOpen(o=>!o)}
+        style={{ position:"absolute", top:12, left: open ? 12 : 8, background:"linear-gradient(135deg,#7c3aed,#a855f7)", border:"none", borderRadius:8, width:28, height:28, cursor:"pointer", color:"#fff", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", zIndex:2, flexShrink:0 }}>
+        {open ? "→" : "✦"}
+      </button>
+
+      {open && (
+        <>
+          {/* Header */}
+          <div style={{ padding:"12px 14px 12px 48px", borderBottom:"1px solid "+G.border, flexShrink:0 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:G.text, fontFamily:"Syne,sans-serif" }}>AI Analyst</div>
+            <div style={{ fontSize:10, color:G.muted, fontFamily:"DM Mono,monospace", marginTop:2 }}>Powered by Claude · Live portfolio data</div>
+          </div>
+
+          {/* Messages */}
+          <div style={{ flex:1, overflowY:"auto", padding:"12px 14px", display:"flex", flexDirection:"column", gap:10 }}>
+            
+            {messages.length === 0 && (
+              <div>
+                <div style={{ fontSize:12, color:G.muted, fontFamily:"DM Mono,monospace", marginBottom:10, textAlign:"center" }}>Ask me anything about your portfolio</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {STARTERS.map((s,i) => (
+                    <button key={i} onClick={() => send(s)}
+                      style={{ background:G.surface2, border:"1px solid "+G.border2, color:G.muted, padding:"8px 10px", borderRadius:8, cursor:"pointer", fontFamily:"DM Mono,monospace", fontSize:11, textAlign:"left", lineHeight:1.4, transition:"all .15s" }}
+                      onMouseEnter={e=>{ e.currentTarget.style.borderColor="#7c3aed"; e.currentTarget.style.color=G.text; }}
+                      onMouseLeave={e=>{ e.currentTarget.style.borderColor=G.border2; e.currentTarget.style.color=G.muted; }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {messages.map((m, i) => (
+              <div key={i} style={{ display:"flex", flexDirection:"column", alignItems: m.role==="user" ? "flex-end":"flex-start" }}>
+                <div style={{ maxWidth:"90%", padding:"9px 12px", borderRadius: m.role==="user" ? "12px 12px 2px 12px":"12px 12px 12px 2px",
+                  background: m.role==="user" ? "linear-gradient(135deg,#7c3aed,#a855f7)":"#0f1e2d",
+                  border: m.role==="user" ? "none":"1px solid "+G.border,
+                  color: G.text, fontSize:12, fontFamily: m.role==="assistant" ? "DM Mono,monospace":"Syne,sans-serif",
+                  lineHeight:1.6, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                  {m.content}
+                </div>
+              </div>
+            ))}
+
+            {loading && (
+              <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0" }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:"#7c3aed", animation:"pulse 1s infinite" }}/>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:"#a855f7", animation:"pulse 1s .2s infinite" }}/>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:"#c084fc", animation:"pulse 1s .4s infinite" }}/>
+                <span style={{ fontSize:11, color:G.muted, fontFamily:"DM Mono,monospace" }}>Analyzing…</span>
+              </div>
+            )}
+            <div ref={el => { if(el) el.scrollIntoView({behavior:"smooth"}); }} />
+          </div>
+
+          {/* Clear button */}
+          {messages.length > 0 && (
+            <div style={{ padding:"6px 14px 0", flexShrink:0 }}>
+              <button onClick={() => setMessages([])}
+                style={{ background:"none", border:"none", color:G.muted, cursor:"pointer", fontFamily:"DM Mono,monospace", fontSize:10, textDecoration:"underline" }}>
+                Clear conversation
+              </button>
+            </div>
+          )}
+
+          {/* Input */}
+          <div style={{ padding:"10px 14px", borderTop:"1px solid "+G.border, flexShrink:0, display:"flex", gap:8 }}>
+            <input value={input} onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); send(); }}}
+              placeholder="Ask about your portfolio…"
+              style={{ flex:1, background:"#080e18", border:"1px solid "+G.border2, color:G.text, padding:"8px 12px", borderRadius:8, fontFamily:"DM Mono,monospace", fontSize:12, resize:"none" }}/>
+            <button onClick={() => send()}
+              disabled={!input.trim() || loading}
+              style={{ background:"linear-gradient(135deg,#7c3aed,#a855f7)", border:"none", borderRadius:8, width:36, height:36, cursor: !input.trim()||loading ? "not-allowed":"pointer", opacity: !input.trim()||loading ? 0.5:1, color:"#fff", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              ↑
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── EXECUTIVE DASHBOARD ─────────────────────────────────────────────────────
 function ExecDashboard({api}) {
   const [portfolio, setPortfolio] = useState([]);
@@ -263,6 +424,8 @@ function ExecDashboard({api}) {
     .sort((a,b)=>new Date(a.target_date)-new Date(b.target_date));
 
   return (
+    <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+    {/* Main content */}
     <div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
 
       {/* ── SECTION: KPI Strip ── */}
@@ -607,6 +770,9 @@ function ExecDashboard({api}) {
           </table>
         </div>
       </Card>
+    </div>
+    {/* AI Panel */}
+    <AiPanel portfolio={portfolio} tasks={tasks} csms={csms} />
     </div>
   );
 }
