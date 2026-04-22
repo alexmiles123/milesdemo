@@ -1083,7 +1083,7 @@ export default function App() {
   if(!api) return <><style>{GLOBAL_CSS}</style><SetupScreen onConnect={handleConnect}/></>;
 
   return (
-    <div style={{minHeight:"100vh",background:G.bg,color:G.text,fontFamily:"Syne,sans-serif",display:"flex",flexDirection:"column"}}>
+    <div style={{height:"100vh",background:G.bg,color:G.text,fontFamily:"Syne,sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{GLOBAL_CSS}</style>
       <NavBar view={view} setView={setView} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
         lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing}/>
