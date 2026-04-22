@@ -66,6 +66,8 @@ function makeApi(url, key) {
 const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;font-size:14px;}
+  html,body,#root{width:100%;max-width:100% !important;overflow-x:hidden;}
+  body{background:#060c14;}
   body{background:${G.bg};font-size:14px;}
   ::-webkit-scrollbar{width:4px;height:4px;}
   ::-webkit-scrollbar-track{background:#0a1520;}
