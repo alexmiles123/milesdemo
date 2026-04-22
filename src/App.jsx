@@ -666,6 +666,7 @@ function ExecDashboard({api}) {
         </div>
       </Card>
     </div>
+    </div>
     <AiPanel portfolio={portfolio} tasks={tasks} csms={csms} />
     </div>
   );
