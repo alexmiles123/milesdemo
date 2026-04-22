@@ -169,6 +169,64 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing}) {
   );
 }
 
+
+function AiPanel({ portfolio, tasks, csms }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(true);
+  const STARTERS = ['Which CSM has most ARR at risk?','Top 3 most overdue tasks?','Which customers need immediate attention?','Summarize portfolio health','Who is top performing CSM?'];
+  const send = async (text) => {
+    const msg = text || input.trim();
+    if (!msg || loading) return;
+    setInput('');
+    const newMessages = [...messages, { role:'user', content:msg }];
+    setMessages(newMessages);
+    setLoading(true);
+    try {
+      const totalArr = portfolio.reduce((s,p)=>s+(p.arr||0),0);
+      const sysP = 'You are an expert PS Operations analyst for Monument. Live data: ' + portfolio.length + ' customers, \$' + (totalArr/1000).toFixed(0) + 'K ARR. On Track: ' + portfolio.filter(p=>p.health==='green').length + '. At Risk: ' + portfolio.filter(p=>p.health==='yellow').length + '. Critical: ' + portfolio.filter(p=>p.health==='red').length + '. Late tasks: ' + tasks.filter(t=>t.status==='late').length + '. Customers: ' + portfolio.map(p=>p.customer+': '+p.stage+', '+p.health_label+', '+p.completion_pct+'% done, \$'+(p.arr/1000).toFixed(0)+'K ARR, CSM: '+p.csm+', '+(p.tasks_late||0)+' late tasks').join('; ') + '. CSMs: ' + csms.map(c=>c.csm+': '+c.total_accounts+' accounts, \$'+((c.total_arr||0)/1000).toFixed(0)+'K ARR, '+c.late_tasks+' late tasks').join('; ') + '. Be concise and executive-level in responses.';
+      const res = await fetch('/api/claude', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ system:sysP, messages:newMessages }) });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setMessages(prev => [...prev, { role:'assistant', content:data.content }]);
+    } catch(e) { setMessages(prev => [...prev, { role:'assistant', content:'Error: '+e.message }]); }
+    setLoading(false);
+  };
+  return (
+    <div style={{width:open?360:48,flexShrink:0,borderLeft:'1px solid #192d40',background:'#0b1521',display:'flex',flexDirection:'column',transition:'width .25s ease',overflow:'hidden',position:'relative'}}>
+      <button onClick={()=>setOpen(o=>!o)} style={{position:'absolute',top:12,left:open?12:8,background:'linear-gradient(135deg,#7c3aed,#a855f7)',border:'none',borderRadius:8,width:28,height:28,cursor:'pointer',color:'#fff',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
+        {open ? '→' : '✦'}
+      </button>
+      {open && <>
+        <div style={{padding:'12px 14px 12px 48px',borderBottom:'1px solid #192d40',flexShrink:0}}>
+          <div style={{fontSize:14,fontWeight:800,color:'#e8f0f8',fontFamily:'Syne,sans-serif'}}>AI Analyst</div>
+          <div style={{fontSize:11,color:'#8fa3b8',fontFamily:'DM Mono,monospace',marginTop:2}}>Claude · Live portfolio data</div>
+        </div>
+        <div style={{flex:1,overflowY:'auto',padding:'12px 14px',display:'flex',flexDirection:'column',gap:10}}>
+          {messages.length===0 && <div style={{display:'flex',flexDirection:'column',gap:6}}>
+            <div style={{fontSize:12,color:'#8fa3b8',fontFamily:'DM Mono,monospace',marginBottom:6,textAlign:'center'}}>Ask me anything about your portfolio</div>
+            {STARTERS.map((s,i)=>(
+              <button key={i} onClick={()=>send(s)} style={{background:'#0f1e2d',border:'1px solid #1e3a52',color:'#8fa3b8',padding:'8px 10px',borderRadius:8,cursor:'pointer',fontFamily:'DM Mono,monospace',fontSize:11,textAlign:'left',lineHeight:1.4}}>{s}</button>
+            ))}
+          </div>}
+          {messages.map((m,i)=>(
+            <div key={i} style={{display:'flex',flexDirection:'column',alignItems:m.role==='user'?'flex-end':'flex-start'}}>
+              <div style={{maxWidth:'90%',padding:'9px 12px',borderRadius:m.role==='user'?'12px 12px 2px 12px':'12px 12px 12px 2px',background:m.role==='user'?'linear-gradient(135deg,#7c3aed,#a855f7)':'#0f1e2d',border:m.role==='user'?'none':'1px solid #192d40',color:'#e8f0f8',fontSize:12,fontFamily:'DM Mono,monospace',lineHeight:1.6,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{m.content}</div>
+            </div>
+          ))}
+          {loading && <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 0'}}><div style={{width:7,height:7,borderRadius:'50%',background:'#7c3aed',animation:'pulse 1s infinite'}}/><span style={{fontSize:11,color:'#8fa3b8',fontFamily:'DM Mono,monospace'}}>Analyzing...</span></div>}
+        </div>
+        {messages.length>0 && <div style={{padding:'4px 14px',flexShrink:0}}><button onClick={()=>setMessages([])} style={{background:'none',border:'none',color:'#8fa3b8',cursor:'pointer',fontFamily:'DM Mono,monospace',fontSize:10,textDecoration:'underline'}}>Clear</button></div>}
+        <div style={{padding:'10px 14px',borderTop:'1px solid #192d40',flexShrink:0,display:'flex',gap:8}}>
+          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} placeholder='Ask about your portfolio...' style={{flex:1,background:'#080e18',border:'1px solid #1e3a52',color:'#e8f0f8',padding:'8px 12px',borderRadius:8,fontFamily:'DM Mono,monospace',fontSize:12}}/>
+          <button onClick={()=>send()} disabled={!input.trim()||loading} style={{background:'linear-gradient(135deg,#7c3aed,#a855f7)',border:'none',borderRadius:8,width:36,height:36,cursor:'pointer',color:'#fff',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,opacity:(!input.trim()||loading)?0.5:1}}>↑</button>
+        </div>
+      </>}
+    </div>
+  );
+}
+
 // ─── EXECUTIVE DASHBOARD ─────────────────────────────────────────────────────
 function ExecDashboard({api}) {
   const [portfolio, setPortfolio] = useState([]);
@@ -263,7 +321,7 @@ function ExecDashboard({api}) {
     .sort((a,b)=>new Date(a.target_date)-new Date(b.target_date));
 
   return (
-    <div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
+    <div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
 
       {/* ── SECTION: KPI Strip ── */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:10,marginBottom:16}}>
@@ -607,6 +665,8 @@ function ExecDashboard({api}) {
           </table>
         </div>
       </Card>
+    </div>
+    <AiPanel portfolio={portfolio} tasks={tasks} csms={csms} />
     </div>
   );
 }
