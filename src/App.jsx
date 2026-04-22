@@ -8,7 +8,7 @@ import {
 const G = {
   bg:"#060c14", surface:"#0b1521", surface2:"#0f1e2d",
   border:"#192d40", border2:"#1e3a52",
-  text:"#e8f0f8", muted:"#6b7d8f", faint:"#2a3f52",
+  text:"#e8f0f8", muted:"#8fa3b8", faint:"#4a6480",
   green:"#22c55e", greenBg:"#041f10", greenBd:"#0d3d1f",
   yellow:"#f59e0b", yellowBg:"#1e1400", yellowBd:"#3d2800",
   red:"#ef4444",   redBg:"#1e0505",   redBd:"#3d0a0a",
@@ -131,7 +131,7 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing}) {
         <Logo size={28}/>
         <div>
           <div style={{fontSize:15,fontWeight:800,letterSpacing:"0.04em",color:G.text,fontFamily:"Syne,sans-serif"}}>Monument</div>
-          <div style={{fontSize:8,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.1em"}}>PS OPERATIONS</div>
+          <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.1em"}}>PS OPERATIONS</div>
         </div>
       </div>
       <div style={{width:1,height:26,background:G.border}}/>
@@ -279,8 +279,8 @@ function ExecDashboard({api}) {
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden",animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
             <div style={{fontSize:26,fontWeight:800,color:k.color,lineHeight:1,marginTop:4,fontFamily:"Syne,sans-serif"}}>{k.value}</div>
-            <div style={{fontSize:10,color:G.muted,marginTop:5,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em"}}>{k.label}</div>
-            <div style={{fontSize:9,color:G.faint,marginTop:2,fontFamily:"DM Mono,monospace"}}>{k.sub}</div>
+            <div style={{fontSize:13,color:G.muted,marginTop:5,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em"}}>{k.label}</div>
+            <div style={{fontSize:9,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace"}}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -332,7 +332,7 @@ function ExecDashboard({api}) {
                   <span style={{width:8,height:8,borderRadius:2,background:h.color}}/>
                   <span style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",flex:1}}>{h.name}</span>
                   <span style={{fontSize:15,fontWeight:800,color:h.color,fontFamily:"Syne,sans-serif"}}>{h.value}</span>
-                  <span style={{fontSize:10,color:G.faint,fontFamily:"DM Mono,monospace"}}>{pct(h.value,portfolio.length)}%</span>
+                  <span style={{fontSize:10,color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>{pct(h.value,portfolio.length)}%</span>
                 </div>
               ))}
             </div>
@@ -411,7 +411,7 @@ function ExecDashboard({api}) {
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border}}>
                 {["CSM","Accts","ARR","On Trk","At Risk","Crit","Late Tasks"].map(h=>(
-                  <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                  <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                 ))}
               </tr>
             </thead>
@@ -455,7 +455,7 @@ function ExecDashboard({api}) {
               <thead style={{position:"sticky",top:0,background:G.surface}}>
                 <tr style={{borderBottom:"1px solid "+G.border}}>
                   {["Task","Customer","CSM","Phase","Due","Days Late","Priority"].map(h=>(
-                    <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                    <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                   ))}
                 </tr>
               </thead>
@@ -469,7 +469,7 @@ function ExecDashboard({api}) {
                       </td>
                       <td style={{padding:"8px 10px",fontSize:13,color:G.muted,whiteSpace:"nowrap"}}>{t.project?.customer||"—"}</td>
                       <td style={{padding:"8px 10px",fontSize:13,color:G.muted,whiteSpace:"nowrap"}}>{t.project?.csm?.split(" ")[0]||"—"}</td>
-                      <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.faint,whiteSpace:"nowrap"}}>{t.phase}</td>
+                      <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",whiteSpace:"nowrap"}}>{t.phase}</td>
                       <td style={{padding:"8px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.red,whiteSpace:"nowrap"}}>{fmtDate(t.proj_date)}</td>
                       <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",fontWeight:800,color:G.red}}>+{daysLate}d</td>
                       <td style={{padding:"8px 10px"}}>
@@ -494,7 +494,7 @@ function ExecDashboard({api}) {
                 <thead>
                   <tr style={{borderBottom:"1px solid "+G.border}}>
                     {["Customer","CSM","Stage","ARR","Target"].map(h=>(
-                      <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em"}}>{h.toUpperCase()}</th>
+                      <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
                     ))}
                   </tr>
                 </thead>
@@ -524,7 +524,7 @@ function ExecDashboard({api}) {
                 <thead>
                   <tr style={{borderBottom:"1px solid "+G.border}}>
                     {["Customer","CSM","ARR","Stage","Late"].map(h=>(
-                      <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em"}}>{h.toUpperCase()}</th>
+                      <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
                     ))}
                   </tr>
                 </thead>
@@ -534,7 +534,7 @@ function ExecDashboard({api}) {
                       <td style={{padding:"7px 10px",fontSize:14,fontWeight:700,color:G.red}}>{p.customer}</td>
                       <td style={{padding:"7px 10px",fontSize:13,color:G.muted}}>{p.csm?.split(" ")[0]}</td>
                       <td style={{padding:"7px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.red,fontWeight:700}}>{fmtArr(p.arr)}</td>
-                      <td style={{padding:"7px 10px",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace"}}>{p.stage}</td>
+                      <td style={{padding:"7px 10px",fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace"}}>{p.stage}</td>
                       <td style={{padding:"7px 10px",fontSize:14,fontFamily:"DM Mono,monospace",fontWeight:800,color:G.red}}>{p.tasks_late||0}!</td>
                     </tr>
                   ))}
@@ -550,14 +550,14 @@ function ExecDashboard({api}) {
       <Card style={{marginBottom:12}}>
         <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>FULL PORTFOLIO — ALL CUSTOMERS</span>
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.faint}}>{portfolio.length} customers · {fmtFull(totalArr)} total ARR</span>
+          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{portfolio.length} customers · {fmtFull(totalArr)} total ARR</span>
         </div>
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border}}>
                 {["Customer","CSM","Stage","Health","Completion","ARR","Start","Target","Total Tasks","Complete","Upcoming","Late","Days to Target"].map(h=>(
-                  <th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                  <th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                 ))}
               </tr>
             </thead>
@@ -587,7 +587,7 @@ function ExecDashboard({api}) {
                       </div>
                     </td>
                     <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.green,fontWeight:700,whiteSpace:"nowrap"}}>{fmtArr(p.arr)}</td>
-                    <td style={{padding:"9px 12px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.faint,whiteSpace:"nowrap"}}>{fmtDate(p.start_date)}</td>
+                    <td style={{padding:"9px 12px",fontSize:13,fontFamily:"DM Mono,monospace",color:"#5a7a94",whiteSpace:"nowrap"}}>{fmtDate(p.start_date)}</td>
                     <td style={{padding:"9px 12px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,whiteSpace:"nowrap"}}>{fmtDate(p.target_date)}</td>
                     <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,textAlign:"center"}}>{p.total_tasks||0}</td>
                     <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.green,textAlign:"center",fontWeight:700}}>{p.tasks_complete||0}</td>
@@ -707,7 +707,7 @@ function TaskModal({project,api,onClose,onUpdated}) {
                 <tr style={{borderBottom:"1px solid "+G.border}}>
                   <th style={{width:44,padding:"9px 8px 9px 18px"}}></th>
                   {["Task","Phase","Assignee","Projected Date","Actual Date","Variance","Priority","Status"].map(h=>(
-                    <th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                    <th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                   ))}
                 </tr>
               </thead>
@@ -731,9 +731,9 @@ function TaskModal({project,api,onClose,onUpdated}) {
                           <span style={{width:8,height:8,borderRadius:"50%",background:sc.color,flexShrink:0,marginTop:3,boxShadow:task.status!=="upcoming"?"0 0 5px "+sc.color+"88":"none"}}/>
                           <span style={{fontSize:13,fontWeight:600,color:task.status==="complete"?G.muted:G.text,textDecoration:task.status==="complete"?"line-through":"none",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.name}</span>
                         </div>
-                        {task.notes&&<div style={{fontSize:9,color:G.faint,fontFamily:"DM Mono,monospace",marginTop:2,marginLeft:15,lineHeight:1.4}}>{task.notes.slice(0,70)}{task.notes.length>70?"…":""}</div>}
+                        {task.notes&&<div style={{fontSize:9,color:"#5a7a94",fontFamily:"DM Mono,monospace",marginTop:2,marginLeft:15,lineHeight:1.4}}>{task.notes.slice(0,70)}{task.notes.length>70?"…":""}</div>}
                       </td>
-                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.faint,whiteSpace:"nowrap"}}>{task.phase}</td>
+                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",whiteSpace:"nowrap"}}>{task.phase}</td>
                       <td style={{padding:"10px 12px",fontSize:13,color:G.muted,whiteSpace:"nowrap"}}>{task.assignee_name||task.assignee_type||"—"}</td>
                       <td style={{padding:"10px 12px",whiteSpace:"nowrap"}}>
                         {isProjEdit?(
@@ -779,7 +779,7 @@ function TaskModal({project,api,onClose,onUpdated}) {
         </div>
         {/* Footer */}
         <div style={{padding:"9px 22px",borderTop:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.faint}}>{shown.length} tasks · Click checkbox to complete · Click date to edit</span>
+          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{shown.length} tasks · Click checkbox to complete · Click date to edit</span>
           <div style={{display:"flex",gap:12,fontSize:14,fontFamily:"DM Mono,monospace"}}>
             <span style={{color:G.green}}>● Complete</span><span style={{color:G.yellow}}>● Upcoming</span><span style={{color:G.red}}>● Late</span>
           </div>
@@ -840,7 +840,7 @@ function ConsultantPortal({api,csm}) {
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 16px",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
             <div style={{fontSize:26,fontWeight:800,color:k.color,lineHeight:1,marginTop:4,fontFamily:"Syne,sans-serif"}}>{k.value}</div>
-            <div style={{fontSize:10,color:G.muted,marginTop:4,fontFamily:"DM Mono,monospace"}}>{k.label}</div>
+            <div style={{fontSize:13,color:G.muted,marginTop:4,fontFamily:"DM Mono,monospace"}}>{k.label}</div>
           </div>
         ))}
       </div>
@@ -874,12 +874,12 @@ function ConsultantPortal({api,csm}) {
           </select>
         </div>
       </div>
-      <div style={{textAlign:"right",fontSize:14,fontFamily:"DM Mono,monospace",color:G.faint,marginBottom:6}}>Double-click any row to manage tasks</div>
+      <div style={{textAlign:"right",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",marginBottom:6}}>Double-click any row to manage tasks</div>
       {/* Table */}
       <Card style={{overflow:"hidden"}}>
         <div style={{padding:"10px 14px",borderBottom:"1px solid "+G.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>{csm ? "ACCOUNTS — "+csm.name.toUpperCase() : "ALL ACCOUNTS"}</span>
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.faint}}>{filtered.length} accounts</span>
+          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{filtered.length} accounts</span>
         </div>
         <div style={{overflowX:"auto"}}>
           {loading?<div style={{padding:40,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace"}}>Loading…</div>:(
@@ -928,7 +928,7 @@ function ConsultantPortal({api,csm}) {
                     </tr>
                   );
                 })}
-                {filtered.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:"center",color:G.faint,fontFamily:"DM Mono,monospace"}}>No accounts match</td></tr>}
+                {filtered.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:"center",color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>No accounts match</td></tr>}
               </tbody>
             </table>
           )}
@@ -967,7 +967,7 @@ function SetupScreen({onConnect}) {
           <Logo size={38}/>
           <div>
             <div style={{fontSize:20,fontWeight:800,color:G.text,letterSpacing:"0.03em"}}>Monument</div>
-            <div style={{fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.12em"}}>PS OPERATIONS PLATFORM</div>
+            <div style={{fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.12em"}}>PS OPERATIONS PLATFORM</div>
           </div>
         </div>
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:14,padding:32}}>
@@ -986,7 +986,7 @@ function SetupScreen({onConnect}) {
               <label style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>SERVICE ROLE KEY</label>
               <input value={key} onChange={e=>setKey(e.target.value)} type="password" placeholder="eyJ…"
                 style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"10px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:12}}/>
-              <div style={{fontSize:10,color:G.faint,fontFamily:"DM Mono,monospace",marginTop:4}}>Use service_role key — bypasses auth for demo</div>
+              <div style={{fontSize:10,color:"#5a7a94",fontFamily:"DM Mono,monospace",marginTop:4}}>Use service_role key — bypasses auth for demo</div>
             </div>
             {error&&<div style={{background:G.redBg,border:"1px solid "+G.red+"44",borderRadius:8,padding:"10px 14px",fontSize:12,color:G.red,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>{error}</div>}
             <button onClick={connect} disabled={loading}
@@ -995,7 +995,7 @@ function SetupScreen({onConnect}) {
             </button>
           </div>
         </div>
-        <div style={{textAlign:"center",fontSize:14,fontFamily:"DM Mono,monospace",color:G.faint,marginTop:14}}>Credentials saved locally · Never transmitted</div>
+        <div style={{textAlign:"center",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",marginTop:14}}>Credentials saved locally · Never transmitted</div>
       </div>
     </div>
   );
