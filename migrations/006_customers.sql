@@ -40,16 +40,25 @@ ALTER TABLE customers ADD COLUMN IF NOT EXISTS address       TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS notes         TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_active     BOOLEAN NOT NULL DEFAULT true;
 
-CREATE INDEX IF NOT EXISTS idx_customers_name_trgm ON customers USING gin (name gin_trgm_ops);
--- If pg_trgm isn't installed, fall back to a simple lower(name) index.
+-- Name index for the global search. Prefer pg_trgm (fuzzy substring), fall
+-- back to lower(name) if the extension can't be installed. Must try the
+-- extension BEFORE the trigram index — gin_trgm_ops doesn't exist without it.
 DO $$
+DECLARE
+  have_trgm BOOLEAN := false;
 BEGIN
-  CREATE EXTENSION IF NOT EXISTS pg_trgm;
-EXCEPTION WHEN OTHERS THEN
-  -- pg_trgm can't be created (managed DB without permissions) — drop the
-  -- GIN index if it was partially created and fall back to a plain index.
-  EXECUTE 'DROP INDEX IF EXISTS idx_customers_name_trgm';
-  EXECUTE 'CREATE INDEX IF NOT EXISTS idx_customers_name_lower ON customers (lower(name))';
+  BEGIN
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    have_trgm := true;
+  EXCEPTION WHEN OTHERS THEN
+    have_trgm := false;
+  END;
+
+  IF have_trgm THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_customers_name_trgm ON customers USING gin (name gin_trgm_ops)';
+  ELSE
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_customers_name_lower ON customers (lower(name))';
+  END IF;
 END $$;
 
 DROP TRIGGER IF EXISTS trg_customers_updated ON customers;
