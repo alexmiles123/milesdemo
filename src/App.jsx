@@ -37,6 +37,31 @@ const fmtFull  = (n) => n!=null ? "$"+Number(n).toLocaleString() : "—";
 const todayISO = () => new Date().toISOString().split("T")[0];
 const pct      = (a,b) => b ? Math.round((a/b)*100) : 0;
 
+// ─── CAPACITY HELPERS ────────────────────────────────────────────────────────
+const TASK_HOURS = { critical:8, high:6, medium:4, low:2 };
+const getTaskHours = (p) => TASK_HOURS[p] || 3;
+const getWeekStart = (dateStr) => {
+  const d = new Date(dateStr+"T00:00:00");
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().split("T")[0];
+};
+const getWeeks = (n=12) => {
+  const weeks = [];
+  const start = getWeekStart(new Date().toISOString().split("T")[0]);
+  for(let i=0;i<n;i++){
+    const d=new Date(start+"T00:00:00");
+    d.setDate(d.getDate()+i*7);
+    weeks.push(d.toISOString().split("T")[0]);
+  }
+  return weeks;
+};
+const fmtWeek = (ds) => new Date(ds+"T00:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+const utilColor = (p) => p>100?G.red:p>80?G.yellow:G.green;
+const utilBg = (p) => p>100?G.redBg:p>80?G.yellowBg:G.greenBg;
+const utilBd = (p) => p>100?G.redBd:p>80?G.yellowBd:G.greenBd;
+
 // ─── REST API CLIENT ─────────────────────────────────────────────────────────
 function makeApi(url, key) {
   const base = url.replace(/\/$/,"") + "/rest/v1";
@@ -58,6 +83,21 @@ function makeApi(url, key) {
       const res = await fetch(base+"/"+table+"?id=eq."+id,{method:"PATCH",headers:hdrs,body:JSON.stringify(body)});
       if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
       return true;
+    },
+    async post(table, body) {
+      const res = await fetch(base+"/"+table,{method:"POST",headers:hdrs,body:JSON.stringify(body)});
+      if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
+      return res.json();
+    },
+    async del(table, id) {
+      const res = await fetch(base+"/"+table+"?id=eq."+id,{method:"DELETE",headers:hdrs});
+      if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
+      return true;
+    },
+    async upsert(table, body) {
+      const res = await fetch(base+"/"+table,{method:"POST",headers:{...hdrs,"Prefer":"return=representation,resolution=merge-duplicates"},body:JSON.stringify(body)});
+      if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
+      return res.json();
     },
   };
 }
@@ -227,6 +267,264 @@ function AiPanel({ portfolio, tasks, csms }) {
   );
 }
 
+// ─── CAPACITY CELL DRILL-DOWN MODAL ──────────────────────────────────────────
+function CapacityCellModal({cell,onClose}) {
+  if(!cell) return null;
+  const {csmName,weekLabel,available,taskHours,commitHours,committed,utilization,taskList,commitList}=cell;
+  const uc=utilColor(utilization);
+  return (
+    <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
+      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:520,maxHeight:"80vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{padding:"16px 22px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <div>
+            <div style={{fontSize:17,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif"}}>{csmName}</div>
+            <div style={{fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:2}}>Week of {weekLabel}</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:utilBg(utilization),border:"1px solid "+utilBd(utilization),borderRadius:8,padding:"6px 14px",textAlign:"center"}}>
+              <div style={{fontSize:22,fontWeight:800,color:uc,fontFamily:"Syne,sans-serif"}}>{Math.round(utilization)}%</div>
+              <div style={{fontSize:10,color:uc,fontFamily:"DM Mono,monospace",opacity:0.8}}>UTILIZED</div>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"1px solid "+G.border,color:G.muted,width:30,height:30,borderRadius:8,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+          </div>
+        </div>
+        <div style={{overflowY:"auto",flex:1,padding:"16px 22px"}}>
+          <div style={{display:"flex",gap:10,marginBottom:16}}>
+            {[{l:"Available",v:available+"h",c:G.blue},{l:"Task Hours",v:taskHours+"h",c:G.purple},{l:"Commitments",v:commitHours+"h",c:G.yellow},{l:"Total",v:committed+"h",c:uc}].map((k,i)=>(
+              <div key={i} style={{flex:1,background:G.surface2,border:"1px solid "+G.border,borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:800,color:k.c,fontFamily:"Syne,sans-serif"}}>{k.v}</div>
+                <div style={{fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:2}}>{k.l}</div>
+              </div>
+            ))}
+          </div>
+          {taskList.length>0&&<Card style={{marginBottom:12}}>
+            <CardHeader>TASKS DRIVING HOURS ({taskHours}h)</CardHeader>
+            <div style={{padding:"8px 0"}}>
+              {taskList.map((t,i)=>(
+                <div key={i} style={{padding:"6px 16px",borderBottom:i<taskList.length-1?"1px solid "+G.faint:"none",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:G.text}}>{t.name}</div>
+                    <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace"}}>{t.customer} · {t.phase||"—"}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted}}>{t.hours}h</span>
+                    <span style={{color:PRIORITY_COLOR[t.priority]||G.muted,fontSize:10,fontFamily:"DM Mono,monospace",fontWeight:700}}>{(t.priority||"").toUpperCase()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>}
+          {commitList.length>0&&<Card>
+            <CardHeader>MANUAL COMMITMENTS ({commitHours}h)</CardHeader>
+            <div style={{padding:"8px 0"}}>
+              {commitList.map((c,i)=>(
+                <div key={i} style={{padding:"6px 16px",borderBottom:i<commitList.length-1?"1px solid "+G.faint:"none",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:G.text}}>{c.commitment_type}</div>
+                    <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace"}}>{c.notes||"—"}</div>
+                  </div>
+                  <span style={{fontSize:12,fontFamily:"DM Mono,monospace",color:G.yellow,fontWeight:700}}>{c.estimated_hours}h</span>
+                </div>
+              ))}
+            </div>
+          </Card>}
+          {taskList.length===0&&commitList.length===0&&<div style={{textAlign:"center",padding:30,color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No commitments this week</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── EXECUTIVE CAPACITY DASHBOARD ────────────────────────────────────────────
+function ExecCapacityDashboard({api}) {
+  const [csmList,setCsmList]=useState([]);
+  const [capEntries,setCapEntries]=useState([]);
+  const [commitments,setCommitments]=useState([]);
+  const [projects,setProjects]=useState([]);
+  const [tasks,setTasks]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [selectedCell,setSelectedCell]=useState(null);
+  const [error,setError]=useState(null);
+
+  const weeks = getWeeks(12);
+
+  const load=useCallback(async()=>{
+    setLoading(true);setError(null);
+    try{
+      const [cs,ce,cm,pr,tk]=await Promise.all([
+        api.get("csms",{is_active:"eq.true",select:"*"}),
+        api.get("capacity_entries",{select:"*"}).catch(()=>[]),
+        api.get("project_commitments",{select:"*"}).catch(()=>[]),
+        api.get("projects",{select:"id,name,csm_id"}),
+        api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority"}),
+      ]);
+      setCsmList(cs||[]);setCapEntries(ce||[]);setCommitments(cm||[]);setProjects(pr||[]);setTasks(tk||[]);
+    }catch(e){setError(e.message);}
+    setLoading(false);
+  },[api]);
+
+  useEffect(()=>{load();},[load]);
+
+  if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>Loading capacity data…</div>;
+  if(error) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.red,fontFamily:"DM Mono,monospace",fontSize:13}}>Error: {error}. Run migration.sql first.</div>;
+
+  // Build project → CSM lookup
+  const projCsm={};
+  projects.forEach(p=>{projCsm[p.id]=p.csm_id;});
+  const projName={};
+  projects.forEach(p=>{projName[p.id]=p.name;});
+
+  // Compute capacity grid data
+  const gridData = csmList.map(csm=>{
+    const csmProjects=projects.filter(p=>p.csm_id===csm.id).map(p=>p.id);
+    const weekData=weeks.map(ws=>{
+      const we=new Date(ws+"T00:00:00");we.setDate(we.getDate()+6);
+      const weStr=we.toISOString().split("T")[0];
+      const capEntry=capEntries.find(e=>e.csm_id===csm.id&&e.week_start_date===ws);
+      const available=capEntry?.estimated_hours||40;
+      const weekTasks=tasks.filter(t=>csmProjects.includes(t.project_id)&&t.proj_date>=ws&&t.proj_date<=weStr);
+      const taskHours=weekTasks.reduce((s,t)=>s+getTaskHours(t.priority),0);
+      const weekCommits=commitments.filter(c=>c.csm_id===csm.id&&c.week_start_date===ws);
+      const commitHours=weekCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+      const committed=taskHours+commitHours;
+      const utilization=available>0?(committed/available)*100:0;
+      return {ws,available,taskHours,commitHours,committed,utilization,
+        taskList:weekTasks.map(t=>({...t,customer:projName[t.project_id]||"—",hours:getTaskHours(t.priority)})),
+        commitList:weekCommits};
+    });
+    return {csm,weekData};
+  });
+
+  // Summary row
+  const summaryWeeks=weeks.map((_,wi)=>{
+    const totalAvail=gridData.reduce((s,r)=>s+r.weekData[wi].available,0);
+    const totalCommit=gridData.reduce((s,r)=>s+r.weekData[wi].committed,0);
+    return {available:totalAvail,committed:totalCommit,utilization:totalAvail>0?(totalCommit/totalAvail)*100:0};
+  });
+
+  // Forecast chart data
+  const chartData=weeks.map((ws,i)=>({
+    name:fmtWeek(ws),
+    Available:summaryWeeks[i].available,
+    Committed:summaryWeeks[i].committed,
+  }));
+
+  // KPIs
+  const totalCsms=csmList.length;
+  const overloaded=gridData.filter(r=>r.weekData.some(w=>w.utilization>100)).length;
+  const avgUtil=summaryWeeks.length?Math.round(summaryWeeks.reduce((s,w)=>s+w.utilization,0)/summaryWeeks.length):0;
+  const peakWeek=summaryWeeks.reduce((max,w,i)=>w.utilization>max.u?{u:w.utilization,i}:max,{u:0,i:0});
+
+  const handleCellClick=(csmName,wi,wd)=>{
+    setSelectedCell({csmName,weekLabel:fmtWeek(weeks[wi]),...wd});
+  };
+
+  return (
+    <div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
+      {/* KPI Strip */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+        {[
+          {label:"Team Members",value:totalCsms,color:G.purple,sub:"active CSMs"},
+          {label:"Avg Utilization",value:avgUtil+"%",color:avgUtil>80?G.yellow:G.green,sub:"across 12 weeks"},
+          {label:"Overloaded CSMs",value:overloaded,color:overloaded>0?G.red:G.green,sub:"with >100% weeks"},
+          {label:"Peak Week",value:Math.round(peakWeek.u)+"%",color:utilColor(peakWeek.u),sub:fmtWeek(weeks[peakWeek.i]||weeks[0])},
+        ].map((k,i)=>(
+          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
+            <div style={{fontSize:26,fontWeight:800,color:k.color,lineHeight:1,marginTop:4,fontFamily:"Syne,sans-serif"}}>{k.value}</div>
+            <div style={{fontSize:13,color:G.muted,marginTop:5,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em"}}>{k.label}</div>
+            <div style={{fontSize:9,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace"}}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Forecast Chart */}
+      <Card style={{marginBottom:12}}>
+        <CardHeader>3-MONTH CAPACITY FORECAST — TEAM TOTAL</CardHeader>
+        <div style={{padding:"14px 16px"}}>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={G.border}/>
+              <XAxis dataKey="name" tick={{fill:G.muted,fontSize:10,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fill:G.muted,fontSize:10,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} label={{value:"Hours",angle:-90,position:"insideLeft",fill:G.muted,fontSize:10}}/>
+              <Tooltip content={<Tip/>}/>
+              <Legend wrapperStyle={{fontSize:11,fontFamily:"DM Mono,monospace"}}/>
+              <Area type="monotone" dataKey="Available" stroke={G.green} fill={G.green} fillOpacity={0.15} strokeWidth={2}/>
+              <Area type="monotone" dataKey="Committed" stroke={G.purple} fill={G.purple} fillOpacity={0.25} strokeWidth={2}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* 12-Week Capacity Grid */}
+      <Card style={{marginBottom:12}}>
+        <CardHeader>CAPACITY GRID — 12 WEEK VIEW</CardHeader>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
+            <thead>
+              <tr style={{borderBottom:"1px solid "+G.border}}>
+                <th style={{padding:"8px 12px",textAlign:"left",fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,position:"sticky",left:0,background:G.surface,zIndex:1,minWidth:120}}>CSM</th>
+                {weeks.map((ws,i)=>(
+                  <th key={i} style={{padding:"8px 6px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:72}}>
+                    {fmtWeek(ws)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Summary Row */}
+              <tr style={{borderBottom:"2px solid "+G.border,background:"#080e18"}}>
+                <td style={{padding:"8px 12px",fontSize:12,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1}}>TEAM TOTAL</td>
+                {summaryWeeks.map((sw,i)=>(
+                  <td key={i} style={{padding:"6px 4px",textAlign:"center"}}>
+                    <div style={{background:utilBg(sw.utilization),border:"1px solid "+utilBd(sw.utilization),borderRadius:6,padding:"4px 2px"}}>
+                      <div style={{fontSize:11,fontWeight:800,color:utilColor(sw.utilization),fontFamily:"DM Mono,monospace"}}>{Math.round(sw.committed)}/{sw.available}</div>
+                      <div style={{fontSize:9,color:utilColor(sw.utilization),opacity:0.7}}>{Math.round(sw.utilization)}%</div>
+                    </div>
+                  </td>
+                ))}
+              </tr>
+              {/* CSM Rows */}
+              {gridData.map((row,ri)=>(
+                <tr key={row.csm.id} style={{borderBottom:ri<gridData.length-1?"1px solid "+G.faint:"none"}}>
+                  <td style={{padding:"8px 12px",position:"sticky",left:0,background:G.surface,zIndex:1}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <div style={{width:22,height:22,borderRadius:"50%",background:CSM_COLORS[ri%CSM_COLORS.length],display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff",flexShrink:0}}>{row.csm.name[0]}</div>
+                      <span style={{fontSize:13,fontWeight:600,color:G.text,whiteSpace:"nowrap"}}>{row.csm.name.split(" ")[0]}</span>
+                    </div>
+                  </td>
+                  {row.weekData.map((wd,wi)=>(
+                    <td key={wi} style={{padding:"4px 3px",textAlign:"center"}}>
+                      <div onClick={()=>handleCellClick(row.csm.name,wi,wd)}
+                        style={{background:utilBg(wd.utilization),border:"1px solid "+utilBd(wd.utilization),borderRadius:6,padding:"5px 2px",cursor:"pointer",transition:"transform .1s"}}
+                        onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"}
+                        onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
+                        <div style={{fontSize:11,fontWeight:700,color:utilColor(wd.utilization),fontFamily:"DM Mono,monospace"}}>{Math.round(wd.committed)}/{wd.available}</div>
+                        <div style={{fontSize:9,color:utilColor(wd.utilization),opacity:0.7}}>{Math.round(wd.utilization)}%</div>
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Legend */}
+      <div style={{display:"flex",gap:16,justifyContent:"center",padding:"8px 0",fontSize:11,fontFamily:"DM Mono,monospace"}}>
+        <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.green}}/>Under 80%</span>
+        <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.yellow}}/>80–100%</span>
+        <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.red}}/>Over 100%</span>
+        <span style={{color:G.muted}}>Click any cell to drill down</span>
+      </div>
+
+      {selectedCell&&<CapacityCellModal cell={selectedCell} onClose={()=>setSelectedCell(null)}/>}
+    </div>
+  );
+}
+
 // ─── EXECUTIVE DASHBOARD ─────────────────────────────────────────────────────
 function ExecDashboard({api}) {
   const [portfolio, setPortfolio] = useState([]);
@@ -234,6 +532,7 @@ function ExecDashboard({api}) {
   const [csms,      setCsms]      = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [selProject,setSelProject]= useState(null);
+  const [execTab,   setExecTab]   = useState("dashboard");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -321,6 +620,20 @@ function ExecDashboard({api}) {
     .sort((a,b)=>new Date(a.target_date)-new Date(b.target_date));
 
   return (
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      {/* Sub-tab bar */}
+      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0}}>
+        {[["dashboard","Dashboard"],["capacity","Capacity"]].map(([k,l])=>(
+          <button key={k} onClick={()=>setExecTab(k)}
+            style={{background:execTab===k?"#0f2036":"none",border:"1px solid "+(execTab===k?G.blue+"44":"transparent"),borderBottom:execTab===k?"2px solid "+G.blue:"2px solid transparent",color:execTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
+        ))}
+      </div>
+      {execTab==="capacity" ? (
+        <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+          <ExecCapacityDashboard api={api}/>
+          <AiPanel portfolio={portfolio} tasks={tasks} csms={csms}/>
+        </div>
+      ) : (
     <div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
 
       {/* ── SECTION: KPI Strip ── */}
@@ -669,17 +982,21 @@ function ExecDashboard({api}) {
     </div>
     <AiPanel portfolio={portfolio} tasks={tasks} csms={csms} />
     </div>
+      )}
+    </div>
   );
 }
 
 // ─── CONSULTANT PORTAL ───────────────────────────────────────────────────────
-function TaskModal({project,api,onClose,onUpdated}) {
+function TaskModal({project,api,onClose,onUpdated,allCsms}) {
   const [tasks,     setTasks]   = useState([]);
   const [loading,   setLoading] = useState(true);
   const [saving,    setSaving]  = useState(null);
   const [editing,   setEditing] = useState(null);
   const [phase,     setPhase]   = useState("all");
   const [toast,     setToast]   = useState(null);
+  const [capData,   setCapData] = useState(null);
+  const [capWarning,setCapWarning]=useState(null);
 
   const load = useCallback(async()=>{
     setLoading(true);
@@ -689,6 +1006,41 @@ function TaskModal({project,api,onClose,onUpdated}) {
   },[project.id]);
 
   useEffect(()=>{ load(); },[load]);
+
+  // Load capacity data for date intelligence
+  useEffect(()=>{
+    if(!allCsms) return;
+    const csmObj=allCsms.find(c=>c.name===project.csm);
+    if(!csmObj) return;
+    (async()=>{
+      try{
+        const [prjs,ce,cm]=await Promise.all([
+          api.get("projects",{csm_id:"eq."+csmObj.id,select:"id,name"}),
+          api.get("capacity_entries",{csm_id:"eq."+csmObj.id,select:"*"}).catch(()=>[]),
+          api.get("project_commitments",{csm_id:"eq."+csmObj.id,select:"*"}).catch(()=>[]),
+        ]);
+        const pIds=prjs.map(p=>p.id);
+        const allT=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,proj_date,priority"}).catch(()=>[]);
+        const csmTasks=allT.filter(t=>pIds.includes(t.project_id));
+        const pNames={};prjs.forEach(p=>{pNames[p.id]=p.name;});
+        setCapData({csmId:csmObj.id,csmName:csmObj.name,tasks:csmTasks,capEntries:ce||[],commitments:cm||[],projectIds:pIds,projectNames:pNames});
+      }catch(e){console.log("Cap data load skipped:",e.message);}
+    })();
+  },[allCsms,project.csm]);
+
+  const checkDateCapacity=(dateStr)=>{
+    if(!capData||!dateStr) return null;
+    const ws=getWeekStart(dateStr);
+    const we=new Date(ws+"T00:00:00");we.setDate(we.getDate()+6);const weStr=we.toISOString().split("T")[0];
+    const capEntry=capData.capEntries.find(e=>e.week_start_date===ws);
+    const available=capEntry?.estimated_hours||40;
+    const weekTasks=capData.tasks.filter(t=>t.proj_date>=ws&&t.proj_date<=weStr);
+    const taskHrs=weekTasks.reduce((s,t)=>s+getTaskHours(t.priority),0);
+    const commitHrs=capData.commitments.filter(c=>c.week_start_date===ws).reduce((s,c)=>s+(c.estimated_hours||0),0);
+    const committed=taskHrs+commitHrs;
+    const utilization=available>0?(committed/available)*100:0;
+    return {committed,available,utilization,csmName:capData.csmName};
+  };
 
   const showToast=(msg,type="success")=>{ setToast({msg,type}); setTimeout(()=>setToast(null),2500); };
 
@@ -798,15 +1150,24 @@ function TaskModal({project,api,onClose,onUpdated}) {
                       <td style={{padding:"10px 12px",fontSize:13,color:G.muted,whiteSpace:"nowrap"}}>{task.assignee_name||task.assignee_type||"—"}</td>
                       <td style={{padding:"10px 12px",whiteSpace:"nowrap"}}>
                         {isProjEdit?(
-                          <input type="date" defaultValue={task.proj_date} autoFocus
-                            onBlur={e=>saveEdit(task,"proj_date",e.target.value)}
-                            onKeyDown={e=>{if(e.key==="Enter")saveEdit(task,"proj_date",e.target.value);if(e.key==="Escape")setEditing(null);}}
-                            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+                          <div>
+                            <input type="date" defaultValue={task.proj_date} autoFocus
+                              onChange={e=>{const ci=checkDateCapacity(e.target.value);setCapWarning(ci&&ci.utilization>80?ci:null);}}
+                              onBlur={e=>{saveEdit(task,"proj_date",e.target.value);setCapWarning(null);}}
+                              onKeyDown={e=>{if(e.key==="Enter"){saveEdit(task,"proj_date",e.target.value);setCapWarning(null);}if(e.key==="Escape"){setEditing(null);setCapWarning(null);}}}
+                              style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+                            {capWarning&&<div style={{background:G.yellowBg,border:"1px solid "+G.yellowBd,borderRadius:6,padding:"5px 8px",marginTop:4,fontSize:10,color:G.yellow,fontFamily:"DM Mono,monospace",maxWidth:220,lineHeight:1.4}}>
+                              {capWarning.csmName} is at {Math.round(capWarning.utilization)}% capacity that week — consider rescheduling
+                            </div>}
+                          </div>
                         ):(
-                          <div onClick={()=>setEditing({id:task.id,field:"proj_date"})}
-                            style={{cursor:"pointer",fontSize:14,fontFamily:"DM Mono,monospace",color:task.status==="late"?G.red:G.muted,borderBottom:"1px dashed "+G.border,display:"inline-block",padding:"2px 4px"}}
-                            title="Click to edit">
-                            {fmtDate(task.proj_date)} ✎
+                          <div style={{display:"flex",alignItems:"center",gap:4}}>
+                            <div onClick={()=>setEditing({id:task.id,field:"proj_date"})}
+                              style={{cursor:"pointer",fontSize:14,fontFamily:"DM Mono,monospace",color:task.status==="late"?G.red:G.muted,borderBottom:"1px dashed "+G.border,display:"inline-block",padding:"2px 4px"}}
+                              title="Click to edit">
+                              {fmtDate(task.proj_date)} ✎
+                            </div>
+                            {(()=>{const ci=checkDateCapacity(task.proj_date);return ci?<span style={{width:7,height:7,borderRadius:"50%",background:utilColor(ci.utilization),display:"inline-block",flexShrink:0}} title={Math.round(ci.utilization)+"% capacity"}/>:null;})()}
                           </div>
                         )}
                       </td>
@@ -850,7 +1211,290 @@ function TaskModal({project,api,onClose,onUpdated}) {
   );
 }
 
-function ConsultantPortal({api,csm}) {
+// ─── ADD COMMITMENT MODAL ────────────────────────────────────────────────────
+function AddCommitmentModal({api,csm,onClose,onAdded}) {
+  const [type,setType]=useState("Client Call");
+  const [hours,setHours]=useState("2");
+  const [week,setWeek]=useState(getWeeks(12)[0]);
+  const [notes,setNotes]=useState("");
+  const [projectId,setProjectId]=useState("");
+  const [projects,setProjects]=useState([]);
+  const [saving,setSaving]=useState(false);
+
+  useEffect(()=>{
+    if(csm) api.get("projects",{csm_id:"eq."+csm.id,select:"id,name"}).then(setProjects).catch(()=>{});
+  },[csm]);
+
+  const save=async()=>{
+    if(!hours||!csm) return;
+    setSaving(true);
+    try{
+      await api.post("project_commitments",[{
+        csm_id:csm.id,
+        project_id:projectId||null,
+        week_start_date:week,
+        estimated_hours:parseFloat(hours),
+        commitment_type:type,
+        notes:notes||null,
+      }]);
+      onAdded();onClose();
+    }catch(e){alert("Failed: "+e.message);}
+    setSaving(false);
+  };
+
+  const weeks=getWeeks(12);
+  return (
+    <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
+      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:420,padding:24}}>
+        <div style={{fontSize:17,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif",marginBottom:18}}>Add Commitment Block</div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div>
+            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>TYPE</label>
+            <select value={type} onChange={e=>setType(e.target.value)}
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}>
+              {["Client Call","Travel","Onboarding Session","Internal Meeting","Training","Documentation","Other"].map(t=><option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>WEEK</label>
+            <select value={week} onChange={e=>setWeek(e.target.value)}
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}>
+              {weeks.map(w=><option key={w} value={w}>Week of {fmtWeek(w)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>HOURS</label>
+            <input type="number" value={hours} onChange={e=>setHours(e.target.value)} min="0.5" max="40" step="0.5"
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+          </div>
+          <div>
+            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>PROJECT (OPTIONAL)</label>
+            <select value={projectId} onChange={e=>setProjectId(e.target.value)}
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}>
+              <option value="">No specific project</option>
+              {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>NOTES</label>
+            <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Optional notes…"
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <button onClick={onClose} style={{flex:1,background:G.surface2,border:"1px solid "+G.border,color:G.muted,padding:"10px",borderRadius:8,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12}}>Cancel</button>
+            <button onClick={save} disabled={saving} style={{flex:1,background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"10px",borderRadius:8,cursor:"pointer",fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,opacity:saving?0.6:1}}>{saving?"Saving…":"Add Commitment"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CSM CAPACITY PANEL ──────────────────────────────────────────────────────
+function CsmCapacityPanel({api,csm}) {
+  const [capEntries,setCapEntries]=useState([]);
+  const [commitments,setCommitments]=useState([]);
+  const [projects,setProjects]=useState([]);
+  const [tasks,setTasks]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [showAddModal,setShowAddModal]=useState(false);
+  const [editingWeek,setEditingWeek]=useState(null);
+
+  const weeks=getWeeks(12);
+
+  const load=useCallback(async()=>{
+    if(!csm) return;
+    setLoading(true);
+    try{
+      const [ce,cm,pr]=await Promise.all([
+        api.get("capacity_entries",{csm_id:"eq."+csm.id,select:"*"}).catch(()=>[]),
+        api.get("project_commitments",{csm_id:"eq."+csm.id,select:"*"}).catch(()=>[]),
+        api.get("projects",{csm_id:"eq."+csm.id,select:"id,name"}),
+      ]);
+      setCapEntries(ce||[]);setCommitments(cm||[]);setProjects(pr||[]);
+      const pIds=(pr||[]).map(p=>p.id);
+      if(pIds.length){
+        const tk=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority"}).catch(()=>[]);
+        setTasks((tk||[]).filter(t=>pIds.includes(t.project_id)));
+      }else{setTasks([]);}
+    }catch(e){console.error(e);}
+    setLoading(false);
+  },[api,csm]);
+
+  useEffect(()=>{load();},[load]);
+
+  const updateAvailHours=async(ws,hours)=>{
+    try{
+      const existing=capEntries.find(e=>e.week_start_date===ws);
+      if(existing){
+        await api.patch("capacity_entries",existing.id,{estimated_hours:parseFloat(hours)});
+      }else{
+        await api.post("capacity_entries",[{csm_id:csm.id,week_start_date:ws,estimated_hours:parseFloat(hours)}]);
+      }
+      load();
+    }catch(e){alert("Failed: "+e.message);}
+    setEditingWeek(null);
+  };
+
+  const deleteCommitment=async(id)=>{
+    try{await api.del("project_commitments",id);load();}catch(e){alert("Failed: "+e.message);}
+  };
+
+  if(!csm) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13,padding:40}}>Select a CSM from the dropdown above to view capacity</div>;
+  if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>Loading capacity…</div>;
+
+  const projNames={};projects.forEach(p=>{projNames[p.id]=p.name;});
+
+  const weekData=weeks.map(ws=>{
+    const we=new Date(ws+"T00:00:00");we.setDate(we.getDate()+6);const weStr=we.toISOString().split("T")[0];
+    const capEntry=capEntries.find(e=>e.week_start_date===ws);
+    const available=capEntry?.estimated_hours||40;
+    const weekTasks=tasks.filter(t=>t.proj_date>=ws&&t.proj_date<=weStr);
+    const taskHours=weekTasks.reduce((s,t)=>s+getTaskHours(t.priority),0);
+    const weekCommits=commitments.filter(c=>c.week_start_date===ws);
+    const commitHours=weekCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+    const committed=taskHours+commitHours;
+    const utilization=available>0?(committed/available)*100:0;
+    return {ws,available,taskHours,commitHours,committed,utilization,weekTasks,weekCommits,capEntry};
+  });
+
+  const avgUtil=weekData.length?Math.round(weekData.reduce((s,w)=>s+w.utilization,0)/weekData.length):0;
+  const peakWeek=weekData.reduce((max,w)=>w.utilization>max.u?{u:w.utilization,l:fmtWeek(w.ws)}:max,{u:0,l:"—"});
+  const overloadedWeeks=weekData.filter(w=>w.utilization>100).length;
+
+  return (
+    <div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .25s ease"}}>
+      {/* KPIs */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+        {[
+          {label:"Available Hours",value:weekData.reduce((s,w)=>s+w.available,0)+"h",color:G.blue,sub:"next 12 weeks"},
+          {label:"Avg Utilization",value:avgUtil+"%",color:avgUtil>80?G.yellow:G.green,sub:"across all weeks"},
+          {label:"Peak Week",value:Math.round(peakWeek.u)+"%",color:utilColor(peakWeek.u),sub:peakWeek.l},
+          {label:"Overloaded Weeks",value:overloadedWeeks,color:overloadedWeeks>0?G.red:G.green,sub:">100% utilization"},
+        ].map((k,i)=>(
+          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
+            <div style={{fontSize:26,fontWeight:800,color:k.color,lineHeight:1,marginTop:4,fontFamily:"Syne,sans-serif"}}>{k.value}</div>
+            <div style={{fontSize:13,color:G.muted,marginTop:5,fontFamily:"DM Mono,monospace"}}>{k.label}</div>
+            <div style={{fontSize:9,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace"}}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 12-Week Grid */}
+      <Card style={{marginBottom:12}}>
+        <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>MY 12-WEEK CAPACITY</span>
+          <button onClick={()=>setShowAddModal(true)}
+            style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700}}>+ Add Commitment</button>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
+            <thead>
+              <tr style={{borderBottom:"1px solid "+G.border}}>
+                <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:110}}>METRIC</th>
+                {weeks.map((ws,i)=>(
+                  <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Available Hours Row (editable) */}
+              <tr style={{borderBottom:"1px solid "+G.faint}}>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.blue,fontFamily:"DM Mono,monospace"}}>AVAILABLE</td>
+                {weekData.map((wd,i)=>(
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center"}}>
+                    {editingWeek===wd.ws?(
+                      <input type="number" defaultValue={wd.available} autoFocus min="0" max="80" step="1"
+                        onBlur={e=>updateAvailHours(wd.ws,e.target.value)}
+                        onKeyDown={e=>{if(e.key==="Enter")updateAvailHours(wd.ws,e.target.value);if(e.key==="Escape")setEditingWeek(null);}}
+                        style={{width:44,background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px",borderRadius:4,fontFamily:"DM Mono,monospace",fontSize:11,textAlign:"center"}}/>
+                    ):(
+                      <div onClick={()=>setEditingWeek(wd.ws)}
+                        style={{cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",color:G.blue,fontWeight:700,padding:"3px",borderBottom:"1px dashed "+G.border}}>{wd.available}h</div>
+                    )}
+                  </td>
+                ))}
+              </tr>
+              {/* Task Hours Row */}
+              <tr style={{borderBottom:"1px solid "+G.faint}}>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.purple,fontFamily:"DM Mono,monospace"}}>TASK HOURS</td>
+                {weekData.map((wd,i)=>(
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:G.purple}}>{wd.taskHours}h</td>
+                ))}
+              </tr>
+              {/* Commitment Hours Row */}
+              <tr style={{borderBottom:"1px solid "+G.faint}}>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.yellow,fontFamily:"DM Mono,monospace"}}>COMMITMENTS</td>
+                {weekData.map((wd,i)=>(
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:G.yellow}}>{wd.commitHours}h</td>
+                ))}
+              </tr>
+              {/* Utilization Row */}
+              <tr style={{borderBottom:"1px solid "+G.border}}>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace"}}>UTILIZATION</td>
+                {weekData.map((wd,i)=>(
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center"}}>
+                    <div style={{background:utilBg(wd.utilization),border:"1px solid "+utilBd(wd.utilization),borderRadius:6,padding:"5px 2px"}}>
+                      <div style={{fontSize:13,fontWeight:800,color:utilColor(wd.utilization),fontFamily:"DM Mono,monospace"}}>{Math.round(wd.utilization)}%</div>
+                      <div style={{fontSize:9,color:utilColor(wd.utilization),opacity:0.7}}>{Math.round(wd.committed)}/{wd.available}h</div>
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Commitments List */}
+      <Card style={{marginBottom:12}}>
+        <CardHeader>MANUAL COMMITMENTS</CardHeader>
+        <div style={{overflowY:"auto",maxHeight:300}}>
+          {commitments.length===0?<div style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No manual commitments — click "+ Add Commitment" above</div>:(
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead>
+                <tr style={{borderBottom:"1px solid "+G.border}}>
+                  {["Type","Week","Hours","Project","Notes",""].map(h=>(
+                    <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {commitments.sort((a,b)=>a.week_start_date.localeCompare(b.week_start_date)).map((c,i)=>(
+                  <tr key={c.id} style={{borderBottom:i<commitments.length-1?"1px solid "+G.faint:"none"}}>
+                    <td style={{padding:"8px 10px",fontSize:13,fontWeight:600,color:G.text}}>{c.commitment_type}</td>
+                    <td style={{padding:"8px 10px",fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted}}>{fmtWeek(c.week_start_date)}</td>
+                    <td style={{padding:"8px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.yellow,fontWeight:700}}>{c.estimated_hours}h</td>
+                    <td style={{padding:"8px 10px",fontSize:12,color:G.muted}}>{projNames[c.project_id]||"—"}</td>
+                    <td style={{padding:"8px 10px",fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.notes||"—"}</td>
+                    <td style={{padding:"8px 10px"}}>
+                      <button onClick={()=>deleteCommitment(c.id)}
+                        style={{background:G.redBg,border:"1px solid "+G.redBd,color:G.red,padding:"3px 8px",borderRadius:4,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10}}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </Card>
+
+      {/* Legend */}
+      <div style={{display:"flex",gap:16,justifyContent:"center",padding:"8px 0",fontSize:11,fontFamily:"DM Mono,monospace"}}>
+        <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.green}}/>Under 80%</span>
+        <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.yellow}}/>80–100%</span>
+        <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.red}}/>Over 100%</span>
+        <span style={{color:G.muted}}>Click available hours to edit</span>
+      </div>
+
+      {showAddModal&&<AddCommitmentModal api={api} csm={csm} onClose={()=>setShowAddModal(false)} onAdded={load}/>}
+    </div>
+  );
+}
+
+function ConsultantPortal({api,csm,allCsms}) {
   const [projects, setProjects] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [selected, setSelected] = useState(null);
@@ -859,6 +1503,7 @@ function ConsultantPortal({api,csm}) {
   const [stage,    setStage]    = useState("all");
   const [sortKey,  setSortKey]  = useState("customer");
   const [sortDir,  setSortDir]  = useState("asc");
+  const [cTab,     setCTab]     = useState("accounts");
 
   const load=useCallback(async()=>{
     setLoading(true);
@@ -889,6 +1534,17 @@ function ConsultantPortal({api,csm}) {
   );
 
   return (
+    <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      {/* Sub-tab bar */}
+      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0}}>
+        {[["accounts","My Accounts"],["capacity","My Capacity"]].filter(([k])=>k==="accounts"||csm).map(([k,l])=>(
+          <button key={k} onClick={()=>setCTab(k)}
+            style={{background:cTab===k?"#0f2036":"none",border:"1px solid "+(cTab===k?G.blue+"44":"transparent"),borderBottom:cTab===k?"2px solid "+G.blue:"2px solid transparent",color:cTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
+        ))}
+      </div>
+      {cTab==="capacity"&&csm ? (
+        <CsmCapacityPanel api={api} csm={csm}/>
+      ) : (
     <div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .25s ease"}}>
       {/* KPIs */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:14}}>
@@ -995,7 +1651,9 @@ function ConsultantPortal({api,csm}) {
           )}
         </div>
       </Card>
-      {selected&&<TaskModal project={selected} api={api} onClose={()=>setSelected(null)} onUpdated={load}/>}
+      {selected&&<TaskModal project={selected} api={api} allCsms={allCsms} onClose={()=>setSelected(null)} onUpdated={load}/>}
+    </div>
+      )}
     </div>
   );
 }
@@ -1090,7 +1748,7 @@ export default function App() {
         lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing}/>
       {view==="exec"
         ? <ExecDashboard api={api} key={refreshKey}/>
-        : <ConsultantPortal api={api} csm={activeCsm} key={refreshKey+"-"+activeCsm?.id}/>}
+        : <ConsultantPortal api={api} csm={activeCsm} allCsms={csms} key={refreshKey+"-"+activeCsm?.id}/>}
     </div>
   );
 }
