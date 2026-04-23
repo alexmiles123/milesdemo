@@ -100,11 +100,11 @@ function getNextBusinessDays(n) {
 }
 
 export default async function handler(req, res) {
-  if (process.env.CRON_SECRET) {
-    const auth = req.headers['authorization'];
-    if (auth !== 'Bearer ' + process.env.CRON_SECRET) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return res.status(500).json({ error: 'CRON_SECRET not configured.' });
+  const auth = req.headers['authorization'];
+  if (auth !== 'Bearer ' + secret) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {

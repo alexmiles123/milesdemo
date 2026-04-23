@@ -8,6 +8,7 @@
 import crypto from "node:crypto";
 import { rateLimit, hardenResponse, requestId, fail, json, redactSecrets } from "../_lib/security.js";
 import { sbGet, sbPatch, writeAudit } from "../_lib/supabase.js";
+import { requireAuth } from "../_lib/auth.js";
 
 const ALLOWED_PROVIDERS = new Set(["microsoft_teams", "salesforce"]);
 
@@ -18,6 +19,9 @@ export default async function handler(req, res) {
 
   const rl = rateLimit(req, "integrations-connect");
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Rate limit exceeded."); }
+
+  const session = await requireAuth(req, res);
+  if (!session) return;
 
   const rid = requestId(req);
   let body = req.body;
@@ -52,7 +56,7 @@ export default async function handler(req, res) {
     });
 
     writeAudit({
-      actor: "milesdemo", actor_role: "demo",
+      actor: session.user || "unknown", actor_role: session.role || "user",
       action: "integration.configure",
       target_table: "integrations", target_id: row.id,
       before_state: redactSecrets(row), after_state: redactSecrets(updated?.[0] || null),

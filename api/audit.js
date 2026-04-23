@@ -6,6 +6,7 @@
 
 import { rateLimit, hardenResponse, requestId, fail, json, redactSecrets } from "./_lib/security.js";
 import { writeAudit } from "./_lib/supabase.js";
+import { requireAuth } from "./_lib/auth.js";
 
 const MAX_STRING = 200;
 const MAX_BODY   = 64 * 1024;
@@ -24,6 +25,9 @@ export default async function handler(req, res) {
   const rl = rateLimit(req, "audit");
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Rate limit exceeded."); }
 
+  const session = await requireAuth(req, res);
+  if (!session) return;
+
   const rid = requestId(req);
   let body = req.body;
   try {
@@ -38,8 +42,11 @@ export default async function handler(req, res) {
   const ua = clamp(req.headers["user-agent"]);
 
   const row = {
-    actor:        "milesdemo",                          // TODO swap for real user once Supabase Auth lands
-    actor_role:   "demo",
+    // Identity comes from the verified JWT, not from the client payload —
+    // any `actor` in the request body is ignored so a caller can't forge rows
+    // as another user.
+    actor:        clamp(session.user) || "unknown",
+    actor_role:   clamp(session.role) || "user",
     action:       clamp(body.action),
     target_table: clamp(body.target_table),
     target_id:    body.target_id ? String(body.target_id).slice(0, 120) : null,

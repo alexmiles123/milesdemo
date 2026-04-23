@@ -4,6 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import ConfigPage from "./config/ConfigPage.jsx";
+import { getToken, login as authLogin, logout as authLogout, clearToken } from "./lib/auth.js";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = {
@@ -64,41 +65,57 @@ const utilBg = (p) => p>100?G.redBg:p>80?G.yellowBg:G.greenBg;
 const utilBd = (p) => p>100?G.redBd:p>80?G.yellowBd:G.greenBd;
 
 // ─── REST API CLIENT ─────────────────────────────────────────────────────────
-function makeApi(url, key) {
-  const base = url.replace(/\/$/,"") + "/rest/v1";
-  const hdrs = {
-    "apikey": key,
-    "Authorization": "Bearer " + key,
-    "Content-Type": "application/json",
-    "Prefer": "return=representation",
+// All DB traffic goes through /api/db/<table>, which verifies the session JWT
+// and forwards to Supabase with the service key. The browser never holds
+// Supabase credentials — signing out wipes the only thing it has.
+function makeApi() {
+  const base = "/api/db";
+  const authHeaders = () => {
+    const token = getToken();
+    const h = { "Content-Type": "application/json", "Prefer": "return=representation" };
+    if (token) h["Authorization"] = "Bearer " + token;
+    return h;
+  };
+  const handle = async (res) => {
+    if (res.status === 401) {
+      clearToken();
+      // Force the app back to the login screen by reloading — simpler than
+      // threading an auth-error channel through every caller.
+      if (typeof window !== "undefined") window.location.reload();
+      throw new Error("Session expired. Please sign in again.");
+    }
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.message || e.hint || e.error || "HTTP " + res.status);
+    }
+    const ct = res.headers.get("content-type") || "";
+    return ct.includes("application/json") ? res.json() : true;
   };
   return {
     async get(table, params={}) {
       const qs = Object.entries(params).map(([k,v]) => k + "=" + encodeURIComponent(v)).join("&");
       const url = base + "/" + table + (qs ? "?" + qs : "");
-      const res = await fetch(url, { headers: hdrs });
-      if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
-      return res.json();
+      const res = await fetch(url, { headers: authHeaders() });
+      return handle(res);
     },
     async patch(table, id, body) {
-      const res = await fetch(base+"/"+table+"?id=eq."+id,{method:"PATCH",headers:hdrs,body:JSON.stringify(body)});
-      if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
+      const res = await fetch(base+"/"+table+"?id=eq."+id,{method:"PATCH",headers:authHeaders(),body:JSON.stringify(body)});
+      await handle(res);
       return true;
     },
     async post(table, body) {
-      const res = await fetch(base+"/"+table,{method:"POST",headers:hdrs,body:JSON.stringify(body)});
-      if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
-      return res.json();
+      const res = await fetch(base+"/"+table,{method:"POST",headers:authHeaders(),body:JSON.stringify(body)});
+      return handle(res);
     },
     async del(table, id) {
-      const res = await fetch(base+"/"+table+"?id=eq."+id,{method:"DELETE",headers:hdrs});
-      if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
+      const res = await fetch(base+"/"+table+"?id=eq."+id,{method:"DELETE",headers:authHeaders()});
+      await handle(res);
       return true;
     },
     async upsert(table, body) {
-      const res = await fetch(base+"/"+table,{method:"POST",headers:{...hdrs,"Prefer":"return=representation,resolution=merge-duplicates"},body:JSON.stringify(body)});
-      if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.message||e.hint||"HTTP "+res.status); }
-      return res.json();
+      const h = { ...authHeaders(), "Prefer":"return=representation,resolution=merge-duplicates" };
+      const res = await fetch(base+"/"+table,{method:"POST",headers:h,body:JSON.stringify(body)});
+      return handle(res);
     },
   };
 }
@@ -2025,12 +2042,6 @@ function ConsultantPortal({api,csm,allCsms}) {
   );
 }
 
-// ─── HARDCODED CREDENTIALS ───────────────────────────────────────────────────
-const SB_URL = "https://qzvzlrsmaaowbdetcagj.supabase.co";
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6dnpscnNtYWFvd2JkZXRjYWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjY2MDYsImV4cCI6MjA5MjQ0MjYwNn0.w-ZNLOuAEH1sxNLsyT02MIsUghLkk-XxtITl6sHQjBA";
-const VALID_USER = "milesdemo";
-const VALID_PASS = "Test123!";
-
 // ─── LOGIN SCREEN ────────────────────────────────────────────────────────────
 function LoginScreen({onConnect}) {
   const [username, setUsername] = useState("");
@@ -2040,15 +2051,14 @@ function LoginScreen({onConnect}) {
 
   const login=async()=>{
     if(!username||!password){setError("Both fields are required.");return;}
-    if(username!==VALID_USER||password!==VALID_PASS){setError("Invalid username or password.");return;}
     setLoading(true);setError("");
     try{
-      const api=makeApi(SB_URL,SB_KEY);
+      await authLogin(username, password);
+      const api=makeApi();
       const data=await api.get("csms",{"is_active":"eq.true","select":"*"});
       if(!Array.isArray(data)) throw new Error("Unexpected response.");
-      sessionStorage.setItem("logged_in","1");
       onConnect(api,data);
-    }catch(e){setError("Connection failed: "+e.message);}
+    }catch(e){setError(e.message||"Sign-in failed.");}
     setLoading(false);
   };
 
@@ -2103,7 +2113,7 @@ export default function App() {
 
   const handleConnect=(client,csmList)=>{ setApi(client); setCsms(csmList); setLastSync(new Date().toLocaleTimeString()); };
 
-  const handleLogout=()=>{ sessionStorage.removeItem("logged_in"); setApi(null); setCsms([]); setActiveCsm(null); };
+  const handleLogout=()=>{ authLogout(); setApi(null); setCsms([]); setActiveCsm(null); };
 
   const handleRefresh=()=>{
     setRefreshing(true);
@@ -2113,13 +2123,15 @@ export default function App() {
   };
 
   useEffect(()=>{
-    if(sessionStorage.getItem("logged_in")){
-      const api=makeApi(SB_URL,SB_KEY);
-      api.get("csms",{"is_active":"eq.true","select":"*"}).then(data=>{
-        if(Array.isArray(data)) handleConnect(api,data);
-        else sessionStorage.removeItem("logged_in");
-      }).catch(()=>sessionStorage.removeItem("logged_in"));
-    }
+    // Rehydrate from the JWT in localStorage. If the token is missing or the
+    // server rejects it, the API call throws and we fall back to the login
+    // screen without any extra cleanup — the 401 handler in makeApi already
+    // clears the token.
+    if(!getToken()) return;
+    const api=makeApi();
+    api.get("csms",{"is_active":"eq.true","select":"*"}).then(data=>{
+      if(Array.isArray(data)) handleConnect(api,data);
+    }).catch(()=>{ /* token invalid; makeApi cleared it already */ });
   },[]);
 
   if(!api) return <><style>{GLOBAL_CSS}</style><LoginScreen onConnect={handleConnect}/></>;

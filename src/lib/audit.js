@@ -1,14 +1,22 @@
 // Client-side audit helper. Fires-and-forgets to the server endpoint, which
 // applies the service-role key and writes an immutable row to audit_log.
 //
-// The browser never writes to audit_log directly — the anon key cannot write
-// (RLS allows SELECT only), so bypassing the server route would simply fail.
+// The endpoint requires a valid session JWT. If the user isn't signed in,
+// we simply skip the write — audit rows should only record authenticated
+// actions anyway.
+
+import { getToken } from "./auth.js";
 
 export async function audit(action, target_table, target_id, { before, after, metadata } = {}) {
+  const token = getToken();
+  if (!token) return;
   try {
     await fetch("/api/audit", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + token,
+      },
       body: JSON.stringify({
         action, target_table, target_id,
         before_state: before || null,

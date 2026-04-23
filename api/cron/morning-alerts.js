@@ -93,12 +93,12 @@ function fmtDate(d) {
 }
 
 export default async function handler(req, res) {
-  // Verify cron secret
-  if (process.env.CRON_SECRET) {
-    const auth = req.headers['authorization'];
-    if (auth !== 'Bearer ' + process.env.CRON_SECRET) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+  // Fail closed: without CRON_SECRET set the endpoint is an open emailer.
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return res.status(500).json({ error: 'CRON_SECRET not configured.' });
+  const auth = req.headers['authorization'];
+  if (auth !== 'Bearer ' + secret) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {

@@ -4,6 +4,7 @@
 
 import { rateLimit, hardenResponse, requestId, fail, json } from "../../_lib/security.js";
 import { sbGet, writeAudit } from "../../_lib/supabase.js";
+import { requireAuth } from "../../_lib/auth.js";
 
 export default async function handler(req, res) {
   hardenResponse(req, res);
@@ -12,6 +13,9 @@ export default async function handler(req, res) {
 
   const rl = rateLimit(req, "salesforce-test", 2);
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Rate limit exceeded."); }
+
+  const session = await requireAuth(req, res);
+  if (!session) return;
 
   const rid = requestId(req);
   let integration;
