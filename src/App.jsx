@@ -336,6 +336,182 @@ function CapacityCellModal({cell,onClose}) {
   );
 }
 
+// ─── CSM DRILLDOWN MODAL (from Exec Capacity Grid) ──────────────────────────
+function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
+  const [projects,setProjects]=useState([]);
+  const [commitments,setCommitments]=useState([]);
+  const [capEntries,setCapEntries]=useState([]);
+  const [tasks,setTasks]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [editingCell,setEditingCell]=useState(null); // {projectId, ws}
+
+  const load=useCallback(async()=>{
+    setLoading(true);
+    try{
+      const [pr,cm,ce]=await Promise.all([
+        api.get("projects",{csm_id:"eq."+csm.id,select:"id,name"}),
+        api.get("project_commitments",{csm_id:"eq."+csm.id,select:"*"}).catch(()=>[]),
+        api.get("capacity_entries",{csm_id:"eq."+csm.id,select:"*"}).catch(()=>[]),
+      ]);
+      setProjects(pr||[]);setCommitments(cm||[]);setCapEntries(ce||[]);
+      const pIds=(pr||[]).map(p=>p.id);
+      if(pIds.length){
+        const tk=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority"}).catch(()=>[]);
+        setTasks((tk||[]).filter(t=>pIds.includes(t.project_id)));
+      }else{setTasks([]);}
+    }catch(e){console.error(e);}
+    setLoading(false);
+  },[api,csm]);
+
+  useEffect(()=>{load();},[load]);
+
+  const saveProjectHours=async(projectId,ws,hours)=>{
+    const h=parseFloat(hours);
+    const existing=commitments.find(c=>c.project_id===projectId&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+    try{
+      if(!h||h<=0){
+        if(existing) await api.del("project_commitments",existing.id);
+      }else if(existing){
+        await api.patch("project_commitments",existing.id,{estimated_hours:h});
+      }else{
+        await api.post("project_commitments",[{csm_id:csm.id,project_id:projectId,week_start_date:ws,estimated_hours:h,commitment_type:"Project Work",notes:null}]);
+      }
+      await load();
+      onSaved();
+    }catch(e){alert("Failed: "+e.message);}
+    setEditingCell(null);
+  };
+
+  // Compute KPIs
+  const weekStats=weeks.map(ws=>{
+    const capEntry=capEntries.find(e=>e.week_start_date===ws);
+    const available=capEntry?.estimated_hours||40;
+    const we=new Date(ws+"T00:00:00");we.setDate(we.getDate()+6);const weStr=we.toISOString().split("T")[0];
+    const weekTasks=tasks.filter(t=>t.proj_date>=ws&&t.proj_date<=weStr);
+    const weekCommits=commitments.filter(c=>c.week_start_date===ws);
+    const projWorkCommits=weekCommits.filter(c=>c.commitment_type==="Project Work");
+    const otherCommits=weekCommits.filter(c=>c.commitment_type!=="Project Work");
+    const projsWithManual=new Set(projWorkCommits.map(c=>c.project_id));
+    const autoTaskHours=weekTasks.filter(t=>!projsWithManual.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t.priority),0);
+    const manualProjHours=projWorkCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+    const otherCommitHours=otherCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+    const committed=autoTaskHours+manualProjHours+otherCommitHours;
+    const utilization=available>0?(committed/available)*100:0;
+    return {available,committed,utilization};
+  });
+  const avgUtil=weekStats.length?Math.round(weekStats.reduce((s,w)=>s+w.utilization,0)/weekStats.length):0;
+  const totalCommitted=weekStats.reduce((s,w)=>s+w.committed,0);
+
+  return (
+    <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
+      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:960,maxHeight:"85vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{padding:"16px 22px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <div>
+            <div style={{fontSize:17,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif"}}>{csm.name} — Project Hours</div>
+            <div style={{fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:2}}>{projects.length} project{projects.length!==1?"s":""} · 12-week view</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:utilBg(avgUtil),border:"1px solid "+utilBd(avgUtil),borderRadius:8,padding:"6px 14px",textAlign:"center"}}>
+              <div style={{fontSize:22,fontWeight:800,color:utilColor(avgUtil),fontFamily:"Syne,sans-serif"}}>{avgUtil}%</div>
+              <div style={{fontSize:10,color:utilColor(avgUtil),fontFamily:"DM Mono,monospace",opacity:0.8}}>AVG UTIL</div>
+            </div>
+            <div style={{background:G.surface2,border:"1px solid "+G.border,borderRadius:8,padding:"6px 14px",textAlign:"center"}}>
+              <div style={{fontSize:22,fontWeight:800,color:G.teal,fontFamily:"Syne,sans-serif"}}>{totalCommitted}h</div>
+              <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",opacity:0.8}}>COMMITTED</div>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"1px solid "+G.border,color:G.muted,width:30,height:30,borderRadius:8,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{overflowX:"auto",overflowY:"auto",flex:1,padding:"0"}}>
+          {loading?(
+            <div style={{padding:40,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>Loading projects…</div>
+          ):(
+            <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
+              <thead>
+                <tr style={{borderBottom:"1px solid "+G.border}}>
+                  <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:140,position:"sticky",left:0,background:G.surface,zIndex:1}}>PROJECT</th>
+                  {weeks.map((ws,i)=>(
+                    <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
+                  ))}
+                  <th style={{padding:"8px 8px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:60}}>TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((proj,pi)=>{
+                  const projTotal=weeks.reduce((sum,ws)=>{
+                    const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                    return sum+(entry?.estimated_hours||0);
+                  },0);
+                  return (
+                    <tr key={proj.id} style={{borderBottom:pi<projects.length-1?"1px solid "+G.faint:"none"}}>
+                      <td style={{padding:"8px 12px",fontSize:13,fontWeight:700,color:G.text,whiteSpace:"nowrap",position:"sticky",left:0,background:G.surface,zIndex:1}}>
+                        {proj.name}
+                      </td>
+                      {weeks.map((ws,wi)=>{
+                        const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                        const hrs=entry?.estimated_hours||0;
+                        const isEditing=editingCell?.projectId===proj.id&&editingCell?.ws===ws;
+                        return (
+                          <td key={wi} style={{padding:"3px 2px",textAlign:"center"}}>
+                            {isEditing?(
+                              <input type="number" defaultValue={hrs||""} autoFocus min="0" max="40" step="0.5" placeholder="0"
+                                onBlur={e=>saveProjectHours(proj.id,ws,e.target.value)}
+                                onKeyDown={e=>{if(e.key==="Enter")saveProjectHours(proj.id,ws,e.target.value);if(e.key==="Escape")setEditingCell(null);}}
+                                style={{width:44,background:G.bg,border:"1px solid "+G.teal,color:G.text,padding:"4px",borderRadius:4,fontFamily:"DM Mono,monospace",fontSize:11,textAlign:"center"}}/>
+                            ):(
+                              <div onClick={()=>setEditingCell({projectId:proj.id,ws})}
+                                style={{cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",color:hrs>0?G.teal:G.faint,fontWeight:hrs>0?700:400,padding:"4px 2px",borderRadius:4,transition:"background .15s"}}
+                                onMouseEnter={e=>e.currentTarget.style.background=G.surface2}
+                                onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                                {hrs>0?hrs+"h":"·"}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td style={{padding:"4px 8px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:projTotal>0?G.teal:G.faint,fontWeight:700}}>
+                        {projTotal>0?projTotal+"h":"—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Total Row */}
+                <tr style={{borderTop:"2px solid "+G.border,background:"#080e18"}}>
+                  <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1}}>TOTAL</td>
+                  {weeks.map((ws,wi)=>{
+                    const weekTotal=projects.reduce((sum,proj)=>{
+                      const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                      return sum+(entry?.estimated_hours||0);
+                    },0);
+                    return <td key={wi} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:weekTotal>0?G.teal:G.faint,fontWeight:800}}>{weekTotal>0?weekTotal+"h":"—"}</td>;
+                  })}
+                  <td style={{padding:"4px 8px",textAlign:"center",fontSize:13,fontFamily:"DM Mono,monospace",color:G.teal,fontWeight:800}}>
+                    {(()=>{const gt=projects.reduce((grand,proj)=>grand+weeks.reduce((sum,ws)=>{
+                      const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                      return sum+(entry?.estimated_hours||0);
+                    },0),0);return gt?gt+"h":"—";})()}
+                  </td>
+                </tr>
+                {projects.length===0&&<tr><td colSpan={weeks.length+2} style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No projects assigned</td></tr>}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{padding:"10px 22px",borderTop:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <span style={{fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>Click any cell to enter hours</span>
+          <button onClick={onClose} style={{background:G.surface2,border:"1px solid "+G.border,color:G.muted,padding:"6px 16px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11}}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── EXECUTIVE CAPACITY DASHBOARD ────────────────────────────────────────────
 function ExecCapacityDashboard({api}) {
   const [csmList,setCsmList]=useState([]);
@@ -345,6 +521,7 @@ function ExecCapacityDashboard({api}) {
   const [tasks,setTasks]=useState([]);
   const [loading,setLoading]=useState(true);
   const [selectedCell,setSelectedCell]=useState(null);
+  const [drilldownCsm,setDrilldownCsm]=useState(null);
   const [error,setError]=useState(null);
 
   const weeks = getWeeks(12);
@@ -497,7 +674,10 @@ function ExecCapacityDashboard({api}) {
                   <td style={{padding:"8px 12px",position:"sticky",left:0,background:G.surface,zIndex:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <div style={{width:22,height:22,borderRadius:"50%",background:CSM_COLORS[ri%CSM_COLORS.length],display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff",flexShrink:0}}>{row.csm.name[0]}</div>
-                      <span style={{fontSize:13,fontWeight:600,color:G.text,whiteSpace:"nowrap"}}>{row.csm.name.split(" ")[0]}</span>
+                      <span onClick={()=>setDrilldownCsm(row.csm)}
+                        style={{fontSize:13,fontWeight:600,color:G.text,whiteSpace:"nowrap",cursor:"pointer",borderBottom:"1px dashed "+G.faint,transition:"color .15s"}}
+                        onMouseEnter={e=>e.currentTarget.style.color=G.teal}
+                        onMouseLeave={e=>e.currentTarget.style.color=G.text}>{row.csm.name.split(" ")[0]}</span>
                     </div>
                   </td>
                   {row.weekData.map((wd,wi)=>(
@@ -527,6 +707,7 @@ function ExecCapacityDashboard({api}) {
       </div>
 
       {selectedCell&&<CapacityCellModal cell={selectedCell} onClose={()=>setSelectedCell(null)}/>}
+      {drilldownCsm&&<CsmDrilldownModal api={api} csm={drilldownCsm} weeks={weeks} onClose={()=>setDrilldownCsm(null)} onSaved={load}/>}
     </div>
   );
 }
