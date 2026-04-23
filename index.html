@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <title>Monument — PS Operations</title>
+    <!--
+      Baseline Content Security Policy. We allow inline styles because the
+      app uses style attributes heavily and Google Fonts inlines CSS. The
+      script-src is locked to same-origin so no third-party JS can inject.
+      connect-src covers Supabase, Anthropic (via /api proxy), and self.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src  'self' https://fonts.gstatic.com data:;
+      img-src   'self' data: blob:;
+      connect-src 'self' https://*.supabase.co https://*.supabase.in;
+      frame-ancestors 'none';
+      form-action 'self';
+      base-uri 'self';
+      object-src 'none';
+    " />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="no-referrer" />
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       html, body, #root {

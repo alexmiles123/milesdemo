@@ -1,5 +1,0 @@
-﻿content = open('src/App.jsx', 'r', encoding='utf-8').read()
-print('Has AiPanel function:', 'function AiPanel' in content)
-print('Has AiPanel usage:', 'AiPanel portfolio' in content)
-print('Has flex wrapper:', 'display:\"flex\",overflow:\"hidden\"' in content)
-print('Has height 100vh:', 'height:\"100vh\"' in content)

@@ -3,6 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
+import ConfigPage from "./config/ConfigPage.jsx";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = {
@@ -177,7 +178,7 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
       <div style={{width:1,height:26,background:G.border}}/>
       {/* View tabs */}
       <div style={{display:"flex",gap:2}}>
-        {[["exec","Executive View"],["consultant","Consultant Portal"]].map(([v,l])=>(
+        {[["exec","Executive View"],["consultant","Consultant Portal"],["config","Configuration"]].map(([v,l])=>(
           <button key={v} onClick={()=>setView(v)}
             style={{background:view===v?"#0f2036":"none",border:"none",color:view===v?G.blue:G.muted,
               padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:14,fontWeight:700,letterSpacing:"0.03em"}}>
@@ -2041,9 +2042,13 @@ export default function App() {
       <style>{GLOBAL_CSS}</style>
       <NavBar view={view} setView={setView} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
         lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing} onLogout={handleLogout}/>
-      {view==="exec"
-        ? <ExecDashboard api={api} key={refreshKey}/>
-        : <ConsultantPortal api={api} csm={activeCsm} allCsms={csms} key={refreshKey+"-"+activeCsm?.id}/>}
+      {view==="exec" ? (
+        <ExecDashboard api={api} key={refreshKey}/>
+      ) : view==="config" ? (
+        <ConfigPage api={api} csms={csms} onCsmsChanged={setCsms} key={"config-"+refreshKey}/>
+      ) : (
+        <ConsultantPortal api={api} csm={activeCsm} allCsms={csms} key={refreshKey+"-"+activeCsm?.id}/>
+      )}
     </div>
   );
 }
