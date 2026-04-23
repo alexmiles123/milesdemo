@@ -17,6 +17,7 @@ export default function ProjectsTab({ api, csms, onChanged }) {
   const [confirm, setConfirm] = useState(null); // project pending delete
   const [toast, setToast] = useState(null);
   const [showImport, setShowImport] = useState(false);
+  const [taskImportFor, setTaskImportFor] = useState(null); // project pending task import
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,7 +102,8 @@ export default function ProjectsTab({ api, csms, onChanged }) {
                     <Td style={{ textAlign:"right", fontVariantNumeric: "tabular-nums" }}>{fmtArr(p.arr)}</Td>
                     <Td style={{ textAlign:"right" }}>{p.completion_pct ?? 0}%</Td>
                     <Td>{fmtDate(p.target_date)}</Td>
-                    <Td style={{ textAlign:"right" }} onClick={(e)=>e.stopPropagation()}>
+                    <Td style={{ textAlign:"right", whiteSpace:"nowrap" }} onClick={(e)=>e.stopPropagation()}>
+                      <Button variant="ghost" onClick={() => setTaskImportFor(p)} style={{ marginRight: 6 }}>Import Tasks</Button>
                       <Button variant="danger" onClick={() => setConfirm(p)}>Delete</Button>
                     </Td>
                   </tr>
@@ -133,6 +135,17 @@ export default function ProjectsTab({ api, csms, onChanged }) {
           spec={PROJECT_IMPORT_SPEC}
           onClose={() => setShowImport(false)}
           onDone={(r) => { setToast({ tone: "success", msg: `Imported ${r.created} project${r.created === 1 ? "" : "s"}.` }); load(); onChanged && onChanged(); }}
+        />
+      )}
+
+      {taskImportFor && (
+        <ImportModal
+          title={`Import Tasks → ${taskImportFor.name}`}
+          api={api}
+          ctx={{ project: taskImportFor }}
+          spec={TASK_IMPORT_SPEC}
+          onClose={() => setTaskImportFor(null)}
+          onDone={(r) => { setToast({ tone: "success", msg: `Imported ${r.created} task${r.created === 1 ? "" : "s"} into "${taskImportFor.name}".` }); setTaskImportFor(null); }}
         />
       )}
 
@@ -171,6 +184,35 @@ const PROJECT_IMPORT_SPEC = {
     { key: "notes", aliases: ["notes"] },
   ],
   transformRow: (r) => ({ ...r, start_date: new Date().toISOString().slice(0, 10) }),
+};
+
+// Task import is scoped to one project — the row's project_id is injected
+// via transformRow from ctx.project, so the spreadsheet never has to carry it.
+const PRIORITY_OPTIONS = ["critical", "high", "medium", "low"];
+const STATUS_OPTIONS   = ["complete", "upcoming", "late"];
+
+const TASK_IMPORT_SPEC = {
+  table: "tasks",
+  auditAction: "task.import",
+  templateName: "tasks-import-template.xlsx",
+  templateSample: [
+    ["Kickoff meeting",       "Kickoff",        "high",   "upcoming", "2026-05-01", "Jordan Lee", 4, "Introduce the team"],
+    ["Environment access",    "Discovery",      "medium", "upcoming", "2026-05-10", "IT Ops",     2, ""],
+    ["Data migration script", "Implementation", "high",   "upcoming", "2026-06-05", "Alex Miles", 8, "Pulls from legacy DB"],
+    ["UAT sign-off",          "Testing & QA",   "critical","upcoming","2026-07-01", "Customer",   3, "Blocks go-live"],
+  ],
+  defaults: { phase: "Kickoff", priority: "medium", status: "upcoming" },
+  columns: [
+    { key: "name",            aliases: ["task", "name", "task name"], required: true },
+    { key: "phase",           aliases: ["phase", "milestone", "stage"], parse: "enum", values: PHASE_ORDER },
+    { key: "priority",        aliases: ["priority"], parse: "enum", values: PRIORITY_OPTIONS },
+    { key: "status",          aliases: ["status"], parse: "enum", values: STATUS_OPTIONS },
+    { key: "proj_date",       aliases: ["due date", "target date", "projected date", "proj_date"], parse: "date" },
+    { key: "assignee_name",   aliases: ["assignee", "owner", "assigned to"] },
+    { key: "estimated_hours", aliases: ["estimated hours", "hours", "est hours", "estimated_hours"], parse: "number" },
+    { key: "notes",           aliases: ["notes", "description"] },
+  ],
+  transformRow: (r, ctx) => ({ ...r, project_id: ctx.project.id }),
 };
 
 function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {

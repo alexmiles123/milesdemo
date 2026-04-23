@@ -4,6 +4,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import ConfigPage from "./config/ConfigPage.jsx";
+import AccountSearch from "./AccountSearch.jsx";
+import AccountDetail from "./AccountDetail.jsx";
 import { getToken, login as authLogin, logout as authLogout, clearToken } from "./lib/auth.js";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
@@ -182,7 +184,7 @@ const Badge = ({status}) => {
 };
 
 // ─── NAV BAR ─────────────────────────────────────────────────────────────────
-function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLogout}) {
+function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLogout,api,onAccountSelect}) {
   return (
     <div style={{borderBottom:"1px solid "+G.border,padding:"0 24px",display:"flex",alignItems:"center",gap:14,height:54,background:"#08111c",flexShrink:0,zIndex:10}}>
       <div style={{display:"flex",alignItems:"center",gap:9}}>
@@ -204,6 +206,7 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
         ))}
       </div>
       <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:12}}>
+        {api && <AccountSearch api={api} onSelect={onAccountSelect}/>}
         {/* CSM selector for consultant view */}
         {view==="consultant" && (
           <select value={csm?.id||"all"} onChange={e=> setCsm(e.target.value==="all" ? null : csms.find(c=>c.id===e.target.value)||null)}
@@ -2107,13 +2110,14 @@ export default function App() {
   const [csms,       setCsms]       = useState([]);
   const [view,       setView]       = useState("exec");
   const [activeCsm,  setActiveCsm]  = useState(null);
+  const [activeAccount, setActiveAccount] = useState(null);
   const [lastSync,   setLastSync]   = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleConnect=(client,csmList)=>{ setApi(client); setCsms(csmList); setLastSync(new Date().toLocaleTimeString()); };
 
-  const handleLogout=()=>{ authLogout(); setApi(null); setCsms([]); setActiveCsm(null); };
+  const handleLogout=()=>{ authLogout(); setApi(null); setCsms([]); setActiveCsm(null); setActiveAccount(null); };
 
   const handleRefresh=()=>{
     setRefreshing(true);
@@ -2139,9 +2143,14 @@ export default function App() {
   return (
     <div style={{height:"100vh",background:G.bg,color:G.text,fontFamily:"Syne,sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{GLOBAL_CSS}</style>
-      <NavBar view={view} setView={setView} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
-        lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing} onLogout={handleLogout}/>
-      {view==="exec" ? (
+      <NavBar view={view} setView={(v)=>{setActiveAccount(null); setView(v);}} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
+        lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing} onLogout={handleLogout}
+        api={api} onAccountSelect={setActiveAccount}/>
+      {activeAccount ? (
+        <AccountDetail api={api} account={activeAccount}
+          onClose={()=>setActiveAccount(null)}
+          onUpdated={(c)=>setActiveAccount(c)}/>
+      ) : view==="exec" ? (
         <ExecDashboard api={api} key={refreshKey}/>
       ) : view==="config" ? (
         <ConfigPage api={api} csms={csms} onCsmsChanged={setCsms} key={"config-"+refreshKey}/>

@@ -24,7 +24,7 @@ const ALLOWED_TABLES = new Set([
   "csms", "csm_roles", "csm_assignments",
   "projects", "tasks",
   "capacity_entries", "project_commitments",
-  "customer_interactions",
+  "customers", "customer_interactions",
   "integrations", "sync_runs",
   "notification_rules",
   "audit_log",
