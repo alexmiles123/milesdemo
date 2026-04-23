@@ -164,7 +164,7 @@ const Badge = ({status}) => {
 };
 
 // ─── NAV BAR ─────────────────────────────────────────────────────────────────
-function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing}) {
+function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLogout}) {
   return (
     <div style={{borderBottom:"1px solid "+G.border,padding:"0 24px",display:"flex",alignItems:"center",gap:14,height:54,background:"#08111c",flexShrink:0,zIndex:10}}>
       <div style={{display:"flex",alignItems:"center",gap:9}}>
@@ -204,6 +204,13 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing}) {
             <span style={{color:G.green,marginRight:5,animation:"pulse 2s infinite",display:"inline-block"}}>●</span>{lastSync}
           </span>
         )}
+        {onLogout && <>
+          <div style={{width:1,height:20,background:G.border}}/>
+          <button onClick={onLogout}
+            style={{background:"none",border:"1px solid "+G.border,color:G.muted,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11}}>
+            Logout
+          </button>
+        </>}
       </div>
     </div>
   );
@@ -1930,22 +1937,28 @@ function ConsultantPortal({api,csm,allCsms}) {
   );
 }
 
-// ─── SETUP SCREEN ────────────────────────────────────────────────────────────
-function SetupScreen({onConnect}) {
-  const [url,     setUrl]     = useState(localStorage.getItem("sb_url")||"");
-  const [key,     setKey]     = useState(localStorage.getItem("sb_key")||"");
-  const [error,   setError]   = useState("");
-  const [loading, setLoading] = useState(false);
+// ─── HARDCODED CREDENTIALS ───────────────────────────────────────────────────
+const SB_URL = "https://qzvzlrsmaaowbdetcagj.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6dnpscnNtYWFvd2JkZXRjYWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjY2MDYsImV4cCI6MjA5MjQ0MjYwNn0.w-ZNLOuAEH1sxNLsyT02MIsUghLkk-XxtITl6sHQjBA";
+const VALID_USER = "milesdemo";
+const VALID_PASS = "Test123!";
 
-  const connect=async()=>{
-    if(!url||!key){setError("Both fields are required.");return;}
+// ─── LOGIN SCREEN ────────────────────────────────────────────────────────────
+function LoginScreen({onConnect}) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error,    setError]    = useState("");
+  const [loading,  setLoading]  = useState(false);
+
+  const login=async()=>{
+    if(!username||!password){setError("Both fields are required.");return;}
+    if(username!==VALID_USER||password!==VALID_PASS){setError("Invalid username or password.");return;}
     setLoading(true);setError("");
     try{
-      const api=makeApi(url.trim(),key.trim());
+      const api=makeApi(SB_URL,SB_KEY);
       const data=await api.get("csms",{"is_active":"eq.true","select":"*"});
-      if(!Array.isArray(data)) throw new Error("Unexpected response — check your credentials.");
-      localStorage.setItem("sb_url",url.trim());
-      localStorage.setItem("sb_key",key.trim());
+      if(!Array.isArray(data)) throw new Error("Unexpected response.");
+      sessionStorage.setItem("logged_in","1");
       onConnect(api,data);
     }catch(e){setError("Connection failed: "+e.message);}
     setLoading(false);
@@ -1962,31 +1975,29 @@ function SetupScreen({onConnect}) {
           </div>
         </div>
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:14,padding:32}}>
-          <div style={{fontSize:16,fontWeight:700,color:G.text,marginBottom:6}}>Connect to Supabase</div>
+          <div style={{fontSize:16,fontWeight:700,color:G.text,marginBottom:6}}>Sign In</div>
           <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",marginBottom:26,lineHeight:1.7}}>
-            URL: Supabase → Settings → General<br/>
-            Key: Settings → API Keys → Legacy → service_role
+            Enter your credentials to continue.
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             <div>
-              <label style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>PROJECT URL</label>
-              <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxx.supabase.co"
+              <label style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>USERNAME</label>
+              <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Username"
                 style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"10px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:12}}/>
             </div>
             <div>
-              <label style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>SERVICE ROLE KEY</label>
-              <input value={key} onChange={e=>setKey(e.target.value)} type="password" placeholder="eyJ…"
+              <label style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>PASSWORD</label>
+              <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Password"
+                onKeyDown={e=>{if(e.key==="Enter")login();}}
                 style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"10px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:12}}/>
-              <div style={{fontSize:10,color:"#5a7a94",fontFamily:"DM Mono,monospace",marginTop:4}}>Use service_role key — bypasses auth for demo</div>
             </div>
             {error&&<div style={{background:G.redBg,border:"1px solid "+G.red+"44",borderRadius:8,padding:"10px 14px",fontSize:12,color:G.red,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>{error}</div>}
-            <button onClick={connect} disabled={loading}
+            <button onClick={login} disabled={loading}
               style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"13px",borderRadius:8,cursor:loading?"not-allowed":"pointer",fontSize:14,fontWeight:700,marginTop:4,opacity:loading?0.7:1}}>
-              {loading?"Connecting…":"Connect →"}
+              {loading?"Signing in…":"Sign In →"}
             </button>
           </div>
         </div>
-        <div style={{textAlign:"center",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",marginTop:14}}>Credentials saved locally · Never transmitted</div>
       </div>
     </div>
   );
@@ -2004,6 +2015,8 @@ export default function App() {
 
   const handleConnect=(client,csmList)=>{ setApi(client); setCsms(csmList); setLastSync(new Date().toLocaleTimeString()); };
 
+  const handleLogout=()=>{ sessionStorage.removeItem("logged_in"); setApi(null); setCsms([]); setActiveCsm(null); };
+
   const handleRefresh=()=>{
     setRefreshing(true);
     setRefreshKey(k=>k+1);
@@ -2011,13 +2024,23 @@ export default function App() {
     setTimeout(()=>setRefreshing(false),1200);
   };
 
-  if(!api) return <><style>{GLOBAL_CSS}</style><SetupScreen onConnect={handleConnect}/></>;
+  useEffect(()=>{
+    if(sessionStorage.getItem("logged_in")){
+      const api=makeApi(SB_URL,SB_KEY);
+      api.get("csms",{"is_active":"eq.true","select":"*"}).then(data=>{
+        if(Array.isArray(data)) handleConnect(api,data);
+        else sessionStorage.removeItem("logged_in");
+      }).catch(()=>sessionStorage.removeItem("logged_in"));
+    }
+  },[]);
+
+  if(!api) return <><style>{GLOBAL_CSS}</style><LoginScreen onConnect={handleConnect}/></>;
 
   return (
     <div style={{height:"100vh",background:G.bg,color:G.text,fontFamily:"Syne,sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{GLOBAL_CSS}</style>
       <NavBar view={view} setView={setView} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
-        lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing}/>
+        lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing} onLogout={handleLogout}/>
       {view==="exec"
         ? <ExecDashboard api={api} key={refreshKey}/>
         : <ConsultantPortal api={api} csm={activeCsm} allCsms={csms} key={refreshKey+"-"+activeCsm?.id}/>}
