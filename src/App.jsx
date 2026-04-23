@@ -375,7 +375,7 @@ function ExecCapacityDashboard({api}) {
   const projName={};
   projects.forEach(p=>{projName[p.id]=p.name;});
 
-  // Compute capacity grid data
+  // Compute capacity grid data (project hours override auto-task hours per project)
   const gridData = csmList.map(csm=>{
     const csmProjects=projects.filter(p=>p.csm_id===csm.id).map(p=>p.id);
     const weekData=weeks.map(ws=>{
@@ -384,14 +384,20 @@ function ExecCapacityDashboard({api}) {
       const capEntry=capEntries.find(e=>e.csm_id===csm.id&&e.week_start_date===ws);
       const available=capEntry?.estimated_hours||40;
       const weekTasks=tasks.filter(t=>csmProjects.includes(t.project_id)&&t.proj_date>=ws&&t.proj_date<=weStr);
-      const taskHours=weekTasks.reduce((s,t)=>s+getTaskHours(t.priority),0);
       const weekCommits=commitments.filter(c=>c.csm_id===csm.id&&c.week_start_date===ws);
-      const commitHours=weekCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+      const projWorkCommits=weekCommits.filter(c=>c.commitment_type==="Project Work");
+      const otherCommits=weekCommits.filter(c=>c.commitment_type!=="Project Work");
+      const projsWithManual=new Set(projWorkCommits.map(c=>c.project_id));
+      const autoTaskHours=weekTasks.filter(t=>!projsWithManual.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t.priority),0);
+      const manualProjHours=projWorkCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+      const otherCommitHours=otherCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+      const taskHours=autoTaskHours+manualProjHours;
+      const commitHours=otherCommitHours;
       const committed=taskHours+commitHours;
       const utilization=available>0?(committed/available)*100:0;
       return {ws,available,taskHours,commitHours,committed,utilization,
-        taskList:weekTasks.map(t=>({...t,customer:projName[t.project_id]||"—",hours:getTaskHours(t.priority)})),
-        commitList:weekCommits};
+        taskList:weekTasks.filter(t=>!projsWithManual.has(t.project_id)).map(t=>({...t,customer:projName[t.project_id]||"—",hours:getTaskHours(t.priority)})).concat(projWorkCommits.map(c=>({name:c.commitment_type,customer:projName[c.project_id]||"—",phase:"Manual",priority:"medium",hours:c.estimated_hours}))),
+        commitList:otherCommits};
     });
     return {csm,weekData};
   });
@@ -1300,6 +1306,7 @@ function CsmCapacityPanel({api,csm}) {
   const [loading,setLoading]=useState(true);
   const [showAddModal,setShowAddModal]=useState(false);
   const [editingWeek,setEditingWeek]=useState(null);
+  const [editingProj,setEditingProj]=useState(null); // {projectId, ws}
 
   const weeks=getWeeks(12);
 
@@ -1341,6 +1348,22 @@ function CsmCapacityPanel({api,csm}) {
     try{await api.del("project_commitments",id);load();}catch(e){alert("Failed: "+e.message);}
   };
 
+  const saveProjectHours=async(projectId,ws,hours)=>{
+    const h=parseFloat(hours);
+    const existing=commitments.find(c=>c.project_id===projectId&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+    try{
+      if(!h||h<=0){
+        if(existing) await api.del("project_commitments",existing.id);
+      }else if(existing){
+        await api.patch("project_commitments",existing.id,{estimated_hours:h});
+      }else{
+        await api.post("project_commitments",[{csm_id:csm.id,project_id:projectId,week_start_date:ws,estimated_hours:h,commitment_type:"Project Work",notes:null}]);
+      }
+      load();
+    }catch(e){alert("Failed: "+e.message);}
+    setEditingProj(null);
+  };
+
   if(!csm) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13,padding:40}}>Select a CSM from the dropdown above to view capacity</div>;
   if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>Loading capacity…</div>;
 
@@ -1351,12 +1374,18 @@ function CsmCapacityPanel({api,csm}) {
     const capEntry=capEntries.find(e=>e.week_start_date===ws);
     const available=capEntry?.estimated_hours||40;
     const weekTasks=tasks.filter(t=>t.proj_date>=ws&&t.proj_date<=weStr);
-    const taskHours=weekTasks.reduce((s,t)=>s+getTaskHours(t.priority),0);
     const weekCommits=commitments.filter(c=>c.week_start_date===ws);
-    const commitHours=weekCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
-    const committed=taskHours+commitHours;
+    // Separate project work hours from other commitments
+    const projWorkCommits=weekCommits.filter(c=>c.commitment_type==="Project Work");
+    const otherCommits=weekCommits.filter(c=>c.commitment_type!=="Project Work");
+    const projsWithManual=new Set(projWorkCommits.map(c=>c.project_id));
+    // For projects with manual hours, use those; otherwise fall back to auto-task estimate
+    const autoTaskHours=weekTasks.filter(t=>!projsWithManual.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t.priority),0);
+    const manualProjHours=projWorkCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+    const otherCommitHours=otherCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+    const committed=autoTaskHours+manualProjHours+otherCommitHours;
     const utilization=available>0?(committed/available)*100:0;
-    return {ws,available,taskHours,commitHours,committed,utilization,weekTasks,weekCommits,capEntry};
+    return {ws,available,autoTaskHours,manualProjHours,otherCommitHours,committed,utilization,weekTasks,weekCommits,capEntry};
   });
 
   const avgUtil=weekData.length?Math.round(weekData.reduce((s,w)=>s+w.utilization,0)/weekData.length):0;
@@ -1417,18 +1446,25 @@ function CsmCapacityPanel({api,csm}) {
                   </td>
                 ))}
               </tr>
-              {/* Task Hours Row */}
+              {/* Project Hours Row */}
               <tr style={{borderBottom:"1px solid "+G.faint}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.purple,fontFamily:"DM Mono,monospace"}}>TASK HOURS</td>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.teal,fontFamily:"DM Mono,monospace"}}>PROJECT HRS</td>
                 {weekData.map((wd,i)=>(
-                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:G.purple}}>{wd.taskHours}h</td>
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:G.teal,fontWeight:wd.manualProjHours>0?700:400}}>{wd.manualProjHours>0?wd.manualProjHours+"h":"—"}</td>
                 ))}
               </tr>
-              {/* Commitment Hours Row */}
+              {/* Other Commitments Row */}
               <tr style={{borderBottom:"1px solid "+G.faint}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.yellow,fontFamily:"DM Mono,monospace"}}>COMMITMENTS</td>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.yellow,fontFamily:"DM Mono,monospace"}}>OTHER</td>
                 {weekData.map((wd,i)=>(
-                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:G.yellow}}>{wd.commitHours}h</td>
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:G.yellow}}>{wd.otherCommitHours>0?wd.otherCommitHours+"h":"—"}</td>
+                ))}
+              </tr>
+              {/* Task Estimate Row (reference only) */}
+              <tr style={{borderBottom:"1px solid "+G.faint}}>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:500,color:G.faint,fontFamily:"DM Mono,monospace"}} title="Auto-estimated from task due dates — overridden by project hours above">TASK EST.</td>
+                {weekData.map((wd,i)=>(
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:11,fontFamily:"DM Mono,monospace",color:G.faint}}>{wd.autoTaskHours>0?wd.autoTaskHours+"h":"—"}</td>
                 ))}
               </tr>
               {/* Utilization Row */}
@@ -1448,38 +1484,119 @@ function CsmCapacityPanel({api,csm}) {
         </div>
       </Card>
 
-      {/* Commitments List */}
+      {/* Project Breakdown Grid */}
       <Card style={{marginBottom:12}}>
-        <CardHeader>MANUAL COMMITMENTS</CardHeader>
-        <div style={{overflowY:"auto",maxHeight:300}}>
-          {commitments.length===0?<div style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No manual commitments — click "+ Add Commitment" above</div>:(
-            <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead>
-                <tr style={{borderBottom:"1px solid "+G.border}}>
-                  {["Type","Week","Hours","Project","Notes",""].map(h=>(
-                    <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {commitments.sort((a,b)=>a.week_start_date.localeCompare(b.week_start_date)).map((c,i)=>(
-                  <tr key={c.id} style={{borderBottom:i<commitments.length-1?"1px solid "+G.faint:"none"}}>
-                    <td style={{padding:"8px 10px",fontSize:13,fontWeight:600,color:G.text}}>{c.commitment_type}</td>
-                    <td style={{padding:"8px 10px",fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted}}>{fmtWeek(c.week_start_date)}</td>
-                    <td style={{padding:"8px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.yellow,fontWeight:700}}>{c.estimated_hours}h</td>
-                    <td style={{padding:"8px 10px",fontSize:12,color:G.muted}}>{projNames[c.project_id]||"—"}</td>
-                    <td style={{padding:"8px 10px",fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.notes||"—"}</td>
-                    <td style={{padding:"8px 10px"}}>
-                      <button onClick={()=>deleteCommitment(c.id)}
-                        style={{background:G.redBg,border:"1px solid "+G.redBd,color:G.red,padding:"3px 8px",borderRadius:4,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10}}>Delete</button>
+        <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>PROJECT BREAKDOWN — ESTIMATED HOURS</span>
+          <span style={{fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>Click any cell to enter hours</span>
+        </div>
+        <div style={{overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
+            <thead>
+              <tr style={{borderBottom:"1px solid "+G.border}}>
+                <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:140,position:"sticky",left:0,background:G.surface,zIndex:1}}>PROJECT</th>
+                {weeks.map((ws,i)=>(
+                  <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
+                ))}
+                <th style={{padding:"8px 8px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:60}}>TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map((proj,pi)=>{
+                const projTotal=weeks.reduce((sum,ws)=>{
+                  const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                  return sum+(entry?.estimated_hours||0);
+                },0);
+                return (
+                  <tr key={proj.id} style={{borderBottom:pi<projects.length-1?"1px solid "+G.faint:"none"}}>
+                    <td style={{padding:"8px 12px",fontSize:13,fontWeight:700,color:G.text,whiteSpace:"nowrap",position:"sticky",left:0,background:G.surface,zIndex:1}}>
+                      {proj.name}
+                    </td>
+                    {weeks.map((ws,wi)=>{
+                      const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                      const hrs=entry?.estimated_hours||0;
+                      const isEditing=editingProj?.projectId===proj.id&&editingProj?.ws===ws;
+                      return (
+                        <td key={wi} style={{padding:"3px 2px",textAlign:"center"}}>
+                          {isEditing?(
+                            <input type="number" defaultValue={hrs||""} autoFocus min="0" max="40" step="0.5" placeholder="0"
+                              onBlur={e=>saveProjectHours(proj.id,ws,e.target.value)}
+                              onKeyDown={e=>{if(e.key==="Enter")saveProjectHours(proj.id,ws,e.target.value);if(e.key==="Escape")setEditingProj(null);}}
+                              style={{width:44,background:G.bg,border:"1px solid "+G.teal,color:G.text,padding:"4px",borderRadius:4,fontFamily:"DM Mono,monospace",fontSize:11,textAlign:"center"}}/>
+                          ):(
+                            <div onClick={()=>setEditingProj({projectId:proj.id,ws})}
+                              style={{cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",color:hrs>0?G.teal:G.faint,fontWeight:hrs>0?700:400,padding:"4px 2px",borderRadius:4,transition:"background .15s"}}
+                              onMouseEnter={e=>e.currentTarget.style.background=G.surface2}
+                              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                              {hrs>0?hrs+"h":"·"}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td style={{padding:"4px 8px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:projTotal>0?G.teal:G.faint,fontWeight:700}}>
+                      {projTotal>0?projTotal+"h":"—"}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                );
+              })}
+              {/* Total Row */}
+              <tr style={{borderTop:"2px solid "+G.border,background:"#080e18"}}>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1}}>TOTAL</td>
+                {weeks.map((ws,wi)=>{
+                  const weekTotal=projects.reduce((sum,proj)=>{
+                    const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                    return sum+(entry?.estimated_hours||0);
+                  },0);
+                  return <td key={wi} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:weekTotal>0?G.teal:G.faint,fontWeight:800}}>{weekTotal>0?weekTotal+"h":"—"}</td>;
+                })}
+                <td style={{padding:"4px 8px",textAlign:"center",fontSize:13,fontFamily:"DM Mono,monospace",color:G.teal,fontWeight:800}}>
+                  {projects.reduce((grand,proj)=>grand+weeks.reduce((sum,ws)=>{
+                    const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                    return sum+(entry?.estimated_hours||0);
+                  },0),0)||"—"}{projects.reduce((grand,proj)=>grand+weeks.reduce((sum,ws)=>{
+                    const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+                    return sum+(entry?.estimated_hours||0);
+                  },0),0)?"h":""}
+                </td>
+              </tr>
+              {projects.length===0&&<tr><td colSpan={weeks.length+2} style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No projects assigned</td></tr>}
+            </tbody>
+          </table>
         </div>
       </Card>
+
+      {/* Other Commitments List */}
+      {(()=>{const other=commitments.filter(c=>c.commitment_type!=="Project Work");return other.length>0?(
+      <Card style={{marginBottom:12}}>
+        <CardHeader>OTHER COMMITMENTS</CardHeader>
+        <div style={{overflowY:"auto",maxHeight:200}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead>
+              <tr style={{borderBottom:"1px solid "+G.border}}>
+                {["Type","Week","Hours","Project","Notes",""].map(h=>(
+                  <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {other.sort((a,b)=>a.week_start_date.localeCompare(b.week_start_date)).map((c,i)=>(
+                <tr key={c.id} style={{borderBottom:i<other.length-1?"1px solid "+G.faint:"none"}}>
+                  <td style={{padding:"8px 10px",fontSize:13,fontWeight:600,color:G.text}}>{c.commitment_type}</td>
+                  <td style={{padding:"8px 10px",fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted}}>{fmtWeek(c.week_start_date)}</td>
+                  <td style={{padding:"8px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.yellow,fontWeight:700}}>{c.estimated_hours}h</td>
+                  <td style={{padding:"8px 10px",fontSize:12,color:G.muted}}>{projNames[c.project_id]||"—"}</td>
+                  <td style={{padding:"8px 10px",fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.notes||"—"}</td>
+                  <td style={{padding:"8px 10px"}}>
+                    <button onClick={()=>deleteCommitment(c.id)}
+                      style={{background:G.redBg,border:"1px solid "+G.redBd,color:G.red,padding:"3px 8px",borderRadius:4,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10}}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>):null;})()}
 
       {/* Legend */}
       <div style={{display:"flex",gap:16,justifyContent:"center",padding:"8px 0",fontSize:11,fontFamily:"DM Mono,monospace"}}>
