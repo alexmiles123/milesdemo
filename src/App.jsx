@@ -17,10 +17,10 @@ const G = {
   teal:"#2dd4bf",
 };
 
-const PHASE_ORDER = ["Kickoff","Design","Config","Training","Deploying to Production","Go Live Support"];
+const PHASE_ORDER = ["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"];
 const PHASE_COLOR = {
-  "Kickoff":"#6366f1","Design":"#8b5cf6","Config":"#3b82f6",
-  "Training":"#06b6d4","Deploying to Production":"#f59e0b","Go Live Support":"#22c55e",
+  "Kickoff":"#6366f1","Discovery":"#8b5cf6","Implementation":"#3b82f6",
+  "Testing & QA":"#06b6d4","Go-Live Prep":"#f59e0b","Go-Live":"#22c55e",
 };
 const HEALTH_COLOR = { green:G.green, yellow:G.yellow, red:G.red };
 const STATUS_CFG = {
@@ -730,7 +730,7 @@ function ExecDashboard({api}) {
   const totalComplete= tasks.filter(t=>t.status==="complete").length;
   const totalUpcoming= tasks.filter(t=>t.status==="upcoming").length;
   const criticalLate = tasks.filter(t=>t.status==="late"&&t.priority==="critical").length;
-  const goLivesSoon  = portfolio.filter(p=>p.stage==="Deploying to Production"||p.stage==="Go Live Support");
+  const goLivesSoon  = portfolio.filter(p=>p.stage==="Go-Live Prep"||p.stage==="Go-Live");
 
   // ── Chart data ──
   const healthData = [
@@ -777,7 +777,7 @@ function ExecDashboard({api}) {
 
   // Upcoming go-lives
   const upcomingGoLives = portfolio
-    .filter(p=>["Deploying to Production","Go Live Support"].includes(p.stage))
+    .filter(p=>["Go-Live Prep","Go-Live"].includes(p.stage))
     .sort((a,b)=>new Date(a.target_date)-new Date(b.target_date));
 
   return (
@@ -806,7 +806,7 @@ function ExecDashboard({api}) {
           {label:"ARR Critical",       value:fmtArr(arrCritical),       sub:critical+" red accounts",  color:G.red},
           {label:"Avg Completion",     value:avgCompl+"%",              sub:"across portfolio",        color:G.blue},
           {label:"Late Tasks",         value:totalLate,                 sub:criticalLate+" critical priority", color:G.red},
-          {label:"Deploying / Live",   value:goLivesSoon.length,        sub:"deploying or in support", color:G.teal},
+          {label:"Go-Live This Month", value:goLivesSoon.length,        sub:"in prep or live now",     color:G.teal},
         ].map((k,i)=>(
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden",animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
