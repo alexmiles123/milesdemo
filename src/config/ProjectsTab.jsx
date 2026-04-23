@@ -149,6 +149,7 @@ function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
         target_date: form.target_date || null,
       };
       if (mode === "create") {
+        payload.start_date = new Date().toISOString().slice(0, 10);
         const rows = await audited("project.create", "projects", null, () => api.post("projects", [payload]), { after: payload });
         onSaved(rows[0], "create");
       } else {
