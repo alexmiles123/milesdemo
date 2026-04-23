@@ -40,26 +40,14 @@ ALTER TABLE customers ADD COLUMN IF NOT EXISTS address       TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS notes         TEXT;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_active     BOOLEAN NOT NULL DEFAULT true;
 
--- Name index for the global search. Prefer pg_trgm (fuzzy substring), fall
--- back to lower(name) if the extension can't be installed. Must try the
--- extension BEFORE the trigram index — gin_trgm_ops doesn't exist without it.
-DO $$
-DECLARE
-  have_trgm BOOLEAN := false;
-BEGIN
-  BEGIN
-    CREATE EXTENSION IF NOT EXISTS pg_trgm;
-    have_trgm := true;
-  EXCEPTION WHEN OTHERS THEN
-    have_trgm := false;
-  END;
-
-  IF have_trgm THEN
-    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_customers_name_trgm ON customers USING gin (name gin_trgm_ops)';
-  ELSE
-    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_customers_name_lower ON customers (lower(name))';
-  END IF;
-END $$;
+-- No special index on name — the customers table stays small (tens to low
+-- hundreds of rows for a single-tenant PS org) so a seq scan from the
+-- global search's ILIKE query is fine. If this table ever grows past a
+-- few thousand rows, revisit and add a pg_trgm GIN index. On Supabase
+-- pg_trgm lives in the `extensions` schema, which isn't always on the
+-- session search_path — so a naive `gin_trgm_ops` reference fails even
+-- when the extension is installed.
+CREATE INDEX IF NOT EXISTS idx_customers_name_lower ON customers (lower(name));
 
 DROP TRIGGER IF EXISTS trg_customers_updated ON customers;
 CREATE TRIGGER trg_customers_updated BEFORE UPDATE ON customers
