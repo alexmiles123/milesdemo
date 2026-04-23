@@ -17,10 +17,10 @@ const G = {
   teal:"#2dd4bf",
 };
 
-const PHASE_ORDER = ["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"];
+const PHASE_ORDER = ["Kickoff","Design","Config","Training","Deploying to Production","Go Live Support"];
 const PHASE_COLOR = {
-  "Kickoff":"#6366f1","Discovery":"#8b5cf6","Implementation":"#3b82f6",
-  "Testing & QA":"#06b6d4","Go-Live Prep":"#f59e0b","Go-Live":"#22c55e",
+  "Kickoff":"#6366f1","Design":"#8b5cf6","Config":"#3b82f6",
+  "Training":"#06b6d4","Deploying to Production":"#f59e0b","Go Live Support":"#22c55e",
 };
 const HEALTH_COLOR = { green:G.green, yellow:G.yellow, red:G.red };
 const STATUS_CFG = {
@@ -39,7 +39,7 @@ const pct      = (a,b) => b ? Math.round((a/b)*100) : 0;
 
 // ─── CAPACITY HELPERS ────────────────────────────────────────────────────────
 const TASK_HOURS = { critical:8, high:6, medium:4, low:2 };
-const getTaskHours = (p) => TASK_HOURS[p] || 3;
+const getTaskHours = (t) => t.estimated_hours || TASK_HOURS[t.priority] || 3;
 const getWeekStart = (dateStr) => {
   const d = new Date(dateStr+"T00:00:00");
   const day = d.getDay();
@@ -267,79 +267,6 @@ function AiPanel({ portfolio, tasks, csms }) {
   );
 }
 
-// ─── CAPACITY CELL DRILL-DOWN MODAL ──────────────────────────────────────────
-function CapacityCellModal({cell,onClose,onEditHours}) {
-  if(!cell) return null;
-  const {csmName,weekLabel,available,taskHours,commitHours,committed,utilization,taskList,commitList}=cell;
-  const uc=utilColor(utilization);
-  return (
-    <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
-      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:520,maxHeight:"80vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        <div style={{padding:"16px 22px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-          <div>
-            <div style={{fontSize:17,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif"}}>{csmName}</div>
-            <div style={{fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:2}}>Week of {weekLabel}</div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{background:utilBg(utilization),border:"1px solid "+utilBd(utilization),borderRadius:8,padding:"6px 14px",textAlign:"center"}}>
-              <div style={{fontSize:22,fontWeight:800,color:uc,fontFamily:"Syne,sans-serif"}}>{Math.round(utilization)}%</div>
-              <div style={{fontSize:10,color:uc,fontFamily:"DM Mono,monospace",opacity:0.8}}>UTILIZED</div>
-            </div>
-            <button onClick={onClose} style={{background:"none",border:"1px solid "+G.border,color:G.muted,width:30,height:30,borderRadius:8,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-          </div>
-        </div>
-        <div style={{overflowY:"auto",flex:1,padding:"16px 22px"}}>
-          <div style={{display:"flex",gap:10,marginBottom:16}}>
-            {[{l:"Available",v:available+"h",c:G.blue},{l:"Task Hours",v:taskHours+"h",c:G.purple},{l:"Commitments",v:commitHours+"h",c:G.yellow},{l:"Total",v:committed+"h",c:uc}].map((k,i)=>(
-              <div key={i} style={{flex:1,background:G.surface2,border:"1px solid "+G.border,borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
-                <div style={{fontSize:18,fontWeight:800,color:k.c,fontFamily:"Syne,sans-serif"}}>{k.v}</div>
-                <div style={{fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:2}}>{k.l}</div>
-              </div>
-            ))}
-          </div>
-          {taskList.length>0&&<Card style={{marginBottom:12}}>
-            <CardHeader>TASKS DRIVING HOURS ({taskHours}h)</CardHeader>
-            <div style={{padding:"8px 0"}}>
-              {taskList.map((t,i)=>(
-                <div key={i} style={{padding:"6px 16px",borderBottom:i<taskList.length-1?"1px solid "+G.faint:"none",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:600,color:G.text}}>{t.name}</div>
-                    <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace"}}>{t.customer} · {t.phase||"—"}</div>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted}}>{t.hours}h</span>
-                    <span style={{color:PRIORITY_COLOR[t.priority]||G.muted,fontSize:10,fontFamily:"DM Mono,monospace",fontWeight:700}}>{(t.priority||"").toUpperCase()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>}
-          {commitList.length>0&&<Card>
-            <CardHeader>MANUAL COMMITMENTS ({commitHours}h)</CardHeader>
-            <div style={{padding:"8px 0"}}>
-              {commitList.map((c,i)=>(
-                <div key={i} style={{padding:"6px 16px",borderBottom:i<commitList.length-1?"1px solid "+G.faint:"none",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:600,color:G.text}}>{c.commitment_type}</div>
-                    <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace"}}>{c.notes||"—"}</div>
-                  </div>
-                  <span style={{fontSize:12,fontFamily:"DM Mono,monospace",color:G.yellow,fontWeight:700}}>{c.estimated_hours}h</span>
-                </div>
-              ))}
-            </div>
-          </Card>}
-          {taskList.length===0&&commitList.length===0&&<div style={{textAlign:"center",padding:30,color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No commitments this week</div>}
-          {onEditHours&&<button onClick={onEditHours}
-            style={{marginTop:14,width:"100%",background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"10px",borderRadius:8,cursor:"pointer",fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700}}>
-            Edit Project Hours
-          </button>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── CSM DRILLDOWN MODAL (from Exec Capacity Grid) ──────────────────────────
 function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
   const [projects,setProjects]=useState([]);
@@ -347,7 +274,9 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
   const [capEntries,setCapEntries]=useState([]);
   const [tasks,setTasks]=useState([]);
   const [loading,setLoading]=useState(true);
-  const [editingCell,setEditingCell]=useState(null); // {projectId, ws}
+  const [saving,setSaving]=useState(false);
+  const [pendingChanges,setPendingChanges]=useState({}); // {"projectId::ws": hours}
+  const [expandedProjects,setExpandedProjects]=useState(new Set());
 
   const load=useCallback(async()=>{
     setLoading(true);
@@ -360,7 +289,7 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
       setProjects(pr||[]);setCommitments(cm||[]);setCapEntries(ce||[]);
       const pIds=(pr||[]).map(p=>p.id);
       if(pIds.length){
-        const tk=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority"}).catch(()=>[]);
+        const tk=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority,estimated_hours"}).catch(()=>[]);
         setTasks((tk||[]).filter(t=>pIds.includes(t.project_id)));
       }else{setTasks([]);}
     }catch(e){console.error(e);}
@@ -369,35 +298,70 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
 
   useEffect(()=>{load();},[load]);
 
-  const saveProjectHours=async(projectId,ws,hours)=>{
-    const h=parseFloat(hours);
-    const existing=commitments.find(c=>c.project_id===projectId&&c.week_start_date===ws&&c.commitment_type==="Project Work");
-    try{
-      if(!h||h<=0){
-        if(existing) await api.del("project_commitments",existing.id);
-      }else if(existing){
-        await api.patch("project_commitments",existing.id,{estimated_hours:h});
-      }else{
-        await api.post("project_commitments",[{csm_id:csm.id,project_id:projectId,week_start_date:ws,estimated_hours:h,commitment_type:"Project Work",notes:null}]);
-      }
-      await load();
-      onSaved();
-    }catch(e){alert("Failed: "+e.message);}
-    setEditingCell(null);
+  // Get the display value for a cell (pending change takes priority over DB value)
+  const getCellHours=(projectId,ws)=>{
+    const key=projectId+"::"+ws;
+    if(key in pendingChanges) return pendingChanges[key];
+    const entry=commitments.find(c=>c.project_id===projectId&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+    return entry?.estimated_hours||0;
   };
 
-  // Compute KPIs
+  const setPendingHours=(projectId,ws,val)=>{
+    const h=parseFloat(val)||0;
+    const key=projectId+"::"+ws;
+    const entry=commitments.find(c=>c.project_id===projectId&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+    const dbVal=entry?.estimated_hours||0;
+    // Only track if different from DB value
+    if(h===dbVal){
+      setPendingChanges(prev=>{const next={...prev};delete next[key];return next;});
+    }else{
+      setPendingChanges(prev=>({...prev,[key]:h}));
+    }
+  };
+
+  const hasPendingChanges=Object.keys(pendingChanges).length>0;
+
+  const saveAll=async()=>{
+    if(!hasPendingChanges){onClose();return;}
+    setSaving(true);
+    try{
+      for(const [key,hours] of Object.entries(pendingChanges)){
+        const [projectId,ws]=key.split("::");
+        const existing=commitments.find(c=>c.project_id===projectId&&c.week_start_date===ws&&c.commitment_type==="Project Work");
+        if(!hours||hours<=0){
+          if(existing) await api.del("project_commitments",existing.id);
+        }else if(existing){
+          await api.patch("project_commitments",existing.id,{estimated_hours:hours});
+        }else{
+          await api.post("project_commitments",[{csm_id:csm.id,project_id:projectId,week_start_date:ws,estimated_hours:hours,commitment_type:"Project Work",notes:null}]);
+        }
+      }
+      onSaved();
+    }catch(e){alert("Save failed: "+e.message);}
+    setSaving(false);
+    onClose();
+  };
+
+  const toggleExpand=(projectId)=>{
+    setExpandedProjects(prev=>{
+      const next=new Set(prev);
+      if(next.has(projectId)) next.delete(projectId); else next.add(projectId);
+      return next;
+    });
+  };
+
+  // Compute KPIs using pending values where available
   const weekStats=weeks.map(ws=>{
     const capEntry=capEntries.find(e=>e.week_start_date===ws);
     const available=capEntry?.estimated_hours||40;
     const we=new Date(ws+"T00:00:00");we.setDate(we.getDate()+6);const weStr=we.toISOString().split("T")[0];
     const weekTasks=tasks.filter(t=>t.proj_date>=ws&&t.proj_date<=weStr);
     const weekCommits=commitments.filter(c=>c.week_start_date===ws);
-    const projWorkCommits=weekCommits.filter(c=>c.commitment_type==="Project Work");
     const otherCommits=weekCommits.filter(c=>c.commitment_type!=="Project Work");
-    const projsWithManual=new Set(projWorkCommits.map(c=>c.project_id));
-    const autoTaskHours=weekTasks.filter(t=>!projsWithManual.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t.priority),0);
-    const manualProjHours=projWorkCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
+    // Use pending values for project hours
+    const manualProjHours=projects.reduce((s,proj)=>s+getCellHours(proj.id,ws),0);
+    const projsWithHours=new Set(projects.filter(proj=>getCellHours(proj.id,ws)>0).map(p=>p.id));
+    const autoTaskHours=weekTasks.filter(t=>!projsWithHours.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t),0);
     const otherCommitHours=otherCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
     const committed=autoTaskHours+manualProjHours+otherCommitHours;
     const utilization=available>0?(committed/available)*100:0;
@@ -407,7 +371,7 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
   const totalCommitted=weekStats.reduce((s,w)=>s+w.committed,0);
 
   return (
-    <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
+    <div onClick={e=>{if(e.target===e.currentTarget)saveAll();}}
       style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:960,maxHeight:"85vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         {/* Header */}
@@ -425,7 +389,7 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
               <div style={{fontSize:22,fontWeight:800,color:G.teal,fontFamily:"Syne,sans-serif"}}>{totalCommitted}h</div>
               <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",opacity:0.8}}>COMMITTED</div>
             </div>
-            <button onClick={onClose} style={{background:"none",border:"1px solid "+G.border,color:G.muted,width:30,height:30,borderRadius:8,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            <button onClick={saveAll} style={{background:"none",border:"1px solid "+G.border,color:G.muted,width:30,height:30,borderRadius:8,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
           </div>
         </div>
 
@@ -437,7 +401,7 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
             <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
               <thead>
                 <tr style={{borderBottom:"1px solid "+G.border}}>
-                  <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:140,position:"sticky",left:0,background:G.surface,zIndex:1}}>PROJECT</th>
+                  <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:170,position:"sticky",left:0,background:G.surface,zIndex:1}}>PROJECT</th>
                   {weeks.map((ws,i)=>(
                     <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
                   ))}
@@ -446,58 +410,61 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
               </thead>
               <tbody>
                 {projects.map((proj,pi)=>{
-                  const projTotal=weeks.reduce((sum,ws)=>{
-                    const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
-                    return sum+(entry?.estimated_hours||0);
-                  },0);
-                  return (
-                    <tr key={proj.id} style={{borderBottom:pi<projects.length-1?"1px solid "+G.faint:"none"}}>
+                  const projTotal=weeks.reduce((sum,ws)=>sum+getCellHours(proj.id,ws),0);
+                  const isExpanded=expandedProjects.has(proj.id);
+                  const projTasks=tasks.filter(t=>t.project_id===proj.id);
+                  const phaseGroups={};
+                  projTasks.forEach(t=>{const ph=t.phase||"Unassigned";if(!phaseGroups[ph])phaseGroups[ph]=[];phaseGroups[ph].push(t);});
+                  return [
+                    <tr key={proj.id} style={{borderBottom:"1px solid "+G.faint}}>
                       <td style={{padding:"8px 12px",fontSize:13,fontWeight:700,color:G.text,whiteSpace:"nowrap",position:"sticky",left:0,background:G.surface,zIndex:1}}>
-                        {proj.name}
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <span onClick={()=>toggleExpand(proj.id)}
+                            style={{cursor:"pointer",fontSize:10,color:G.muted,width:16,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,userSelect:"none"}}>{isExpanded?"▼":"▶"}</span>
+                          {proj.name}
+                        </div>
                       </td>
                       {weeks.map((ws,wi)=>{
-                        const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
-                        const hrs=entry?.estimated_hours||0;
-                        const isEditing=editingCell?.projectId===proj.id&&editingCell?.ws===ws;
+                        const hrs=getCellHours(proj.id,ws);
+                        const key=proj.id+"::"+ws;
+                        const isPending=key in pendingChanges;
                         return (
                           <td key={wi} style={{padding:"3px 2px",textAlign:"center"}}>
-                            {isEditing?(
-                              <input type="number" defaultValue={hrs||""} autoFocus min="0" max="40" step="0.5" placeholder="0"
-                                onBlur={e=>saveProjectHours(proj.id,ws,e.target.value)}
-                                onKeyDown={e=>{if(e.key==="Enter")saveProjectHours(proj.id,ws,e.target.value);if(e.key==="Escape")setEditingCell(null);}}
-                                style={{width:44,background:G.bg,border:"1px solid "+G.teal,color:G.text,padding:"4px",borderRadius:4,fontFamily:"DM Mono,monospace",fontSize:11,textAlign:"center"}}/>
-                            ):(
-                              <div onClick={()=>setEditingCell({projectId:proj.id,ws})}
-                                style={{cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",color:hrs>0?G.teal:G.faint,fontWeight:hrs>0?700:400,padding:"4px 2px",borderRadius:4,transition:"background .15s"}}
-                                onMouseEnter={e=>e.currentTarget.style.background=G.surface2}
-                                onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                                {hrs>0?hrs+"h":"·"}
-                              </div>
-                            )}
+                            <input type="number" value={hrs||""} min="0" max="60" step="0.5" placeholder="·"
+                              onChange={e=>setPendingHours(proj.id,ws,e.target.value)}
+                              style={{width:48,background:isPending?G.bg:G.surface2,border:"1px solid "+(isPending?G.teal:G.border),color:hrs>0?(isPending?G.teal:G.text):G.faint,padding:"4px 2px",borderRadius:4,fontFamily:"DM Mono,monospace",fontSize:11,textAlign:"center",fontWeight:hrs>0?700:400}}/>
                           </td>
                         );
                       })}
                       <td style={{padding:"4px 8px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:projTotal>0?G.teal:G.faint,fontWeight:700}}>
                         {projTotal>0?projTotal+"h":"—"}
                       </td>
-                    </tr>
-                  );
-                })}
+                    </tr>,
+                    // Expanded task rows
+                    ...(isExpanded?Object.entries(phaseGroups).map(([phase,phaseTasks])=>
+                      phaseTasks.map((t,ti)=>(
+                        <tr key={"task-"+t.id} style={{background:"#080e18"}}>
+                          <td style={{padding:"4px 12px 4px 42px",fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1,whiteSpace:"nowrap"}}>
+                            <span style={{color:PHASE_COLOR[phase]||G.faint,marginRight:6,fontSize:9,fontWeight:700}}>{phase}</span>
+                            <span style={{color:G.muted}}>{t.name}</span>
+                            <span style={{color:PRIORITY_COLOR[t.priority]||G.faint,marginLeft:6,fontSize:9,fontWeight:700}}>{(t.priority||"").toUpperCase()}</span>
+                          </td>
+                          {weeks.map((_,wi)=><td key={wi} style={{padding:"2px",textAlign:"center"}}/>)}
+                          <td style={{padding:"4px 8px",textAlign:"center",fontSize:10,fontFamily:"DM Mono,monospace",color:G.faint}}>{getTaskHours(t)}h</td>
+                        </tr>
+                      ))
+                    ).flat():[])
+                  ];
+                }).flat()}
                 {/* Total Row */}
                 <tr style={{borderTop:"2px solid "+G.border,background:"#080e18"}}>
                   <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1}}>TOTAL</td>
                   {weeks.map((ws,wi)=>{
-                    const weekTotal=projects.reduce((sum,proj)=>{
-                      const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
-                      return sum+(entry?.estimated_hours||0);
-                    },0);
+                    const weekTotal=projects.reduce((sum,proj)=>sum+getCellHours(proj.id,ws),0);
                     return <td key={wi} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:weekTotal>0?G.teal:G.faint,fontWeight:800}}>{weekTotal>0?weekTotal+"h":"—"}</td>;
                   })}
                   <td style={{padding:"4px 8px",textAlign:"center",fontSize:13,fontFamily:"DM Mono,monospace",color:G.teal,fontWeight:800}}>
-                    {(()=>{const gt=projects.reduce((grand,proj)=>grand+weeks.reduce((sum,ws)=>{
-                      const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
-                      return sum+(entry?.estimated_hours||0);
-                    },0),0);return gt?gt+"h":"—";})()}
+                    {(()=>{const gt=projects.reduce((grand,proj)=>grand+weeks.reduce((sum,ws)=>sum+getCellHours(proj.id,ws),0),0);return gt?gt+"h":"—";})()}
                   </td>
                 </tr>
                 {projects.length===0&&<tr><td colSpan={weeks.length+2} style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No projects assigned</td></tr>}
@@ -508,8 +475,13 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
 
         {/* Footer */}
         <div style={{padding:"10px 22px",borderTop:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-          <span style={{fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>Click any cell to enter hours</span>
-          <button onClick={onClose} style={{background:G.surface2,border:"1px solid "+G.border,color:G.muted,padding:"6px 16px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11}}>Close</button>
+          <span style={{fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>
+            {hasPendingChanges?Object.keys(pendingChanges).length+" unsaved change"+(Object.keys(pendingChanges).length>1?"s":""):"Click any cell to enter hours · expand rows to see tasks"}
+          </span>
+          <button onClick={saveAll} disabled={saving}
+            style={{background:hasPendingChanges?"linear-gradient(135deg,#7c3aed,#a855f7)":G.surface2,border:hasPendingChanges?"none":"1px solid "+G.border,color:hasPendingChanges?"#fff":G.muted,padding:"8px 20px",borderRadius:8,cursor:"pointer",fontFamily:"Syne,sans-serif",fontSize:12,fontWeight:700,opacity:saving?0.6:1}}>
+            {saving?"Saving…":hasPendingChanges?"Save & Close":"Close"}
+          </button>
         </div>
       </div>
     </div>
@@ -524,7 +496,6 @@ function ExecCapacityDashboard({api}) {
   const [projects,setProjects]=useState([]);
   const [tasks,setTasks]=useState([]);
   const [loading,setLoading]=useState(true);
-  const [selectedCell,setSelectedCell]=useState(null);
   const [drilldownCsm,setDrilldownCsm]=useState(null);
   const [error,setError]=useState(null);
 
@@ -538,7 +509,7 @@ function ExecCapacityDashboard({api}) {
         api.get("capacity_entries",{select:"*"}).catch(()=>[]),
         api.get("project_commitments",{select:"*"}).catch(()=>[]),
         api.get("projects",{select:"id,name,csm_id"}),
-        api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority"}),
+        api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority,estimated_hours"}),
       ]);
       setCsmList(cs||[]);setCapEntries(ce||[]);setCommitments(cm||[]);setProjects(pr||[]);setTasks(tk||[]);
     }catch(e){setError(e.message);}
@@ -569,7 +540,7 @@ function ExecCapacityDashboard({api}) {
       const projWorkCommits=weekCommits.filter(c=>c.commitment_type==="Project Work");
       const otherCommits=weekCommits.filter(c=>c.commitment_type!=="Project Work");
       const projsWithManual=new Set(projWorkCommits.map(c=>c.project_id));
-      const autoTaskHours=weekTasks.filter(t=>!projsWithManual.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t.priority),0);
+      const autoTaskHours=weekTasks.filter(t=>!projsWithManual.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t),0);
       const manualProjHours=projWorkCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
       const otherCommitHours=otherCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
       const taskHours=autoTaskHours+manualProjHours;
@@ -577,7 +548,7 @@ function ExecCapacityDashboard({api}) {
       const committed=taskHours+commitHours;
       const utilization=available>0?(committed/available)*100:0;
       return {ws,available,taskHours,commitHours,committed,utilization,
-        taskList:weekTasks.filter(t=>!projsWithManual.has(t.project_id)).map(t=>({...t,customer:projName[t.project_id]||"—",hours:getTaskHours(t.priority)})).concat(projWorkCommits.map(c=>({name:c.commitment_type,customer:projName[c.project_id]||"—",phase:"Manual",priority:"medium",hours:c.estimated_hours}))),
+        taskList:weekTasks.filter(t=>!projsWithManual.has(t.project_id)).map(t=>({...t,customer:projName[t.project_id]||"—",hours:getTaskHours(t)})).concat(projWorkCommits.map(c=>({name:c.commitment_type,customer:projName[c.project_id]||"—",phase:"Manual",priority:"medium",hours:c.estimated_hours}))),
         commitList:otherCommits};
     });
     return {csm,weekData};
@@ -603,8 +574,8 @@ function ExecCapacityDashboard({api}) {
   const avgUtil=summaryWeeks.length?Math.round(summaryWeeks.reduce((s,w)=>s+w.utilization,0)/summaryWeeks.length):0;
   const peakWeek=summaryWeeks.reduce((max,w,i)=>w.utilization>max.u?{u:w.utilization,i}:max,{u:0,i:0});
 
-  const handleCellClick=(csm,wi,wd)=>{
-    setSelectedCell({csmName:csm.name,csmObj:csm,weekLabel:fmtWeek(weeks[wi]),...wd});
+  const handleCellClick=(csm)=>{
+    setDrilldownCsm(csm);
   };
 
   return (
@@ -686,7 +657,7 @@ function ExecCapacityDashboard({api}) {
                   </td>
                   {row.weekData.map((wd,wi)=>(
                     <td key={wi} style={{padding:"4px 3px",textAlign:"center"}}>
-                      <div onClick={()=>handleCellClick(row.csm,wi,wd)}
+                      <div onClick={()=>handleCellClick(row.csm)}
                         style={{background:utilBg(wd.utilization),border:"1px solid "+utilBd(wd.utilization),borderRadius:6,padding:"5px 2px",cursor:"pointer",transition:"transform .1s"}}
                         onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"}
                         onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
@@ -710,7 +681,6 @@ function ExecCapacityDashboard({api}) {
         <span style={{color:G.muted}}>Click any cell to drill down</span>
       </div>
 
-      {selectedCell&&<CapacityCellModal cell={selectedCell} onClose={()=>setSelectedCell(null)} onEditHours={()=>{setDrilldownCsm(selectedCell.csmObj);setSelectedCell(null);}}/>}
       {drilldownCsm&&<CsmDrilldownModal api={api} csm={drilldownCsm} weeks={weeks} onClose={()=>setDrilldownCsm(null)} onSaved={load}/>}
     </div>
   );
@@ -760,7 +730,7 @@ function ExecDashboard({api}) {
   const totalComplete= tasks.filter(t=>t.status==="complete").length;
   const totalUpcoming= tasks.filter(t=>t.status==="upcoming").length;
   const criticalLate = tasks.filter(t=>t.status==="late"&&t.priority==="critical").length;
-  const goLivesSoon  = portfolio.filter(p=>p.stage==="Go-Live Prep"||p.stage==="Go-Live");
+  const goLivesSoon  = portfolio.filter(p=>p.stage==="Deploying to Production"||p.stage==="Go Live Support");
 
   // ── Chart data ──
   const healthData = [
@@ -807,7 +777,7 @@ function ExecDashboard({api}) {
 
   // Upcoming go-lives
   const upcomingGoLives = portfolio
-    .filter(p=>["Go-Live Prep","Go-Live"].includes(p.stage))
+    .filter(p=>["Deploying to Production","Go Live Support"].includes(p.stage))
     .sort((a,b)=>new Date(a.target_date)-new Date(b.target_date));
 
   return (
@@ -836,7 +806,7 @@ function ExecDashboard({api}) {
           {label:"ARR Critical",       value:fmtArr(arrCritical),       sub:critical+" red accounts",  color:G.red},
           {label:"Avg Completion",     value:avgCompl+"%",              sub:"across portfolio",        color:G.blue},
           {label:"Late Tasks",         value:totalLate,                 sub:criticalLate+" critical priority", color:G.red},
-          {label:"Go-Live This Month", value:goLivesSoon.length,        sub:"in prep or live now",     color:G.teal},
+          {label:"Deploying / Live",   value:goLivesSoon.length,        sub:"deploying or in support", color:G.teal},
         ].map((k,i)=>(
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden",animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
@@ -1211,7 +1181,7 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
           api.get("project_commitments",{csm_id:"eq."+csmObj.id,select:"*"}).catch(()=>[]),
         ]);
         const pIds=prjs.map(p=>p.id);
-        const allT=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,proj_date,priority"}).catch(()=>[]);
+        const allT=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority,estimated_hours"}).catch(()=>[]);
         const csmTasks=allT.filter(t=>pIds.includes(t.project_id));
         const pNames={};prjs.forEach(p=>{pNames[p.id]=p.name;});
         setCapData({csmId:csmObj.id,csmName:csmObj.name,tasks:csmTasks,capEntries:ce||[],commitments:cm||[],projectIds:pIds,projectNames:pNames});
@@ -1226,7 +1196,7 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
     const capEntry=capData.capEntries.find(e=>e.week_start_date===ws);
     const available=capEntry?.estimated_hours||40;
     const weekTasks=capData.tasks.filter(t=>t.proj_date>=ws&&t.proj_date<=weStr);
-    const taskHrs=weekTasks.reduce((s,t)=>s+getTaskHours(t.priority),0);
+    const taskHrs=weekTasks.reduce((s,t)=>s+getTaskHours(t),0);
     const commitHrs=capData.commitments.filter(c=>c.week_start_date===ws).reduce((s,c)=>s+(c.estimated_hours||0),0);
     const committed=taskHrs+commitHrs;
     const utilization=available>0?(committed/available)*100:0;
@@ -1507,7 +1477,7 @@ function CsmCapacityPanel({api,csm}) {
       setCapEntries(ce||[]);setCommitments(cm||[]);setProjects(pr||[]);
       const pIds=(pr||[]).map(p=>p.id);
       if(pIds.length){
-        const tk=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority"}).catch(()=>[]);
+        const tk=await api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority,estimated_hours"}).catch(()=>[]);
         setTasks((tk||[]).filter(t=>pIds.includes(t.project_id)));
       }else{setTasks([]);}
     }catch(e){console.error(e);}
@@ -1565,7 +1535,7 @@ function CsmCapacityPanel({api,csm}) {
     const otherCommits=weekCommits.filter(c=>c.commitment_type!=="Project Work");
     const projsWithManual=new Set(projWorkCommits.map(c=>c.project_id));
     // For projects with manual hours, use those; otherwise fall back to auto-task estimate
-    const autoTaskHours=weekTasks.filter(t=>!projsWithManual.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t.priority),0);
+    const autoTaskHours=weekTasks.filter(t=>!projsWithManual.has(t.project_id)).reduce((s,t)=>s+getTaskHours(t),0);
     const manualProjHours=projWorkCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
     const otherCommitHours=otherCommits.reduce((s,c)=>s+(c.estimated_hours||0),0);
     const committed=autoTaskHours+manualProjHours+otherCommitHours;
