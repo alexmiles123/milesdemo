@@ -20,6 +20,13 @@ CREATE TABLE IF NOT EXISTS csms (
   CONSTRAINT csms_email_unique UNIQUE (email)
 );
 
+-- Idempotent column backfill for DBs where csms pre-existed without these cols.
+ALTER TABLE csms ADD COLUMN IF NOT EXISTS role       TEXT NOT NULL DEFAULT 'CSM';
+ALTER TABLE csms ADD COLUMN IF NOT EXISTS is_active  BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE csms ADD COLUMN IF NOT EXISTS email      TEXT;
+ALTER TABLE csms ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE csms ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
 CREATE INDEX IF NOT EXISTS idx_csms_active ON csms(is_active) WHERE is_active = true;
 
 -- ─── PROJECTS (customer accounts) ───────────────────────────────────────────
@@ -40,6 +47,20 @@ CREATE TABLE IF NOT EXISTS projects (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Idempotent column backfill: pre-existing projects tables may be missing
+-- columns that the dashboard and views now depend on.
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS customer        TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS csm_id          UUID REFERENCES csms(id) ON DELETE SET NULL;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS stage           TEXT NOT NULL DEFAULT 'Kickoff';
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS health          TEXT NOT NULL DEFAULT 'green';
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS health_label    TEXT;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS arr             NUMERIC(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS target_date     DATE;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS completion_pct  INT NOT NULL DEFAULT 0;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS external_ids    JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS created_at      TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS updated_at      TIMESTAMPTZ NOT NULL DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_projects_csm ON projects(csm_id);
 CREATE INDEX IF NOT EXISTS idx_projects_stage ON projects(stage);
@@ -64,6 +85,20 @@ CREATE TABLE IF NOT EXISTS tasks (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Idempotent column backfill for tasks.
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS phase            TEXT NOT NULL DEFAULT 'Kickoff';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority         TEXT NOT NULL DEFAULT 'medium';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status           TEXT NOT NULL DEFAULT 'upcoming';
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS proj_date        DATE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS actual_date      DATE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assignee_type    TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS assignee_name    TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS notes            TEXT;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimated_hours  NUMERIC(5,1);
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS external_ids     JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS created_at       TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMPTZ NOT NULL DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
