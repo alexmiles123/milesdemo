@@ -1,6 +1,10 @@
 // Monument — Morning Late Task Alert (8am CT / 13:00 UTC, weekdays)
-// Sends individual emails to each CSM with their late tasks
-// Sends executive summary to EXEC_EMAIL
+// Sends individual emails to each CSM with their late tasks.
+// Sends an executive summary to the notification_rules(event_type='task.late')
+// recipients, with EXEC_EMAIL as a legacy fallback if the rules table is
+// empty or missing.
+
+import { resolveRecipients } from '../_lib/notifications.js';
 
 const SB_URL = () => process.env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1';
 const SB_KEY = () => process.env.SUPABASE_SERVICE_KEY;
@@ -17,19 +21,21 @@ async function sbGet(table, params = {}) {
   return res.json();
 }
 
-async function sendEmail(to, subject, html) {
+async function sendEmail(to, subject, html, cc) {
+  const body = {
+    from: process.env.FROM_EMAIL || 'Monument <onboarding@resend.dev>',
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    html,
+  };
+  if (cc && cc.length) body.cc = cc;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + process.env.RESEND_API_KEY,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: process.env.FROM_EMAIL || 'Monument <onboarding@resend.dev>',
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-    }),
+    body: JSON.stringify(body),
   });
   return res.json();
 }
@@ -96,6 +102,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Resolve exec-summary recipients (DB rule > EXEC_EMAIL env fallback)
+    const summaryTargets = await resolveRecipients('task.late', { envFallbackTo: 'EXEC_EMAIL' });
+    if (!summaryTargets.enabled) {
+      return res.status(200).json({ message: 'task.late notifications disabled via rule.' });
+    }
+
     // Fetch data
     const [tasks, projects, csms] = await Promise.all([
       sbGet('tasks', { status: 'eq.late', select: '*' }),
@@ -175,9 +187,8 @@ export default async function handler(req, res) {
       results.push({ csm: csm.name, email: csm.email, tasks: csmTasks.length, result });
     }
 
-    // Send executive summary
-    const execEmail = process.env.EXEC_EMAIL;
-    if (execEmail) {
+    // Send executive summary to the recipients resolved above
+    if (summaryTargets.to.length) {
       let execBody = `<div style="font-size:14px;color:#e8f0f8;margin-bottom:16px;">Portfolio-wide: <strong style="color:#ef4444;">${tasks.length}</strong> late tasks across <strong>${new Set(tasks.map(t => t.project_id)).size}</strong> accounts.</div>`;
 
       for (const entry of Object.values(byCsm)) {
@@ -209,11 +220,12 @@ export default async function handler(req, res) {
       }
 
       const execResult = await sendEmail(
-        execEmail,
+        summaryTargets.to,
         `Executive Summary — ${tasks.length} Late Tasks Across Portfolio`,
-        emailShell('Executive Summary — Late Tasks', today, execBody)
+        emailShell('Executive Summary — Late Tasks', today, execBody),
+        summaryTargets.cc
       );
-      results.push({ exec: true, email: execEmail, result: execResult });
+      results.push({ exec: true, to: summaryTargets.to, cc: summaryTargets.cc, source: summaryTargets.source, result: execResult });
     }
 
     return res.status(200).json({ success: true, emailsSent: results.length, results });

@@ -1,6 +1,9 @@
 // Monument — Afternoon Task Reminders (4pm CT / 21:00 UTC, weekdays)
-// Sends individual emails to each CSM with upcoming tasks for next 5 business days
-// Sends executive summary to EXEC_EMAIL
+// Sends individual emails to each CSM with upcoming tasks for next 5 business days.
+// Sends an executive summary to notification_rules(event_type='task.upcoming')
+// recipients, with EXEC_EMAIL as a legacy fallback.
+
+import { resolveRecipients } from '../_lib/notifications.js';
 
 const SB_URL = () => process.env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1';
 const SB_KEY = () => process.env.SUPABASE_SERVICE_KEY;
@@ -17,19 +20,21 @@ async function sbGet(table, params = {}) {
   return res.json();
 }
 
-async function sendEmail(to, subject, html) {
+async function sendEmail(to, subject, html, cc) {
+  const body = {
+    from: process.env.FROM_EMAIL || 'Monument <onboarding@resend.dev>',
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    html,
+  };
+  if (cc && cc.length) body.cc = cc;
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + process.env.RESEND_API_KEY,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: process.env.FROM_EMAIL || 'Monument <onboarding@resend.dev>',
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-    }),
+    body: JSON.stringify(body),
   });
   return res.json();
 }
@@ -103,6 +108,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    const summaryTargets = await resolveRecipients('task.upcoming', { envFallbackTo: 'EXEC_EMAIL' });
+    if (!summaryTargets.enabled) {
+      return res.status(200).json({ message: 'task.upcoming notifications disabled via rule.' });
+    }
+
     const bizDays = getNextBusinessDays(5);
     const startDate = bizDays[0].toISOString().split('T')[0];
     const endDate = bizDays[bizDays.length - 1].toISOString().split('T')[0];
@@ -186,9 +196,8 @@ export default async function handler(req, res) {
       results.push({ csm: csm.name, email: csm.email, tasks: csmTasks.length, result });
     }
 
-    // Executive summary
-    const execEmail = process.env.EXEC_EMAIL;
-    if (execEmail) {
+    // Executive summary — recipients from notification_rules (env fallback)
+    if (summaryTargets.to.length) {
       let execBody = `<div style="font-size:14px;color:#e8f0f8;margin-bottom:16px;">Team-wide: <strong style="color:#60a5fa;">${upcoming.length}</strong> tasks due in the next 5 business days.</div>`;
 
       for (const entry of Object.values(byCsm)) {
@@ -220,11 +229,12 @@ export default async function handler(req, res) {
       }
 
       const execResult = await sendEmail(
-        execEmail,
+        summaryTargets.to,
         `Executive Summary — ${upcoming.length} Upcoming Tasks This Week`,
-        emailShell('Executive Summary — Upcoming Tasks', dateRange, execBody)
+        emailShell('Executive Summary — Upcoming Tasks', dateRange, execBody),
+        summaryTargets.cc
       );
-      results.push({ exec: true, email: execEmail, result: execResult });
+      results.push({ exec: true, to: summaryTargets.to, cc: summaryTargets.cc, source: summaryTargets.source, result: execResult });
     }
 
     return res.status(200).json({ success: true, emailsSent: results.length, results });

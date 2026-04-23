@@ -4,16 +4,18 @@ import ProjectsTab from "./ProjectsTab.jsx";
 import CsmsTab from "./CsmsTab.jsx";
 import AssignmentsTab from "./AssignmentsTab.jsx";
 import IntegrationsTab from "./IntegrationsTab.jsx";
+import NotificationsTab from "./NotificationsTab.jsx";
 import AuditTab from "./AuditTab.jsx";
 import SecurityTab from "./SecurityTab.jsx";
 
 const TABS = [
-  { id: "projects",     label: "Projects" },
-  { id: "csms",         label: "CSMs" },
-  { id: "assignments",  label: "Assignments" },
-  { id: "integrations", label: "Integrations" },
-  { id: "audit",        label: "Audit Log" },
-  { id: "security",     label: "Security" },
+  { id: "projects",      label: "Projects" },
+  { id: "csms",          label: "CSMs" },
+  { id: "assignments",   label: "Assignments" },
+  { id: "integrations",  label: "Integrations" },
+  { id: "notifications", label: "Notifications" },
+  { id: "audit",         label: "Audit Log" },
+  { id: "security",      label: "Security" },
 ];
 
 export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
@@ -77,9 +79,10 @@ export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
         {tab === "projects"     && <ProjectsTab     api={api} csms={csms} onChanged={refreshCsms} />}
         {tab === "csms"         && <CsmsTab         api={api} onChanged={refreshCsms} />}
         {tab === "assignments"  && <AssignmentsTab  api={api} csms={csms} onChanged={refreshCsms} />}
-        {tab === "integrations" && <IntegrationsTab api={api} />}
-        {tab === "audit"        && <AuditTab        api={api} />}
-        {tab === "security"     && <SecurityTab     api={api} />}
+        {tab === "integrations"  && <IntegrationsTab  api={api} />}
+        {tab === "notifications" && <NotificationsTab api={api} />}
+        {tab === "audit"         && <AuditTab         api={api} />}
+        {tab === "security"      && <SecurityTab      api={api} />}
       </div>
     </div>
   );

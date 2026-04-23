@@ -695,6 +695,27 @@ function ExecCapacityDashboard({api}) {
 }
 
 // ─── EXECUTIVE DASHBOARD ─────────────────────────────────────────────────────
+// Exec dashboard widgets are toggleable. Hidden IDs persist to localStorage so
+// each user keeps their preferred layout across reloads.
+const EXEC_WIDGETS = [
+  { id:"kpi-strip",        label:"KPI Strip (7 cards)" },
+  { id:"stage-pipeline",   label:"Implementation Pipeline by Stage" },
+  { id:"portfolio-health", label:"Portfolio Health" },
+  { id:"task-status",      label:"Task Status Across Portfolio" },
+  { id:"arr-distribution", label:"ARR Distribution" },
+  { id:"csm-scorecard",    label:"CSM Performance Scorecard" },
+  { id:"csm-book",         label:"CSM Book Breakdown" },
+  { id:"late-tasks",       label:"Late Tasks (Exec Attention)" },
+  { id:"upcoming-go-lives",label:"Upcoming Go-Lives" },
+  { id:"critical-accounts",label:"Critical Accounts (Immediate Attention)" },
+  { id:"full-portfolio",   label:"Full Portfolio Table" },
+];
+const LS_HIDDEN = "monument.execDashboard.hiddenWidgets";
+function loadHiddenWidgets() {
+  try { return new Set(JSON.parse(localStorage.getItem(LS_HIDDEN) || "[]")); }
+  catch { return new Set(); }
+}
+
 function ExecDashboard({api}) {
   const [portfolio, setPortfolio] = useState([]);
   const [tasks,     setTasks]     = useState([]);
@@ -702,6 +723,19 @@ function ExecDashboard({api}) {
   const [loading,   setLoading]   = useState(true);
   const [selProject,setSelProject]= useState(null);
   const [execTab,   setExecTab]   = useState("dashboard");
+  const [hiddenWidgets, setHiddenWidgets] = useState(loadHiddenWidgets);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const shown = (id) => !hiddenWidgets.has(id);
+  const toggleWidget = (id) => setHiddenWidgets(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    try { localStorage.setItem(LS_HIDDEN, JSON.stringify([...next])); } catch { /* ignore */ }
+    return next;
+  });
+  const resetWidgets = () => {
+    try { localStorage.removeItem(LS_HIDDEN); } catch { /* ignore */ }
+    setHiddenWidgets(new Set());
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -791,11 +825,40 @@ function ExecDashboard({api}) {
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Sub-tab bar */}
-      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0}}>
+      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0,alignItems:"center",position:"relative"}}>
         {[["dashboard","Dashboard"],["capacity","Capacity"]].map(([k,l])=>(
           <button key={k} onClick={()=>setExecTab(k)}
             style={{background:execTab===k?"#0f2036":"none",border:"1px solid "+(execTab===k?G.blue+"44":"transparent"),borderBottom:execTab===k?"2px solid "+G.blue:"2px solid transparent",color:execTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
         ))}
+        {execTab === "dashboard" && (
+          <>
+            <button
+              onClick={()=>setShowCustomize(s=>!s)}
+              title="Show/hide dashboard widgets"
+              style={{marginLeft:"auto",background:showCustomize?"#0f2036":"none",border:"1px solid "+(showCustomize?G.purple+"66":G.border),color:showCustomize?G.purple:G.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",borderRadius:6,display:"inline-flex",alignItems:"center",gap:6,marginRight:0,marginTop:6,marginBottom:6}}>
+              <span style={{fontSize:13,lineHeight:1}}>⚙</span> Customize
+              {hiddenWidgets.size > 0 && <span style={{background:G.purple,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:800}}>{hiddenWidgets.size}</span>}
+            </button>
+            {showCustomize && (
+              <>
+                <div onClick={()=>setShowCustomize(false)} style={{position:"fixed",inset:0,zIndex:40}}/>
+                <div style={{position:"absolute",top:"100%",right:24,marginTop:4,background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:12,zIndex:50,minWidth:320,boxShadow:"0 10px 30px rgba(0,0,0,0.5)"}}>
+                  <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
+                    <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:800,color:G.text,letterSpacing:"0.02em"}}>DASHBOARD WIDGETS</div>
+                    <button onClick={resetWidgets} style={{marginLeft:"auto",background:"none",border:"none",color:G.faint,fontSize:10,fontFamily:"DM Mono,monospace",cursor:"pointer",textDecoration:"underline"}}>Show all</button>
+                  </div>
+                  {EXEC_WIDGETS.map(w=>(
+                    <label key={w.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 4px",fontFamily:"DM Mono,monospace",fontSize:12,color:G.text,cursor:"pointer",borderRadius:4}}
+                      onMouseEnter={e=>e.currentTarget.style.background="#0f2036"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <input type="checkbox" checked={shown(w.id)} onChange={()=>toggleWidget(w.id)} />
+                      <span>{w.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
       </div>
       {execTab==="capacity" ? (
         <div style={{flex:1,display:"flex",overflow:"hidden"}}>
@@ -806,6 +869,7 @@ function ExecDashboard({api}) {
     <div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
 
       {/* ── SECTION: KPI Strip ── */}
+      {shown('kpi-strip') && (
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:10,marginBottom:16}}>
         {[
           {label:"Total Customers",    value:portfolio.length,          sub:"active implementations", color:G.purple},
@@ -824,11 +888,13 @@ function ExecDashboard({api}) {
           </div>
         ))}
       </div>
+      )}
 
       {/* ── SECTION: Charts Row 1 ── */}
-      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:12,marginBottom:12}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:12,marginBottom:12}}>
 
         {/* Stage pipeline */}
+        {shown('stage-pipeline') && (
         <Card>
           <CardHeader>IMPLEMENTATION PIPELINE BY STAGE</CardHeader>
           <div style={{padding:"14px 16px"}}>
@@ -853,8 +919,10 @@ function ExecDashboard({api}) {
             </div>
           </div>
         </Card>
+        )}
 
         {/* Health donut */}
+        {shown('portfolio-health') && (
         <Card>
           <CardHeader>PORTFOLIO HEALTH</CardHeader>
           <div style={{padding:"14px 16px"}}>
@@ -878,8 +946,10 @@ function ExecDashboard({api}) {
             </div>
           </div>
         </Card>
+        )}
 
         {/* Task status donut */}
+        {shown('task-status') && (
         <Card>
           <CardHeader>TASK STATUS ACROSS PORTFOLIO</CardHeader>
           <div style={{padding:"14px 16px"}}>
@@ -902,8 +972,10 @@ function ExecDashboard({api}) {
             </div>
           </div>
         </Card>
+        )}
 
         {/* ARR buckets */}
+        {shown('arr-distribution') && (
         <Card>
           <CardHeader>ARR DISTRIBUTION</CardHeader>
           <div style={{padding:"14px 16px"}}>
@@ -920,12 +992,14 @@ function ExecDashboard({api}) {
             </ResponsiveContainer>
           </div>
         </Card>
+        )}
       </div>
 
       {/* ── SECTION: Charts Row 2 ── */}
-      <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr",gap:12,marginBottom:12}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(360px,1fr))",gap:12,marginBottom:12}}>
 
         {/* CSM Scorecard bar */}
+        {shown('csm-scorecard') && (
         <Card>
           <CardHeader>CSM PERFORMANCE SCORECARD</CardHeader>
           <div style={{padding:"14px 16px"}}>
@@ -943,8 +1017,10 @@ function ExecDashboard({api}) {
             </ResponsiveContainer>
           </div>
         </Card>
+        )}
 
         {/* CSM Detail table */}
+        {shown('csm-book') && (
         <Card>
           <CardHeader>CSM BOOK BREAKDOWN</CardHeader>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -979,12 +1055,14 @@ function ExecDashboard({api}) {
             </tbody>
           </table>
         </Card>
+        )}
       </div>
 
       {/* ── SECTION: Tables Row ── */}
-      <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:12,marginBottom:12}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(380px,1fr))",gap:12,marginBottom:12}}>
 
         {/* Late tasks escalation */}
+        {shown('late-tasks') && (
         <Card>
           <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <span style={{fontSize:15,fontWeight:700,color:G.red,letterSpacing:"0.07em",fontFamily:"DM Mono,monospace"}}>LATE TASKS — REQUIRES EXEC ATTENTION</span>
@@ -1023,10 +1101,13 @@ function ExecDashboard({api}) {
             </table>
           </div>
         </Card>
+        )}
 
         {/* Upcoming Go-Lives + At Risk */}
+        {(shown('upcoming-go-lives') || shown('critical-accounts')) && (
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           {/* Upcoming go-lives */}
+          {shown('upcoming-go-lives') && (
           <Card style={{flex:1}}>
             <CardHeader>UPCOMING GO-LIVES</CardHeader>
             <div style={{overflowY:"auto",maxHeight:120}}>
@@ -1055,8 +1136,10 @@ function ExecDashboard({api}) {
               </table>
             </div>
           </Card>
+          )}
 
           {/* Critical health accounts */}
+          {shown('critical-accounts') && (
           <Card style={{flex:1}}>
             <CardHeader style={{color:G.red}}>CRITICAL ACCOUNTS — IMMEDIATE ATTENTION</CardHeader>
             <div style={{overflowY:"auto",maxHeight:120}}>
@@ -1083,10 +1166,13 @@ function ExecDashboard({api}) {
               </table>
             </div>
           </Card>
+          )}
         </div>
+        )}
       </div>
 
       {/* ── SECTION: Full Portfolio Table ── */}
+      {shown('full-portfolio') && (
       <Card style={{marginBottom:12}}>
         <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>FULL PORTFOLIO — ALL CUSTOMERS</span>
@@ -1147,6 +1233,7 @@ function ExecDashboard({api}) {
           </table>
         </div>
       </Card>
+      )}
     </div>
     </div>
     <AiPanel portfolio={portfolio} tasks={tasks} csms={csms} />
