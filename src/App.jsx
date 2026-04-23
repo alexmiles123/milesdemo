@@ -268,7 +268,7 @@ function AiPanel({ portfolio, tasks, csms }) {
 }
 
 // ─── CAPACITY CELL DRILL-DOWN MODAL ──────────────────────────────────────────
-function CapacityCellModal({cell,onClose}) {
+function CapacityCellModal({cell,onClose,onEditHours}) {
   if(!cell) return null;
   const {csmName,weekLabel,available,taskHours,commitHours,committed,utilization,taskList,commitList}=cell;
   const uc=utilColor(utilization);
@@ -330,6 +330,10 @@ function CapacityCellModal({cell,onClose}) {
             </div>
           </Card>}
           {taskList.length===0&&commitList.length===0&&<div style={{textAlign:"center",padding:30,color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No commitments this week</div>}
+          {onEditHours&&<button onClick={onEditHours}
+            style={{marginTop:14,width:"100%",background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"10px",borderRadius:8,cursor:"pointer",fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700}}>
+            Edit Project Hours
+          </button>}
         </div>
       </div>
     </div>
@@ -599,8 +603,8 @@ function ExecCapacityDashboard({api}) {
   const avgUtil=summaryWeeks.length?Math.round(summaryWeeks.reduce((s,w)=>s+w.utilization,0)/summaryWeeks.length):0;
   const peakWeek=summaryWeeks.reduce((max,w,i)=>w.utilization>max.u?{u:w.utilization,i}:max,{u:0,i:0});
 
-  const handleCellClick=(csmName,wi,wd)=>{
-    setSelectedCell({csmName,weekLabel:fmtWeek(weeks[wi]),...wd});
+  const handleCellClick=(csm,wi,wd)=>{
+    setSelectedCell({csmName:csm.name,csmObj:csm,weekLabel:fmtWeek(weeks[wi]),...wd});
   };
 
   return (
@@ -682,7 +686,7 @@ function ExecCapacityDashboard({api}) {
                   </td>
                   {row.weekData.map((wd,wi)=>(
                     <td key={wi} style={{padding:"4px 3px",textAlign:"center"}}>
-                      <div onClick={()=>handleCellClick(row.csm.name,wi,wd)}
+                      <div onClick={()=>handleCellClick(row.csm,wi,wd)}
                         style={{background:utilBg(wd.utilization),border:"1px solid "+utilBd(wd.utilization),borderRadius:6,padding:"5px 2px",cursor:"pointer",transition:"transform .1s"}}
                         onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"}
                         onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
@@ -706,7 +710,7 @@ function ExecCapacityDashboard({api}) {
         <span style={{color:G.muted}}>Click any cell to drill down</span>
       </div>
 
-      {selectedCell&&<CapacityCellModal cell={selectedCell} onClose={()=>setSelectedCell(null)}/>}
+      {selectedCell&&<CapacityCellModal cell={selectedCell} onClose={()=>setSelectedCell(null)} onEditHours={()=>{setDrilldownCsm(selectedCell.csmObj);setSelectedCell(null);}}/>}
       {drilldownCsm&&<CsmDrilldownModal api={api} csm={drilldownCsm} weeks={weeks} onClose={()=>setDrilldownCsm(null)} onSaved={load}/>}
     </div>
   );
