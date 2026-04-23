@@ -3,6 +3,7 @@ import { G, PHASE_ORDER, HEALTH_OPTIONS, fmtDate, fmtArr } from "../lib/theme.js
 import { validateProject, hasErrors } from "../lib/validation.js";
 import { audited } from "../lib/audit.js";
 import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm, TextArea } from "./common.jsx";
+import ImportModal from "./ImportModal.jsx";
 
 const BLANK = { name:"", customer:"", csm_id:"", stage:"Kickoff", health:"green", arr:0, completion_pct:0, target_date:"", notes:"" };
 
@@ -15,6 +16,7 @@ export default function ProjectsTab({ api, csms, onChanged }) {
   const [modal, setModal] = useState(null); // { mode:"create"|"edit", data }
   const [confirm, setConfirm] = useState(null); // project pending delete
   const [toast, setToast] = useState(null);
+  const [showImport, setShowImport] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,7 +66,10 @@ export default function ProjectsTab({ api, csms, onChanged }) {
   return (
     <>
       <Card>
-        <CardHeader right={<Button variant="primary" onClick={openCreate}>+ New Project</Button>}>
+        <CardHeader right={<div style={{ display: "flex", gap: 8 }}>
+          <Button variant="ghost" onClick={() => setShowImport(true)}>Import from Excel</Button>
+          <Button variant="primary" onClick={openCreate}>+ New Project</Button>
+        </div>}>
           ACCOUNTS · PROJECTS ({filtered.length}{filtered.length !== projects.length ? ` of ${projects.length}` : ""})
         </CardHeader>
         <div style={{ padding: "12px 18px", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid " + G.border }}>
@@ -120,11 +125,53 @@ export default function ProjectsTab({ api, csms, onChanged }) {
         />
       )}
 
+      {showImport && (
+        <ImportModal
+          title="Import Projects from Excel"
+          api={api}
+          ctx={{ csms }}
+          spec={PROJECT_IMPORT_SPEC}
+          onClose={() => setShowImport(false)}
+          onDone={(r) => { setToast({ tone: "success", msg: `Imported ${r.created} project${r.created === 1 ? "" : "s"}.` }); load(); onChanged && onChanged(); }}
+        />
+      )}
+
       {confirm && <Confirm message={`Delete project "${confirm.name}"? This cascades to tasks and capacity.`} onCancel={() => setConfirm(null)} onConfirm={() => del(confirm)} />}
       {toast && <Toast tone={toast.tone} onClose={() => setToast(null)}>{toast.msg}</Toast>}
     </>
   );
 }
+
+const PROJECT_IMPORT_SPEC = {
+  table: "projects",
+  auditAction: "project.import",
+  templateName: "projects-import-template.xlsx",
+  templateSample: [
+    ["Acme Implementation", "Acme Corp", "Alex Miles", "Kickoff", "On Track", 120000, 0, "2026-09-30"],
+    ["Globex Rollout", "Globex", "Morgan Wu", "Discovery", "At Risk", 80000, 25, "2026-07-15"],
+  ],
+  defaults: { stage: "Kickoff", health: "green", completion_pct: 0, arr: 0 },
+  columns: [
+    { key: "name", aliases: ["name", "project name", "project"], required: true },
+    { key: "customer", aliases: ["customer", "account", "customer name"] },
+    {
+      key: "csm_id",
+      aliases: ["csm", "owner", "csm name"],
+      lookup: (val, ctx) => {
+        const csm = ctx.csms.find(c => c.name.toLowerCase() === val.toLowerCase());
+        return csm ? csm.id : null;
+      },
+      requiredMsg: "CSM name not found — create the CSM first",
+    },
+    { key: "stage", aliases: ["stage", "phase"], parse: "enum", values: PHASE_ORDER },
+    { key: "health", aliases: ["health", "status"], parse: "healthEnum" },
+    { key: "arr", aliases: ["arr", "annual recurring revenue", "revenue"], parse: "number" },
+    { key: "completion_pct", aliases: ["completion %", "completion_pct", "completion", "done %"], parse: "number" },
+    { key: "target_date", aliases: ["target date", "target", "go-live", "target go-live"], parse: "date" },
+    { key: "notes", aliases: ["notes"] },
+  ],
+  transformRow: (r) => ({ ...r, start_date: new Date().toISOString().slice(0, 10) }),
+};
 
 function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
   const [form, setForm] = useState(initial);

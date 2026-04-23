@@ -3,6 +3,7 @@ import { G, ASSIGNMENT_ROLES, fmtDate } from "../lib/theme.js";
 import { validateAssignment, hasErrors } from "../lib/validation.js";
 import { audited } from "../lib/audit.js";
 import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm, TextArea } from "./common.jsx";
+import ImportModal from "./ImportModal.jsx";
 
 const BLANK = { csm_id:"", project_id:"", role:"primary", allocation_pct:100, start_date:new Date().toISOString().split("T")[0], end_date:"", notes:"" };
 
@@ -15,6 +16,7 @@ export default function AssignmentsTab({ api, csms, onChanged }) {
   const [toast, setToast] = useState(null);
   const [csmFilter, setCsmFilter] = useState("all");
   const [activeOnly, setActiveOnly] = useState(true);
+  const [showImport, setShowImport] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,7 +60,10 @@ export default function AssignmentsTab({ api, csms, onChanged }) {
   return (
     <>
       <Card>
-        <CardHeader right={<Button variant="primary" onClick={() => setModal({ mode:"create", data:{ ...BLANK } })}>+ New Assignment</Button>}>
+        <CardHeader right={<div style={{ display: "flex", gap: 8 }}>
+          <Button variant="ghost" onClick={() => setShowImport(true)}>Import from Excel</Button>
+          <Button variant="primary" onClick={() => setModal({ mode:"create", data:{ ...BLANK } })}>+ New Assignment</Button>
+        </div>}>
           CSM ↔ ACCOUNT ASSIGNMENTS ({filtered.length}{filtered.length !== assignments.length ? ` of ${assignments.length}` : ""})
         </CardHeader>
         <div style={{ padding: "10px 18px", display: "flex", gap: 12, alignItems: "center", borderBottom: "1px solid " + G.border }}>
@@ -110,11 +115,60 @@ export default function AssignmentsTab({ api, csms, onChanged }) {
           onSaved={() => { setModal(null); setToast({ tone:"success", msg:"Assignment saved." }); load(); onChanged && onChanged(); }}
         />
       )}
+      {showImport && (
+        <ImportModal
+          title="Import Assignments from Excel"
+          api={api}
+          ctx={{ csms, projects }}
+          spec={ASSIGNMENT_IMPORT_SPEC}
+          onClose={() => setShowImport(false)}
+          onDone={(r) => { setToast({ tone: "success", msg: `Imported ${r.created} assignment${r.created === 1 ? "" : "s"}.` }); load(); onChanged && onChanged(); }}
+        />
+      )}
+
       {confirm && <Confirm message="Remove this assignment?" onCancel={() => setConfirm(null)} onConfirm={() => del(confirm)} />}
       {toast && <Toast tone={toast.tone} onClose={() => setToast(null)}>{toast.msg}</Toast>}
     </>
   );
 }
+
+const ASSIGNMENT_IMPORT_SPEC = {
+  table: "csm_assignments",
+  auditAction: "assignment.import",
+  templateName: "assignments-import-template.xlsx",
+  templateSample: [
+    ["Alex Miles", "Acme Implementation", "primary", 100, "2026-01-01", ""],
+    ["Morgan Wu", "Globex Rollout", "secondary", 50, "2026-02-15", "2026-06-30"],
+  ],
+  defaults: { role: "primary", allocation_pct: 100 },
+  columns: [
+    {
+      key: "csm_id",
+      aliases: ["csm", "csm name", "owner"],
+      required: true,
+      lookup: (val, ctx) => {
+        const csm = ctx.csms.find(c => c.name.toLowerCase() === val.toLowerCase());
+        return csm ? csm.id : null;
+      },
+      requiredMsg: "CSM name not found",
+    },
+    {
+      key: "project_id",
+      aliases: ["project", "account", "project name"],
+      required: true,
+      lookup: (val, ctx) => {
+        const p = ctx.projects.find(x => x.name.toLowerCase() === val.toLowerCase() || (x.customer || "").toLowerCase() === val.toLowerCase());
+        return p ? p.id : null;
+      },
+      requiredMsg: "Project name not found",
+    },
+    { key: "role", aliases: ["role"], parse: "enum", values: ASSIGNMENT_ROLES },
+    { key: "allocation_pct", aliases: ["allocation %", "allocation_pct", "allocation"], parse: "number" },
+    { key: "start_date", aliases: ["start date", "start"], parse: "date" },
+    { key: "end_date", aliases: ["end date", "end"], parse: "date" },
+    { key: "notes", aliases: ["notes"] },
+  ],
+};
 
 function AssignmentModal({ api, csms, projects, initial, mode, onClose, onSaved }) {
   const [form, setForm] = useState(initial);
