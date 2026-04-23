@@ -134,6 +134,7 @@ CREATE TRIGGER trg_audit_no_delete BEFORE DELETE ON audit_log FOR EACH ROW EXECU
 
 -- Retention view: any tooling that wants to truncate very old audit rows can
 -- copy them to cold storage first using this view (default 2-year retention).
+DROP VIEW IF EXISTS vw_audit_retention_candidates CASCADE;
 CREATE OR REPLACE VIEW vw_audit_retention_candidates AS
   SELECT * FROM audit_log WHERE occurred_at < now() - INTERVAL '730 days';
 
@@ -169,6 +170,7 @@ CREATE POLICY audit_read ON audit_log FOR SELECT USING (true);
 DROP POLICY IF EXISTS integrations_service ON integrations;
 CREATE POLICY integrations_service ON integrations FOR ALL USING (true) WITH CHECK (true);
 
+DROP VIEW IF EXISTS vw_integrations_public CASCADE;
 CREATE OR REPLACE VIEW vw_integrations_public AS
   SELECT id, provider, display_name, status, config, last_sync_at, last_error, created_at, updated_at
   FROM integrations;

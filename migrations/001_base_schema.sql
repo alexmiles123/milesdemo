@@ -105,6 +105,12 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_proj_date ON tasks(proj_date);
 
 -- ─── VIEWS used by the dashboard ────────────────────────────────────────────
+-- DROP first: CREATE OR REPLACE VIEW refuses to reorder/remove columns, and
+-- pre-existing DBs may have earlier versions of these views with different
+-- column lists. Views are pure derivations of the tables, so dropping is safe.
+DROP VIEW IF EXISTS vw_portfolio     CASCADE;
+DROP VIEW IF EXISTS vw_csm_scorecard CASCADE;
+
 CREATE OR REPLACE VIEW vw_portfolio AS
 SELECT
   p.id,
