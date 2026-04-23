@@ -159,6 +159,19 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, api }) 
     XLSX.writeFile(wb, spec.templateName || "import-template.xlsx");
   };
 
+  const describeType = (col) => {
+    if (col.lookup) return "lookup (name)";
+    if (col.parse === "number") return "number";
+    if (col.parse === "date") return "date (YYYY-MM-DD)";
+    if (col.parse === "enum") return col.values.join(" | ");
+    if (col.parse === "healthEnum") return "On Track | At Risk | Critical";
+    return "text";
+  };
+  const sampleFor = (idx) => {
+    const sample = spec.templateSample?.[0];
+    return sample && sample[idx] !== undefined && sample[idx] !== "" ? String(sample[idx]) : "—";
+  };
+
   const validRows = rows.filter(r => !r._errors.length);
   const errorRows = rows.filter(r => r._errors.length);
 
@@ -166,10 +179,33 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, api }) 
     <Modal title={title} onClose={onClose} width={780}>
       {!summary && (
         <>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 14 }}>
-            <Button variant="ghost" onClick={downloadTemplate}>Download template</Button>
-            <div style={{ fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace" }}>
-              .xlsx, .xls, or .csv · headers must match (case-insensitive)
+          <div style={{ border: "1px solid " + G.border, borderRadius: 10, background: "#080e18", marginBottom: 14, overflow: "hidden" }}>
+            <div style={{ padding: "10px 14px", borderBottom: "1px solid " + G.border, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.text, fontFamily: "DM Mono,monospace", letterSpacing: "0.05em" }}>TEMPLATE · COLUMN LAYOUT</div>
+              <div style={{ fontSize: 10, color: G.muted, fontFamily: "DM Mono,monospace" }}>.xlsx · .xls · .csv · headers case-insensitive</div>
+              <Button variant="primary" onClick={downloadTemplate} style={{ marginLeft: "auto" }}>↓ Download .xlsx Template</Button>
+            </div>
+            <div style={{ maxHeight: 220, overflow: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "DM Mono,monospace" }}>
+                <thead style={{ position: "sticky", top: 0, background: G.surface }}>
+                  <tr style={{ borderBottom: "1px solid " + G.border }}>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>COLUMN</th>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>REQUIRED</th>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>FORMAT</th>
+                    <th style={{ padding: "6px 10px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>EXAMPLE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {spec.columns.map((col, idx) => (
+                    <tr key={col.key} style={{ borderBottom: "1px solid " + G.faint }}>
+                      <td style={{ padding: "5px 10px", color: G.text, fontWeight: 700 }}>{col.aliases[0]}</td>
+                      <td style={{ padding: "5px 10px", color: col.required ? G.red : G.faint }}>{col.required ? "YES" : "optional"}</td>
+                      <td style={{ padding: "5px 10px", color: G.muted }}>{describeType(col)}</td>
+                      <td style={{ padding: "5px 10px", color: G.muted }}>{sampleFor(idx)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
