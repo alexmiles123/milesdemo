@@ -5,6 +5,10 @@
 -- through the UI without a code deploy.
 -- ============================================================================
 
+-- Older schema versions created csms_role_check that hardcoded the 5 original
+-- role strings. Drop it so any name from csm_roles is accepted.
+ALTER TABLE csms DROP CONSTRAINT IF EXISTS csms_role_check;
+
 CREATE TABLE IF NOT EXISTS csm_roles (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name       TEXT NOT NULL UNIQUE,
