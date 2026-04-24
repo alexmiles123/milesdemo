@@ -41,13 +41,21 @@ export default async function handler(req, res) {
   const session = await requireAuth(req, res);
   if (!session) return;
 
-  // Parse the path segment(s) directly from req.url. Relying on
-  // req.query.path is fragile — depending on Vercel's runtime version and
-  // how the catch-all route resolves, the dynamic param can come through
-  // empty even on a well-formed request.
-  const urlNoQs = (req.url || "").split("?")[0];
-  const afterPrefix = urlNoQs.replace(/^\/api\/db\/?/, "");
-  const pathParts = afterPrefix.split("/").filter(Boolean);
+  // Resolve the table path. Try req.query.path first (the documented
+  // Vercel catch-all behavior); fall back to parsing req.url. Both paths
+  // have been observed to fail in isolation across Vercel runtime versions,
+  // so we try both and reject if neither works.
+  let pathParts = [];
+  const qp = req.query?.path;
+  if (Array.isArray(qp) && qp.length) pathParts = qp;
+  else if (typeof qp === "string" && qp) pathParts = qp.split("/").filter(Boolean);
+  if (!pathParts.length) {
+    const urlNoQs = (req.url || "").split("?")[0];
+    const afterPrefix = urlNoQs.replace(/^\/api\/db\/?/, "");
+    pathParts = afterPrefix.split("/").filter(Boolean);
+  }
+  // Guard against Vercel ever echoing the literal route param `[...path]`.
+  pathParts = pathParts.filter(p => !/^\[.*\]$/.test(p));
   if (!pathParts.length) return fail(res, 400, "Missing table path.");
 
   const table = pathParts[0];
@@ -63,14 +71,23 @@ export default async function handler(req, res) {
   const sbKey = process.env.SUPABASE_SERVICE_KEY;
   if (!sbUrl || !sbKey) return fail(res, 500, "Supabase not configured.");
 
-  // Reconstruct query string from the original request.
-  const origUrl = req.url || "";
-  const qIdx = origUrl.indexOf("?");
-  const qs = qIdx >= 0 ? origUrl.slice(qIdx) : "";
+  // Rebuild the query string from req.query, skipping the `path` key that
+  // Vercel's catch-all injects. Forwarding it unfiltered was causing
+  // PostgREST to see `path=csms` alongside the real filters and fail with
+  // a "failed to parse tree path" error.
+  const forwardParams = new URLSearchParams();
+  if (req.query && typeof req.query === "object") {
+    for (const [k, v] of Object.entries(req.query)) {
+      if (k === "path") continue;
+      if (Array.isArray(v)) v.forEach(val => forwardParams.append(k, val));
+      else if (v != null) forwardParams.append(k, v);
+    }
+  }
+  const qs = forwardParams.toString();
 
   // Path under rest/v1 — allow sub-paths (e.g. /rpc/some_fn) if we ever add them.
   const subPath = pathParts.join("/");
-  const target = `${sbUrl}/rest/v1/${subPath}${qs}`;
+  const target = `${sbUrl}/rest/v1/${subPath}${qs ? "?" + qs : ""}`;
 
   const headers = {
     apikey: sbKey,
