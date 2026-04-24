@@ -57,6 +57,9 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
   const [error, setError] = useState(null);
   const [newNote, setNewNote] = useState({ subject: "", body: "", category: "note" });
   const [savingNote, setSavingNote] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryErr, setSummaryErr] = useState(null);
 
   // Keep local form in sync if the parent swaps accounts.
   useEffect(() => { setForm(account); }, [account]);
@@ -106,6 +109,65 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
       setError("Save failed: " + e.message);
     }
     setSaving(false);
+  };
+
+  // Last-30-days activity shown in the summary card.
+  const recentInteractions = interactions.filter((i) => {
+    if (!i.occurred_at) return false;
+    const daysOld = (Date.now() - new Date(i.occurred_at).getTime()) / 86400000;
+    return daysOld <= 30;
+  });
+
+  const summarize = async () => {
+    setSummarizing(true);
+    setSummaryErr(null);
+    try {
+      // Compact the activity so we don't blow the context budget for accounts
+      // with many auto-synced rows. Executives care about the gist, not raw
+      // email bodies verbatim.
+      const compact = recentInteractions.slice(0, 80).map((i) => ({
+        when: i.occurred_at,
+        type: i.interaction_type,
+        source: i.source_system,
+        subject: i.subject,
+        body: (i.body || i.summary || "").slice(0, 1500),
+      }));
+      const system = [
+        "You are an executive briefing assistant for a professional services firm.",
+        "Given a customer's recent activity (notes, emails, meeting minutes), produce a crisp 60-second brief for a CRO or VP-level reader.",
+        "Be concrete and specific. No filler. Quote names and dates when they matter.",
+        "Return ONLY a JSON object with exactly these keys:",
+        '  "tldr": string (2-3 sentences, plain prose),',
+        '  "sentiment": one of "positive" | "neutral" | "at_risk" | "critical",',
+        '  "key_points": string[] (3-6 bullets, most-important first),',
+        '  "action_items": string[] (concrete next steps with owners if mentioned),',
+        '  "risks": string[] (explicit or implied — churn signals, missed commitments, tone shifts)',
+        "No markdown, no prose outside the JSON object.",
+      ].join(" ");
+      const userMsg =
+        `Account: ${account.name}\n` +
+        `Window: last 30 days (${compact.length} activity entries)\n\n` +
+        "Activity:\n" +
+        JSON.stringify(compact, null, 2);
+
+      const token = localStorage.getItem("monument.session") || "";
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ system, messages: [{ role: "user", content: userMsg }] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      // Claude sometimes wraps JSON in ```json fences despite instructions.
+      const raw = (data.content || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
+      let parsed;
+      try { parsed = JSON.parse(raw); }
+      catch { throw new Error("Couldn't parse AI response."); }
+      setSummary({ ...parsed, generated_at: new Date().toISOString(), window_count: compact.length });
+    } catch (e) {
+      setSummaryErr(e.message || "Could not generate summary.");
+    }
+    setSummarizing(false);
   };
 
   const addNote = async () => {
@@ -182,6 +244,58 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
             {saving ? "Saving…" : "Save Contact"}
           </Button>
         </div>
+      </Card>
+
+      {/* EXECUTIVE SUMMARY */}
+      <Card title={"EXECUTIVE SUMMARY · LAST 30 DAYS · " + recentInteractions.length + " ITEMS"}>
+        {!summary && !summarizing && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
+            <div style={{ color: G.muted, fontFamily: "DM Mono,monospace", fontSize: 12 }}>
+              {recentInteractions.length === 0
+                ? "No activity in the last 30 days — nothing to summarize."
+                : "Generate an AI-written briefing: TL;DR, key points, action items, and risks."}
+            </div>
+            <Button variant="primary" onClick={summarize}
+                    disabled={recentInteractions.length === 0}>
+              Generate Summary
+            </Button>
+          </div>
+        )}
+        {summarizing && (
+          <div style={{ color: G.muted, fontFamily: "DM Mono,monospace", fontSize: 12, padding: "8px 0" }}>
+            Reading {recentInteractions.length} activity entries…
+          </div>
+        )}
+        {summaryErr && (
+          <div style={{ color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12, padding: "4px 0" }}>
+            {summaryErr}
+          </div>
+        )}
+        {summary && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <SentimentBadge sentiment={summary.sentiment} />
+              <span style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace",
+                              letterSpacing: "0.08em", marginLeft: "auto" }}>
+                Generated {fmtDT(summary.generated_at)} · {summary.window_count} items analyzed
+              </span>
+              <button onClick={summarize} disabled={summarizing}
+                style={{ background: "transparent", border: "1px solid " + G.border,
+                         color: G.muted, padding: "4px 10px", borderRadius: 6, cursor: "pointer",
+                         fontFamily: "DM Mono,monospace", fontSize: 10 }}>
+                ↻ Refresh
+              </button>
+            </div>
+            {summary.tldr && (
+              <div style={{ fontSize: 14, color: G.text, lineHeight: 1.55, fontFamily: "Syne,sans-serif" }}>
+                {summary.tldr}
+              </div>
+            )}
+            <SummaryList label="Key Points" items={summary.key_points} color={G.blue} />
+            <SummaryList label="Action Items" items={summary.action_items} color={G.green} />
+            <SummaryList label="Risks" items={summary.risks} color={G.red} />
+          </div>
+        )}
       </Card>
 
       {/* ADD NOTE */}
@@ -303,6 +417,42 @@ function ActivityRow({ item }) {
           </a>
         )}
       </div>
+    </div>
+  );
+}
+
+const SENTIMENT = {
+  positive: { label: "POSITIVE", color: "#22c55e" },
+  neutral:  { label: "NEUTRAL",  color: "#8fa3b8" },
+  at_risk:  { label: "AT RISK",  color: "#f59e0b" },
+  critical: { label: "CRITICAL", color: "#ef4444" },
+};
+
+function SentimentBadge({ sentiment }) {
+  const s = SENTIMENT[sentiment] || SENTIMENT.neutral;
+  return (
+    <span style={{ fontSize: 10, fontFamily: "DM Mono,monospace", letterSpacing: "0.1em",
+                    fontWeight: 700, padding: "3px 10px", borderRadius: 4,
+                    background: s.color + "22", border: "1px solid " + s.color + "66",
+                    color: s.color }}>
+      {s.label}
+    </span>
+  );
+}
+
+function SummaryList({ label, items, color }) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontFamily: "DM Mono,monospace", letterSpacing: "0.12em",
+                     color: color, marginBottom: 6, fontWeight: 700 }}>
+        {label.toUpperCase()}
+      </div>
+      <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+        {items.map((item, i) => (
+          <li key={i} style={{ fontSize: 13, color: "#e8f0f8", lineHeight: 1.5 }}>{item}</li>
+        ))}
+      </ul>
     </div>
   );
 }
