@@ -31,6 +31,15 @@ const INTERACTION_ICON = {
   task:    "✅",
 };
 
+// Categories the user can pick when logging an activity. Order matters —
+// this is the order shown in the picker. Keys match interaction_type.
+const NOTE_CATEGORIES = [
+  { key: "note",    label: "Note",    color: "#a78bfa" },
+  { key: "email",   label: "Email",   color: "#60a5fa" },
+  { key: "meeting", label: "Meeting", color: "#2dd4bf" },
+];
+const CATEGORY_COLOR = Object.fromEntries(NOTE_CATEGORIES.map(c => [c.key, c.color]));
+
 const fmtDT = (iso) => {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -46,7 +55,7 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
   const [interactions, setInteractions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [newNote, setNewNote] = useState({ subject: "", body: "" });
+  const [newNote, setNewNote] = useState({ subject: "", body: "", category: "note" });
   const [savingNote, setSavingNote] = useState(false);
 
   // Keep local form in sync if the parent swaps accounts.
@@ -109,7 +118,7 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
       const external_id = "manual-" + crypto.randomUUID();
       const row = {
         customer_id: account.id,
-        interaction_type: "note",
+        interaction_type: newNote.category || "note",
         source_system: "manual",
         external_id,
         subject: newNote.subject.trim() || null,
@@ -123,7 +132,7 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
         () => api.post("customer_interactions", [row]),
         { after: row, metadata: { customer_id: account.id } }
       );
-      setNewNote({ subject: "", body: "" });
+      setNewNote({ subject: "", body: "", category: "note" });
       loadActivity();
     } catch (e) {
       setError("Could not save note: " + e.message);
@@ -178,6 +187,31 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
       {/* ADD NOTE */}
       <Card title="ADD NOTE">
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 10, fontFamily: "DM Mono,monospace", letterSpacing: "0.1em",
+                          color: G.muted, marginBottom: 5 }}>CATEGORY</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {NOTE_CATEGORIES.map((c) => {
+                const active = newNote.category === c.key;
+                return (
+                  <button
+                    key={c.key}
+                    onClick={() => setNewNote((p) => ({ ...p, category: c.key }))}
+                    style={{
+                      padding: "6px 14px", borderRadius: 6, cursor: "pointer",
+                      background: active ? c.color + "22" : G.surface2,
+                      border: "1px solid " + (active ? c.color : G.border),
+                      color: active ? c.color : G.muted,
+                      fontFamily: "DM Mono,monospace", fontSize: 11, fontWeight: 700,
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    {INTERACTION_ICON[c.key]} {c.label.toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <Field label="Subject" value={newNote.subject}
                  onChange={(v) => setNewNote((p) => ({ ...p, subject: v }))}
                  placeholder="Subject line for this note" />
@@ -221,6 +255,7 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
 function ActivityRow({ item }) {
   const icon = INTERACTION_ICON[item.interaction_type] || "•";
   const isManual = item.source_system === "manual";
+  const badgeColor = CATEGORY_COLOR[item.interaction_type] || G.faint;
   return (
     <div style={{ display: "flex", gap: 12, padding: "12px 0",
                   borderBottom: "1px solid " + G.border, alignItems: "flex-start" }}>
@@ -232,11 +267,20 @@ function ActivityRow({ item }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: G.text }}>
             {item.subject || "(no subject)"}
           </div>
-          <span style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace",
-                          letterSpacing: "0.08em" }}>
+          <span style={{ fontSize: 10, fontFamily: "DM Mono,monospace",
+                          letterSpacing: "0.08em", fontWeight: 700,
+                          padding: "2px 8px", borderRadius: 4,
+                          background: badgeColor + "22",
+                          border: "1px solid " + badgeColor + "55",
+                          color: badgeColor }}>
             {item.interaction_type.toUpperCase()}
-            {!isManual && " · " + item.source_system.toUpperCase()}
           </span>
+          {!isManual && (
+            <span style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace",
+                            letterSpacing: "0.08em" }}>
+              · {item.source_system.toUpperCase()}
+            </span>
+          )}
           <span style={{ marginLeft: "auto", fontSize: 11, color: G.muted,
                           fontFamily: "DM Mono,monospace" }}>
             {fmtDT(item.occurred_at)}
