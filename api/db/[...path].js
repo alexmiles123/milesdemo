@@ -41,7 +41,13 @@ export default async function handler(req, res) {
   const session = await requireAuth(req, res);
   if (!session) return;
 
-  const pathParts = Array.isArray(req.query.path) ? req.query.path : [req.query.path].filter(Boolean);
+  // Parse the path segment(s) directly from req.url. Relying on
+  // req.query.path is fragile — depending on Vercel's runtime version and
+  // how the catch-all route resolves, the dynamic param can come through
+  // empty even on a well-formed request.
+  const urlNoQs = (req.url || "").split("?")[0];
+  const afterPrefix = urlNoQs.replace(/^\/api\/db\/?/, "");
+  const pathParts = afterPrefix.split("/").filter(Boolean);
   if (!pathParts.length) return fail(res, 400, "Missing table path.");
 
   const table = pathParts[0];
