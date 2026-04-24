@@ -28,6 +28,10 @@ const ALLOWED_TABLES = new Set([
   "integrations", "sync_runs",
   "notification_rules",
   "audit_log",
+  // Read-only views the dashboards query. Not listing them here silently
+  // returns empty arrays (the frontend catches 404s) — exactly the "all
+  // zeros" dashboard bug we hit.
+  "vw_portfolio", "vw_csm_scorecard", "vw_integrations_public",
 ]);
 
 export default async function handler(req, res) {
