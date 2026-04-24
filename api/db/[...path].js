@@ -41,21 +41,20 @@ export default async function handler(req, res) {
   const session = await requireAuth(req, res);
   if (!session) return;
 
-  // Resolve the table path. Try req.query.path first (the documented
-  // Vercel catch-all behavior); fall back to parsing req.url. Both paths
-  // have been observed to fail in isolation across Vercel runtime versions,
-  // so we try both and reject if neither works.
-  let pathParts = [];
-  const qp = req.query?.path;
-  if (Array.isArray(qp) && qp.length) pathParts = qp;
-  else if (typeof qp === "string" && qp) pathParts = qp.split("/").filter(Boolean);
-  if (!pathParts.length) {
-    const urlNoQs = (req.url || "").split("?")[0];
-    const afterPrefix = urlNoQs.replace(/^\/api\/db\/?/, "");
-    pathParts = afterPrefix.split("/").filter(Boolean);
-  }
-  // Guard against Vercel ever echoing the literal route param `[...path]`.
-  pathParts = pathParts.filter(p => !/^\[.*\]$/.test(p));
+  // Parse both the path segments and the query string straight from req.url.
+  // Do NOT trust req.query — Vercel's catch-all echoes the route placeholder
+  // into it in ways that vary across runtime versions, and the fallout shows
+  // up as PostgREST parse errors on the forwarded query.
+  const rawUrl = req.url || "";
+  const qIdx = rawUrl.indexOf("?");
+  const rawPath = qIdx >= 0 ? rawUrl.slice(0, qIdx) : rawUrl;
+  const rawQs   = qIdx >= 0 ? rawUrl.slice(qIdx + 1) : "";
+
+  let pathParts = rawPath
+    .replace(/^\/api\/db\/?/, "")
+    .split("/")
+    .filter(Boolean)
+    .filter(p => !/^[\[\(].*[\]\)]$/.test(p)); // drop literal route placeholders
   if (!pathParts.length) return fail(res, 400, "Missing table path.");
 
   const table = pathParts[0];
@@ -67,27 +66,32 @@ export default async function handler(req, res) {
     return fail(res, 403, "audit_log is append-only via /api/audit.");
   }
 
+  // Strip anything that could be a Vercel-injected route echo from the
+  // forwarded query string. Anything with a dot/bracket/paren in the key
+  // is suspect — real PostgREST params use underscores and lowercase.
+  const usp = new URLSearchParams(rawQs);
+  for (const key of Array.from(usp.keys())) {
+    if (key === "path" || /[\.\[\]\(\)]/.test(key)) usp.delete(key);
+  }
+  const qs = usp.toString();
+
   const sbUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const sbKey = process.env.SUPABASE_SERVICE_KEY;
   if (!sbUrl || !sbKey) return fail(res, 500, "Supabase not configured.");
 
-  // Rebuild the query string from req.query, skipping the `path` key that
-  // Vercel's catch-all injects. Forwarding it unfiltered was causing
-  // PostgREST to see `path=csms` alongside the real filters and fail with
-  // a "failed to parse tree path" error.
-  const forwardParams = new URLSearchParams();
-  if (req.query && typeof req.query === "object") {
-    for (const [k, v] of Object.entries(req.query)) {
-      if (k === "path") continue;
-      if (Array.isArray(v)) v.forEach(val => forwardParams.append(k, val));
-      else if (v != null) forwardParams.append(k, v);
-    }
-  }
-  const qs = forwardParams.toString();
-
   // Path under rest/v1 — allow sub-paths (e.g. /rpc/some_fn) if we ever add them.
   const subPath = pathParts.join("/");
   const target = `${sbUrl}/rest/v1/${subPath}${qs ? "?" + qs : ""}`;
+
+  // Opt-in debug mode: set header x-debug-proxy: 1 on the request and the
+  // proxy returns its view of the world instead of calling Supabase.
+  if (req.headers["x-debug-proxy"] === "1") {
+    res.setHeader("Content-Type", "application/json");
+    return res.end(JSON.stringify({
+      rawUrl, rawPath, rawQs, pathParts, table, qs, target,
+      reqQueryKeys: req.query ? Object.keys(req.query) : null,
+    }, null, 2));
+  }
 
   const headers = {
     apikey: sbKey,
