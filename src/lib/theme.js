@@ -42,3 +42,6 @@ export const fmtArr = (n) => {
   return "$" + Math.round(n);
 };
 export const fmtFull = (n) => n == null ? "—" : "$" + Math.round(n).toLocaleString("en-US");
+// Always-in-millions formatter for KPI cards. $9,723,452 → "$9.723M". Keeps
+// every ARR card the same width regardless of magnitude.
+export const fmtMillions = (n) => n == null ? "—" : "$" + (n / 1_000_000).toFixed(3) + "M";

@@ -45,6 +45,7 @@ const fmtArr   = (n) => {
   return "$" + Math.round(n);
 };
 const fmtFull  = (n) => n!=null ? "$"+Number(n).toLocaleString() : "—";
+const fmtMill  = (n) => n!=null ? "$"+(Number(n)/1_000_000).toFixed(3)+"M" : "—";
 const todayISO = () => new Date().toISOString().split("T")[0];
 const pct      = (a,b) => b ? Math.round((a/b)*100) : 0;
 
@@ -914,7 +915,7 @@ function ExecDashboard({api}) {
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:12,marginBottom:16}}>
         {[
           {label:"Total Customers",    value:String(portfolio.length),  sub:"active implementations",          color:G.purple},
-          {label:"Total ARR",          value:fmtFull(totalArr),         sub:portfolio.length+" customers",     color:G.green},
+          {label:"Total ARR",          value:fmtMill(totalArr),         sub:portfolio.length+" customers",     color:G.green},
           {label:"Avg Completion",     value:avgCompl+"%",              sub:"across portfolio",                color:G.blue},
           {label:"Late Tasks",         value:String(totalLate),         sub:criticalLate+" critical priority", color:G.red},
           {label:"Go-Live This Month", value:String(goLivesSoon.length),sub:"in prep or live now",             color:G.teal},
@@ -1958,7 +1959,7 @@ function ConsultantPortal({api,csm,allCsms}) {
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12,marginBottom:14}}>
         {[
           {label:"My Accounts",    value:String(filtered.length),                                 color:G.purple},
-          {label:"Total ARR",      value:fmtFull(filtered.reduce((s,p)=>s+(p.arr||0),0)),         color:G.green},
+          {label:"Total ARR",      value:fmtMill(filtered.reduce((s,p)=>s+(p.arr||0),0)),         color:G.green},
           {label:"Avg Completion", value:filtered.length?Math.round(filtered.reduce((s,p)=>s+(p.completion_pct||0),0)/filtered.length)+"%":"—", color:G.blue},
           {label:"Late Tasks",     value:String(filtered.reduce((s,p)=>s+(p.tasks_late||0),0)),   color:G.red},
         ].map((k,i)=>(
