@@ -908,17 +908,13 @@ function ExecDashboard({api}) {
     <div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
 
       {/* ── SECTION: KPI Strip ──
-          Two rows of cards on a 4-column grid. Each card is wide enough to
-          host a fully-spelled "$99,999,999" without truncation, and every
-          value uses the same fontSize so a "2" reads at the same visual
-          weight as a "$2,000,000". */}
+          Single row of 5 cards. Every value uses the same fontSize so a "2"
+          reads at the same visual weight as a "$2,000,000". */}
       {shown('kpi-strip') && (
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:12,marginBottom:16}}>
         {[
           {label:"Total Customers",    value:String(portfolio.length),  sub:"active implementations",          color:G.purple},
           {label:"Total ARR",          value:fmtFull(totalArr),         sub:portfolio.length+" customers",     color:G.green},
-          {label:"ARR at Risk",        value:fmtFull(arrAtRisk),        sub:atRisk+" at risk · "+critical+" critical", color:G.yellow},
-          {label:"ARR Critical",       value:fmtFull(arrCritical),      sub:critical+" red accounts",          color:G.red},
           {label:"Avg Completion",     value:avgCompl+"%",              sub:"across portfolio",                color:G.blue},
           {label:"Late Tasks",         value:String(totalLate),         sub:criticalLate+" critical priority", color:G.red},
           {label:"Go-Live This Month", value:String(goLivesSoon.length),sub:"in prep or live now",             color:G.teal},
