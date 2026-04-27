@@ -6,7 +6,7 @@ import {
 import ConfigPage from "./config/ConfigPage.jsx";
 import AccountSearch from "./AccountSearch.jsx";
 import AccountDetail from "./AccountDetail.jsx";
-import { getToken, login as authLogin, logout as authLogout, clearToken } from "./lib/auth.js";
+import { getToken, getSession, login as authLogin, logout as authLogout, clearToken } from "./lib/auth.js";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = {
@@ -204,7 +204,15 @@ const Badge = ({status}) => {
 };
 
 // ─── NAV BAR ─────────────────────────────────────────────────────────────────
-function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLogout,api,onAccountSelect}) {
+function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLogout,api,onAccountSelect,role}) {
+  // Non-admins only see the consultant portal — exec dashboards and the
+  // configuration surface are admin-only. Server endpoints already 403 on
+  // those paths, but hiding the tabs keeps the UI honest about what's
+  // reachable rather than letting users click into empty/erroring screens.
+  const isAdmin = role === "admin";
+  const TABS = isAdmin
+    ? [["exec","Executive View"],["consultant","Consultant Portal"],["config","Configuration"]]
+    : [["consultant","Consultant Portal"]];
   return (
     <div style={{borderBottom:"1px solid "+G.border,padding:"0 24px",display:"flex",alignItems:"center",gap:14,height:54,background:"#08111c",flexShrink:0,zIndex:10}}>
       <div style={{display:"flex",alignItems:"center",gap:9}}>
@@ -217,7 +225,7 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
       <div style={{width:1,height:26,background:G.border}}/>
       {/* View tabs */}
       <div style={{display:"flex",gap:2}}>
-        {[["exec","Executive View"],["consultant","Consultant Portal"],["config","Configuration"]].map(([v,l])=>(
+        {TABS.map(([v,l])=>(
           <button key={v} onClick={()=>setView(v)}
             style={{background:view===v?"#0f2036":"none",border:"none",color:view===v?G.blue:G.muted,
               padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:14,fontWeight:700,letterSpacing:"0.03em"}}>
@@ -2192,16 +2200,26 @@ function LoginScreen({onConnect}) {
 export default function App() {
   const [api,        setApi]        = useState(null);
   const [csms,       setCsms]       = useState([]);
-  const [view,       setView]       = useState("exec");
+  const [role,       setRole]       = useState(() => getSession()?.role || null);
+  // Default to consultant for non-admins so a viewer/CSM never lands on a
+  // tab the NavBar would have hidden anyway.
+  const [view,       setView]       = useState(role === "admin" ? "exec" : "consultant");
   const [activeCsm,  setActiveCsm]  = useState(null);
   const [activeAccount, setActiveAccount] = useState(null);
   const [lastSync,   setLastSync]   = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleConnect=(client,csmList)=>{ setApi(client); setCsms(csmList); setLastSync(new Date().toLocaleTimeString()); };
+  const handleConnect=(client,csmList)=>{
+    setApi(client);
+    setCsms(csmList);
+    setLastSync(new Date().toLocaleTimeString());
+    const r = getSession()?.role || null;
+    setRole(r);
+    if (r !== "admin") setView("consultant");
+  };
 
-  const handleLogout=()=>{ authLogout(); setApi(null); setCsms([]); setActiveCsm(null); setActiveAccount(null); };
+  const handleLogout=()=>{ authLogout(); setApi(null); setCsms([]); setActiveCsm(null); setActiveAccount(null); setRole(null); setView("exec"); };
 
   const handleRefresh=()=>{
     setRefreshing(true);
@@ -2224,19 +2242,23 @@ export default function App() {
 
   if(!api) return <><style>{GLOBAL_CSS}</style><LoginScreen onConnect={handleConnect}/></>;
 
+  // Defensive guard: if a non-admin somehow has view=exec/config (e.g. stale
+  // state after a role change), drop them to the consultant portal.
+  const safeView = role === "admin" ? view : "consultant";
+
   return (
     <div style={{height:"100vh",background:G.bg,color:G.text,fontFamily:"Syne,sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{GLOBAL_CSS}</style>
-      <NavBar view={view} setView={(v)=>{setActiveAccount(null); setView(v);}} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
+      <NavBar view={safeView} setView={(v)=>{setActiveAccount(null); setView(v);}} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
         lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing} onLogout={handleLogout}
-        api={api} onAccountSelect={setActiveAccount}/>
+        api={api} onAccountSelect={setActiveAccount} role={role}/>
       {activeAccount ? (
         <AccountDetail api={api} account={activeAccount}
           onClose={()=>setActiveAccount(null)}
           onUpdated={(c)=>setActiveAccount(c)}/>
-      ) : view==="exec" ? (
+      ) : safeView==="exec" ? (
         <ExecDashboard api={api} key={refreshKey}/>
-      ) : view==="config" ? (
+      ) : safeView==="config" ? (
         <ConfigPage api={api} csms={csms} onCsmsChanged={setCsms} key={"config-"+refreshKey}/>
       ) : (
         <ConsultantPortal api={api} csm={activeCsm} allCsms={csms} key={refreshKey+"-"+activeCsm?.id}/>

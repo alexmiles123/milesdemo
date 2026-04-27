@@ -8,6 +8,7 @@ import NotificationsTab from "./NotificationsTab.jsx";
 import AuditTab from "./AuditTab.jsx";
 import SecurityTab from "./SecurityTab.jsx";
 import UsersTab from "./UsersTab.jsx";
+import RolesTab from "./RolesTab.jsx";
 import TaskTemplatesTab from "./TaskTemplatesTab.jsx";
 
 // Sidebar nav grouped by domain. The flat horizontal tab strip stopped scaling
@@ -32,6 +33,7 @@ const SECTIONS = [
     items: [
       { id: "csms",        label: "CSMs",        desc: "The customer success roster and roles." },
       { id: "users",       label: "App Users",   desc: "Sign-in accounts that can access this platform." },
+      { id: "roles",       label: "Roles",       desc: "Application roles and the views they unlock." },
       { id: "assignments", label: "Assignments", desc: "Which CSMs cover which accounts." },
     ],
   },
@@ -151,6 +153,7 @@ export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
             {tab === "task-templates" && <TaskTemplatesTab  api={api} />}
             {tab === "csms"           && <CsmsTab           api={api} onChanged={refreshCsms} />}
             {tab === "users"          && <UsersTab          api={api} />}
+            {tab === "roles"          && <RolesTab          api={api} />}
             {tab === "assignments"    && <AssignmentsTab    api={api} csms={csms} onChanged={refreshCsms} />}
             {tab === "integrations"   && <IntegrationsTab   api={api} />}
             {tab === "notifications"  && <NotificationsTab  api={api} />}

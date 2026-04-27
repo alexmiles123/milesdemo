@@ -1,13 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { G } from "../lib/theme.js";
 import { fetchPasswordPolicy, describePolicy, validatePasswordWith, DEFAULT_POLICY } from "../lib/password.js";
+import { fetchRoles, roleOptions, SYSTEM_ROLES } from "../lib/roles.js";
 import { Card, CardHeader, Label, Input, Select, Button, Toast, Modal, Empty, Th, Td, Pill, Confirm, FieldError } from "./common.jsx";
-
-const ROLES = [
-  { value: "admin",  label: "Admin (full access)" },
-  { value: "csm",    label: "CSM (consultant + assigned accounts)" },
-  { value: "viewer", label: "Viewer (read-only)" },
-];
 
 const BLANK_NEW = { username: "", email: "", full_name: "", role: "viewer", password: "", must_reset: true };
 
@@ -31,6 +26,7 @@ export default function UsersTab({ api }) {
   const [confirm, setConfirm] = useState(null);
   const [toast, setToast] = useState(null);
   const [policy, setPolicy] = useState(DEFAULT_POLICY);
+  const [roles,  setRoles]  = useState(SYSTEM_ROLES);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,7 +41,13 @@ export default function UsersTab({ api }) {
   }, [api]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(); fetchPasswordPolicy(api).then(setPolicy); }, [api, load]);
+  useEffect(() => {
+    load();
+    fetchPasswordPolicy(api).then(setPolicy);
+    fetchRoles(api).then(setRoles);
+  }, [api, load]);
+
+  const roleOpts = roleOptions(roles);
 
   const visible = users.filter(u => showInactive || u.is_active);
 
@@ -108,7 +110,7 @@ export default function UsersTab({ api }) {
                       <Select
                         value={u.role}
                         onChange={(v) => togglePatch(u, { role: v })}
-                        options={ROLES}
+                        options={roleOpts}
                         style={{ padding: "6px 8px", fontSize: 11 }}
                       />
                     </Td>
@@ -145,7 +147,7 @@ export default function UsersTab({ api }) {
         </div>
       </Card>
 
-      {createOpen && <CreateUserModal api={api} policy={policy} onClose={() => setCreateOpen(false)} onCreated={() => { setCreateOpen(false); setToast({ tone: "success", msg: "User created." }); load(); }} setToast={setToast} />}
+      {createOpen && <CreateUserModal api={api} policy={policy} roleOpts={roleOpts} onClose={() => setCreateOpen(false)} onCreated={() => { setCreateOpen(false); setToast({ tone: "success", msg: "User created." }); load(); }} setToast={setToast} />}
       {resetUser && <ResetPasswordModal api={api} user={resetUser} policy={policy} onClose={() => setResetUser(null)} onDone={() => { setResetUser(null); setToast({ tone: "success", msg: "Password reset." }); load(); }} setToast={setToast} />}
       {confirm && <Confirm message={`Disable ${confirm.username}? They will no longer be able to sign in. You can re-enable them later.`} onCancel={() => setConfirm(null)} onConfirm={() => disable(confirm)} />}
       {toast && <Toast tone={toast.tone}>{toast.msg}<button onClick={() => setToast(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", marginLeft: 12 }}>×</button></Toast>}
@@ -153,7 +155,7 @@ export default function UsersTab({ api }) {
   );
 }
 
-function CreateUserModal({ api, policy, onClose, onCreated, setToast }) {
+function CreateUserModal({ api, policy, roleOpts, onClose, onCreated, setToast }) {
   const [form, setForm] = useState(BLANK_NEW);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
@@ -191,7 +193,10 @@ function CreateUserModal({ api, policy, onClose, onCreated, setToast }) {
         </div>
         <div>
           <Label>ROLE</Label>
-          <Select value={form.role} onChange={(v) => set("role", v)} options={ROLES} />
+          <Select value={form.role} onChange={(v) => set("role", v)} options={roleOpts} />
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+            Manage available roles in <strong style={{ color: G.muted }}>Configuration → People → Roles</strong>.
+          </div>
         </div>
         <div>
           <Label>TEMPORARY PASSWORD</Label>

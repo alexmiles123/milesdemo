@@ -3,6 +3,7 @@ import { G, ROLE_OPTIONS } from "../lib/theme.js";
 import { validateCsm, hasErrors } from "../lib/validation.js";
 import { audited } from "../lib/audit.js";
 import { fetchPasswordPolicy, describePolicy, validatePasswordWith, DEFAULT_POLICY } from "../lib/password.js";
+import { fetchRoles, roleOptions, SYSTEM_ROLES } from "../lib/roles.js";
 import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm } from "./common.jsx";
 
 const BLANK = { name:"", email:"", role:"CSM", is_active:true };
@@ -144,7 +145,9 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
+  const [loginRole, setLoginRole] = useState("csm");
   const [policy, setPolicy] = useState(DEFAULT_POLICY);
+  const [appRoles, setAppRoles] = useState(SYSTEM_ROLES);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -155,12 +158,14 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [usersResult, p] = await Promise.all([
+      const [usersResult, p, r] = await Promise.all([
         api.call("/api/admin/users").catch(() => null),
         fetchPasswordPolicy(api),
+        fetchRoles(api),
       ]);
       if (cancelled) return;
       setPolicy(p);
+      setAppRoles(r);
       if (usersResult) {
         setCanManageUsers(true);
         if (mode === "edit" && initial?.email) {
@@ -213,7 +218,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
             username: username.trim(),
             email: payload.email || (username.trim() + "@local"),
             full_name: payload.name,
-            role: "csm",
+            role: loginRole || "csm",
             password,
           }});
         }
@@ -276,9 +281,14 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
                     <FieldError error={errors.username} />
                     <div style={helperText}>Cannot be changed later.</div>
                   </div>
+                  <div style={{ gridColumn:"span 2" }}>
+                    <Label>APP ROLE</Label>
+                    <Select value={loginRole} onChange={setLoginRole} options={roleOptions(appRoles)} />
+                    <div style={helperText}>Admins can access every dashboard; other roles are limited to the consultant portal.</div>
+                  </div>
                   <div>
                     <Label>PASSWORD</Label>
-                    <Input value={password} onChange={setPassword} type="password" placeholder="Min 12 chars" autoComplete="new-password" />
+                    <Input value={password} onChange={setPassword} type="password" placeholder={`Min ${policy.min_length} chars`} autoComplete="new-password" />
                     <FieldError error={errors.password} />
                   </div>
                   <div>

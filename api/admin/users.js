@@ -23,9 +23,9 @@ import { hardenResponse, fail, json, rateLimit } from "../_lib/security.js";
 import { requireAuth, requireRole } from "../_lib/auth.js";
 import { sbGet, sbInsert, sbUpdate, sbConfigured } from "../_lib/sb.js";
 import { validatePassword } from "../_lib/password.js";
+import { isValidRoleName } from "../_lib/roles.js";
 
 const PUBLIC_FIELDS = "id,username,email,full_name,role,is_active,must_reset,last_login_at,failed_attempts,locked_until,created_at,updated_at";
-const VALID_ROLES = new Set(["admin", "csm", "viewer"]);
 
 async function audit(actor, action, entityId, metadata) {
   try {
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     const role     = (body.role || "viewer").toString();
     const password = (body.password || "").toString();
     if (!username || !email) return fail(res, 400, "Username and email are required.");
-    if (!VALID_ROLES.has(role)) return fail(res, 400, "Invalid role.");
+    if (!(await isValidRoleName(role))) return fail(res, 400, "Invalid role.");
     const pwErr = await validatePassword(password);
     if (pwErr) return fail(res, 400, pwErr);
 
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
     if (body.email != null)      patch.email     = body.email.toString().trim().toLowerCase();
     if (body.full_name != null)  patch.full_name = body.full_name.toString().trim() || null;
     if (body.role != null) {
-      if (!VALID_ROLES.has(body.role)) return fail(res, 400, "Invalid role.");
+      if (!(await isValidRoleName(body.role))) return fail(res, 400, "Invalid role.");
       patch.role = body.role;
     }
     if (body.is_active != null) {

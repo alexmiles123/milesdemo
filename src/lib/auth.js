@@ -36,3 +36,25 @@ export async function login(username, password) {
 }
 
 export function logout() { clearToken(); }
+
+// Decode the JWT payload **without verifying the signature**. The browser is
+// not the security boundary — every API call still goes through requireAuth()
+// on the server, which rejects forged tokens. We only need the payload here
+// to drive UI gating (role-based tab visibility, etc.) and to show "Signed in
+// as alex" in the corner. If the token is missing or malformed, returns null.
+export function getSession() {
+  const token = getToken();
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payload + "===".slice((payload.length + 3) % 4);
+    return JSON.parse(atob(padded));
+  } catch { return null; }
+}
+
+export function getRole() {
+  const s = getSession();
+  return s?.role || null;
+}
