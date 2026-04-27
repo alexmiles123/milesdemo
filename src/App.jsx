@@ -1377,7 +1377,10 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
   };
 
   const shown=phase==="all"?tasks:tasks.filter(t=>t.phase===phase);
-  const phases=PHASE_ORDER.filter(ph=>tasks.some(t=>t.phase===ph));
+  // Always render the canonical phase tabs so users can navigate the
+  // project lifecycle even before any tasks exist (e.g. brand-new
+  // accounts). Per-phase counts still come from the live task list.
+  const phases=PHASE_ORDER;
   const stats={ complete:tasks.filter(t=>t.status==="complete").length, upcoming:tasks.filter(t=>t.status==="upcoming").length, late:tasks.filter(t=>t.status==="late").length };
 
   return (
@@ -1916,7 +1919,7 @@ function CsmCapacityPanel({api,csm}) {
   );
 }
 
-function ConsultantPortal({api,csm,allCsms}) {
+function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
   const [projects, setProjects] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [selected, setSelected] = useState(null);
@@ -1926,6 +1929,26 @@ function ConsultantPortal({api,csm,allCsms}) {
   const [sortKey,  setSortKey]  = useState("customer");
   const [sortDir,  setSortDir]  = useState("asc");
   const [cTab,     setCTab]     = useState("accounts");
+  const [openingAccount, setOpeningAccount] = useState(null);
+
+  // Customer rows live in `customers`, but the portfolio view stores the
+  // customer name as text — so look up by name to get the row AccountDetail
+  // expects. If the customer record doesn't exist yet, create a stub so the
+  // user can start adding notes/contacts immediately.
+  const openAccount = useCallback(async (project) => {
+    if (!onAccountSelect || !project?.customer) return;
+    setOpeningAccount(project.id);
+    try {
+      let rows = await api.get("customers", { name: "eq." + project.customer, select: "*", limit: "1" });
+      let row = Array.isArray(rows) ? rows[0] : null;
+      if (!row) {
+        const created = await api.post("customers", [{ name: project.customer }]);
+        row = Array.isArray(created) ? created[0] : created;
+      }
+      if (row) onAccountSelect(row);
+    } catch (e) { console.error(e); }
+    setOpeningAccount(null);
+  }, [api, onAccountSelect]);
 
   const load=useCallback(async()=>{
     setLoading(true);
@@ -2015,7 +2038,7 @@ function ConsultantPortal({api,csm,allCsms}) {
           </select>
         </div>
       </div>
-      <div style={{textAlign:"right",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",marginBottom:6}}>Double-click any row to manage tasks</div>
+      <div style={{textAlign:"right",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",marginBottom:6}}>Click an account name to view notes · double-click any row to manage tasks</div>
       {/* Table */}
       <Card style={{overflow:"hidden"}}>
         <div style={{padding:"10px 14px",borderBottom:"1px solid "+G.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -2041,7 +2064,13 @@ function ConsultantPortal({api,csm,allCsms}) {
                   return (
                     <tr key={p.id} className="rh" onDoubleClick={()=>setSelected(p)}
                       style={{borderBottom:i<filtered.length-1?"1px solid "+G.faint:"none"}}>
-                      <td style={{padding:"10px 12px",fontSize:15,fontWeight:700}}>{p.customer}</td>
+                      <td style={{padding:"10px 12px",fontSize:15,fontWeight:700}}>
+                        <button onClick={(e)=>{e.stopPropagation();openAccount(p);}}
+                          disabled={openingAccount===p.id}
+                          style={{background:"none",border:"none",padding:0,color:G.blue,fontWeight:700,fontSize:15,fontFamily:"inherit",cursor:openingAccount===p.id?"wait":"pointer",textAlign:"left",textDecoration:"underline",textDecorationColor:G.blue+"55",textUnderlineOffset:3}}>
+                          {p.customer}
+                        </button>
+                      </td>
                       <td style={{padding:"10px 12px",fontSize:11,color:PHASE_COLOR[p.stage]||G.muted,fontFamily:"DM Mono,monospace"}}>{p.stage}</td>
                       <td style={{padding:"10px 12px"}}>
                         <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
@@ -2265,7 +2294,7 @@ export default function App() {
       ) : safeView==="config" ? (
         <ConfigPage api={api} csms={csms} onCsmsChanged={setCsms} key={"config-"+refreshKey}/>
       ) : (
-        <ConsultantPortal api={api} csm={activeCsm} allCsms={csms} key={refreshKey+"-"+activeCsm?.id}/>
+        <ConsultantPortal api={api} csm={activeCsm} allCsms={csms} onAccountSelect={setActiveAccount} key={refreshKey+"-"+activeCsm?.id}/>
       )}
     </div>
   );
