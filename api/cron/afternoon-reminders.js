@@ -51,7 +51,7 @@ function emailShell(title, subtitle, body) {
       </td>
       <td style="vertical-align:middle;">
         <div style="font-size:18px;font-weight:800;color:#e8f0f8;letter-spacing:0.03em;">Monument</div>
-        <div style="font-size:11px;color:#8fa3b8;letter-spacing:0.1em;margin-top:1px;">PS OPERATIONS</div>
+        <div style="font-size:11px;color:#8fa3b8;letter-spacing:0.1em;margin-top:1px;">CUSTOMER SUCCESS</div>
       </td>
     </tr></table>
   </td></tr>
@@ -62,7 +62,7 @@ function emailShell(title, subtitle, body) {
   <tr><td style="padding:16px 0 0 0;">${body}</td></tr>
   <tr><td style="padding:28px 0 0 0;border-top:1px solid #192d40;margin-top:24px;">
     <div style="font-size:11px;color:#4a6480;text-align:center;line-height:1.8;">
-      Monument PS Operations Platform &middot; Automated Reminder<br>
+      Monument Customer Success Platform &middot; Automated Reminder<br>
       <a href="${process.env.APP_URL || 'https://milesdemo-beta.vercel.app'}" style="color:#60a5fa;text-decoration:none;">Open Monument Dashboard &rarr;</a>
     </div>
   </td></tr>

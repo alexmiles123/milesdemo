@@ -36,7 +36,14 @@ const PRIORITY_COLOR = { critical:G.red, high:G.yellow, medium:G.blue, low:G.mut
 const CSM_COLORS = ["#6366f1","#3b82f6","#059669","#d97706","#dc2626","#8b5cf6"];
 
 const fmtDate  = (d) => { if(!d) return "—"; return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}); };
-const fmtArr   = (n) => n!=null ? "$"+(n/1000).toFixed(0)+"K" : "—";
+const fmtArr   = (n) => {
+  if (n == null) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return "$" + (n / 1_000_000_000).toFixed(1) + "B";
+  if (abs >= 1_000_000)     return "$" + (n / 1_000_000).toFixed(1) + "M";
+  if (abs >= 1_000)         return "$" + Math.round(n / 1_000) + "K";
+  return "$" + Math.round(n);
+};
 const fmtFull  = (n) => n!=null ? "$"+Number(n).toLocaleString() : "—";
 const todayISO = () => new Date().toISOString().split("T")[0];
 const pct      = (a,b) => b ? Math.round((a/b)*100) : 0;
@@ -119,16 +126,26 @@ function makeApi() {
       const res = await fetch(base+"/"+table,{method:"POST",headers:h,body:JSON.stringify(body)});
       return handle(res);
     },
+    // Generic JWT-authenticated call to any /api/* endpoint. Used by admin
+    // tabs (users, task templates) that talk to dedicated endpoints rather
+    // than the catch-all DB proxy.
+    async call(path, { method = "GET", body } = {}) {
+      const headers = authHeaders();
+      const init = { method, headers };
+      if (body !== undefined) init.body = typeof body === "string" ? body : JSON.stringify(body);
+      const res = await fetch(path, init);
+      return handle(res);
+    },
   };
 }
 
 // ─── GLOBAL STYLES ───────────────────────────────────────────────────────────
 const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0;font-size:14px;}
+  *{box-sizing:border-box;margin:0;padding:0;font-size:15px;}
   html,body,#root{width:100%;max-width:100% !important;overflow-x:hidden;}
   body{background:#060c14;}
-  body{background:${G.bg};font-size:14px;}
+  body{background:${G.bg};font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
   ::-webkit-scrollbar{width:4px;height:4px;}
   ::-webkit-scrollbar-track{background:#0a1520;}
   ::-webkit-scrollbar-thumb{background:#1e3346;border-radius:2px;}
@@ -137,8 +154,10 @@ const GLOBAL_CSS = `
   @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
   .rh:hover{background:${G.surface2} !important;cursor:pointer;}
-  select,input{outline:none;font-size:13px;}
-  button{font-family:Syne,sans-serif;font-size:13px;}
+  select,input,textarea{outline:none;font-size:14px;}
+  button{font-family:Syne,sans-serif;font-size:14px;}
+  /* Prevent KPI/value overflow inside narrow card columns */
+  .num-fit{font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 `;
 
 // ─── SHARED COMPONENTS ───────────────────────────────────────────────────────
@@ -190,8 +209,8 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
       <div style={{display:"flex",alignItems:"center",gap:9}}>
         <Logo size={28}/>
         <div>
-          <div style={{fontSize:15,fontWeight:800,letterSpacing:"0.04em",color:G.text,fontFamily:"Syne,sans-serif"}}>Monument</div>
-          <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.1em"}}>PS OPERATIONS</div>
+          <div style={{fontSize:16,fontWeight:800,letterSpacing:"0.04em",color:G.text,fontFamily:"Syne,sans-serif"}}>Monument</div>
+          <div style={{fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.1em"}}>CUSTOMER SUCCESS</div>
         </div>
       </div>
       <div style={{width:1,height:26,background:G.border}}/>
@@ -253,7 +272,7 @@ function AiPanel({ portfolio, tasks, csms }) {
     setLoading(true);
     try {
       const totalArr = portfolio.reduce((s,p)=>s+(p.arr||0),0);
-      const sysP = 'You are an expert PS Operations analyst for Monument. Live data: ' + portfolio.length + ' customers, \$' + (totalArr/1000).toFixed(0) + 'K ARR. On Track: ' + portfolio.filter(p=>p.health==='green').length + '. At Risk: ' + portfolio.filter(p=>p.health==='yellow').length + '. Critical: ' + portfolio.filter(p=>p.health==='red').length + '. Late tasks: ' + tasks.filter(t=>t.status==='late').length + '. Customers: ' + portfolio.map(p=>p.customer+': '+p.stage+', '+p.health_label+', '+p.completion_pct+'% done, \$'+(p.arr/1000).toFixed(0)+'K ARR, CSM: '+p.csm+', '+(p.tasks_late||0)+' late tasks').join('; ') + '. CSMs: ' + csms.map(c=>c.csm+': '+c.total_accounts+' accounts, \$'+((c.total_arr||0)/1000).toFixed(0)+'K ARR, '+c.late_tasks+' late tasks').join('; ') + '. Be concise and executive-level in responses.';
+      const sysP = 'You are an expert Customer Success operations analyst for Monument. Live data: ' + portfolio.length + ' customers, \$' + (totalArr/1000).toFixed(0) + 'K ARR. On Track: ' + portfolio.filter(p=>p.health==='green').length + '. At Risk: ' + portfolio.filter(p=>p.health==='yellow').length + '. Critical: ' + portfolio.filter(p=>p.health==='red').length + '. Late tasks: ' + tasks.filter(t=>t.status==='late').length + '. Customers: ' + portfolio.map(p=>p.customer+': '+p.stage+', '+p.health_label+', '+p.completion_pct+'% done, \$'+(p.arr/1000).toFixed(0)+'K ARR, CSM: '+p.csm+', '+(p.tasks_late||0)+' late tasks').join('; ') + '. CSMs: ' + csms.map(c=>c.csm+': '+c.total_accounts+' accounts, \$'+((c.total_arr||0)/1000).toFixed(0)+'K ARR, '+c.late_tasks+' late tasks').join('; ') + '. Be concise and executive-level in responses.';
       const res = await fetch('/api/claude', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ system:sysP, messages:newMessages }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -900,11 +919,12 @@ function ExecDashboard({api}) {
           {label:"Late Tasks",         value:totalLate,                 sub:criticalLate+" critical priority", color:G.red},
           {label:"Go-Live This Month", value:goLivesSoon.length,        sub:"in prep or live now",     color:G.teal},
         ].map((k,i)=>(
-          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden",animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
+          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden",minWidth:0,animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
-            <div style={{fontSize:26,fontWeight:800,color:k.color,lineHeight:1,marginTop:4,fontFamily:"Syne,sans-serif"}}>{k.value}</div>
-            <div style={{fontSize:13,color:G.muted,marginTop:5,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em"}}>{k.label}</div>
-            <div style={{fontSize:9,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace"}}>{k.sub}</div>
+            <div className="num-fit" title={typeof k.value==="string" ? k.value : String(k.value)}
+              style={{fontSize:24,fontWeight:800,color:k.color,lineHeight:1.05,marginTop:4,fontFamily:"Syne,sans-serif",fontVariantNumeric:"tabular-nums"}}>{k.value}</div>
+            <div style={{fontSize:12,color:G.muted,marginTop:6,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.label}>{k.label}</div>
+            <div style={{fontSize:11,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.sub}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -2051,6 +2071,10 @@ function LoginScreen({onConnect}) {
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMsg, setForgotMsg] = useState("");
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   const login=async()=>{
     if(!username||!password){setError("Both fields are required.");return;}
@@ -2065,39 +2089,94 @@ function LoginScreen({onConnect}) {
     setLoading(false);
   };
 
+  const submitForgot = async () => {
+    if (!forgotEmail) { setForgotMsg("Enter the email tied to your account."); return; }
+    setForgotBusy(true); setForgotMsg("");
+    try {
+      const r = await fetch("/api/auth/forgot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      // Generic message regardless of result — never leak whether an account exists.
+      if (!r.ok && r.status !== 404) throw new Error("Request failed.");
+    } catch { /* deliberately swallow */ }
+    setForgotBusy(false);
+    setForgotMsg("If an account exists for that email, an administrator has been notified to reset it.");
+  };
+
   return (
     <div style={{minHeight:"100vh",background:G.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Syne,sans-serif"}}>
       <div style={{width:460,animation:"fadein .4s ease"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:36,justifyContent:"center"}}>
           <Logo size={38}/>
           <div>
-            <div style={{fontSize:20,fontWeight:800,color:G.text,letterSpacing:"0.03em"}}>Monument</div>
-            <div style={{fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.12em"}}>PS OPERATIONS PLATFORM</div>
+            <div style={{fontSize:22,fontWeight:800,color:G.text,letterSpacing:"0.03em"}}>Monument</div>
+            <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.12em"}}>CUSTOMER SUCCESS PLATFORM</div>
           </div>
         </div>
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:14,padding:32}}>
-          <div style={{fontSize:16,fontWeight:700,color:G.text,marginBottom:6}}>Sign In</div>
-          <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",marginBottom:26,lineHeight:1.7}}>
-            Enter your credentials to continue.
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            <div>
-              <label style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>USERNAME</label>
-              <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Username"
-                style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"10px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:12}}/>
-            </div>
-            <div>
-              <label style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>PASSWORD</label>
-              <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Password"
-                onKeyDown={e=>{if(e.key==="Enter")login();}}
-                style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"10px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:12}}/>
-            </div>
-            {error&&<div style={{background:G.redBg,border:"1px solid "+G.red+"44",borderRadius:8,padding:"10px 14px",fontSize:12,color:G.red,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>{error}</div>}
-            <button onClick={login} disabled={loading}
-              style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"13px",borderRadius:8,cursor:loading?"not-allowed":"pointer",fontSize:14,fontWeight:700,marginTop:4,opacity:loading?0.7:1}}>
-              {loading?"Signing in…":"Sign In →"}
-            </button>
-          </div>
+          {!forgotOpen ? (
+            <>
+              <div style={{fontSize:18,fontWeight:700,color:G.text,marginBottom:6}}>Sign In</div>
+              <div style={{fontSize:14,color:G.muted,fontFamily:"DM Mono,monospace",marginBottom:26,lineHeight:1.7}}>
+                Enter your credentials to continue.
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div>
+                  <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>USERNAME</label>
+                  <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Username"
+                    autoComplete="username"
+                    style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>PASSWORD</label>
+                  <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Password"
+                    autoComplete="current-password"
+                    onKeyDown={e=>{if(e.key==="Enter")login();}}
+                    style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                </div>
+                {error&&<div style={{background:G.redBg,border:"1px solid "+G.red+"44",borderRadius:8,padding:"10px 14px",fontSize:13,color:G.red,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>{error}</div>}
+                <button onClick={login} disabled={loading}
+                  style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"14px",borderRadius:8,cursor:loading?"not-allowed":"pointer",fontSize:15,fontWeight:700,marginTop:4,opacity:loading?0.7:1}}>
+                  {loading?"Signing in…":"Sign In →"}
+                </button>
+                <button type="button" onClick={()=>{setForgotOpen(true);setForgotMsg("");}}
+                  style={{background:"transparent",border:"none",color:G.muted,fontSize:13,fontFamily:"DM Mono,monospace",cursor:"pointer",padding:"6px",alignSelf:"center",letterSpacing:"0.06em"}}>
+                  Forgot password?
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{fontSize:18,fontWeight:700,color:G.text,marginBottom:6}}>Reset Password</div>
+              <div style={{fontSize:14,color:G.muted,fontFamily:"DM Mono,monospace",marginBottom:22,lineHeight:1.7}}>
+                Enter the email tied to your account. An administrator will be notified to issue a new password.
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div>
+                  <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>EMAIL</label>
+                  <input value={forgotEmail} onChange={e=>setForgotEmail(e.target.value)} placeholder="you@company.com"
+                    type="email" autoComplete="email"
+                    onKeyDown={e=>{if(e.key==="Enter")submitForgot();}}
+                    style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                </div>
+                {forgotMsg && (
+                  <div style={{background:G.surface2,border:"1px solid "+G.border2,borderRadius:8,padding:"10px 14px",fontSize:13,color:G.text,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>
+                    {forgotMsg}
+                  </div>
+                )}
+                <button onClick={submitForgot} disabled={forgotBusy}
+                  style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"14px",borderRadius:8,cursor:forgotBusy?"not-allowed":"pointer",fontSize:15,fontWeight:700,marginTop:4,opacity:forgotBusy?0.7:1}}>
+                  {forgotBusy?"Submitting…":"Request Reset"}
+                </button>
+                <button type="button" onClick={()=>{setForgotOpen(false);setForgotMsg("");}}
+                  style={{background:"transparent",border:"none",color:G.muted,fontSize:13,fontFamily:"DM Mono,monospace",cursor:"pointer",padding:"6px",alignSelf:"center",letterSpacing:"0.06em"}}>
+                  ← Back to sign in
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

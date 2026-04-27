@@ -25,14 +25,28 @@ function getKey() {
   return cachedKey;
 }
 
-export async function signSession({ user, role = "user" }) {
-  return await new SignJWT({ user, role })
+export async function signSession({ user, role = "user", user_id = null, must_reset = false }) {
+  const payload = { user, role };
+  if (user_id) payload.user_id = user_id;
+  if (must_reset) payload.must_reset = true;
+  return await new SignJWT(payload)
     .setProtectedHeader({ alg: ALG })
     .setIssuedAt()
     .setExpirationTime(`${TTL_HOURS}h`)
     .setIssuer("monument")
     .setAudience("monument-app")
     .sign(getKey());
+}
+
+// Restrict a route to a specific role. Use after requireAuth().
+//   const session = await requireAuth(req, res); if (!session) return;
+//   if (!requireRole(session, "admin", res)) return;
+export function requireRole(session, role, res) {
+  if (!session || session.role !== role) {
+    fail(res, 403, "Insufficient permissions.");
+    return false;
+  }
+  return true;
 }
 
 export async function verifySession(token) {

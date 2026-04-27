@@ -219,7 +219,29 @@ function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templateId, setTemplateId] = useState("");
+  const [templatesLoaded, setTemplatesLoaded] = useState(false);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // Load templates once when the create modal opens. Edit mode never needs
+  // them — applying retroactively belongs on the project detail page.
+  useEffect(() => {
+    if (mode !== "create" || templatesLoaded) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.call("/api/admin/templates");
+        if (cancelled) return;
+        const active = ((data && data.templates) || []).filter(t => t.is_active);
+        setTemplates(active);
+        const def = active.find(t => t.is_default);
+        if (def) setTemplateId(def.id);
+      } catch { /* templates are optional; project create still works */ }
+      if (!cancelled) setTemplatesLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [mode, templatesLoaded, api]);
 
   const save = async () => {
     const e = validateProject(form);
@@ -227,6 +249,7 @@ function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
     if (hasErrors(e)) return;
     setSaving(true);
     try {
+      const startDate = new Date().toISOString().slice(0, 10);
       const payload = {
         name: form.name.trim(),
         customer: form.customer?.trim() || null,
@@ -238,9 +261,22 @@ function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
         target_date: form.target_date || null,
       };
       if (mode === "create") {
-        payload.start_date = new Date().toISOString().slice(0, 10);
+        payload.start_date = startDate;
         const rows = await audited("project.create", "projects", null, () => api.post("projects", [payload]), { after: payload });
-        onSaved(rows[0], "create");
+        const created = rows[0];
+        if (templateId && created?.id) {
+          try {
+            await api.call("/api/admin/apply-template", { method: "POST", body: {
+              project_id: created.id, template_id: templateId, start_date: startDate,
+            }});
+          } catch (tplErr) {
+            // Project saved, template failed. Surface but don't block.
+            setErrors({ _root: "Project created, but template apply failed: " + tplErr.message });
+            setSaving(false);
+            return;
+          }
+        }
+        onSaved(created, "create");
       } else {
         await audited("project.update", "projects", initial.id, () => api.patch("projects", initial.id, payload), { before: initial, after: payload });
         onSaved({ ...initial, ...payload }, "edit");
@@ -291,6 +327,20 @@ function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
           <Input type="date" value={form.target_date} onChange={v => set("target_date", v)} />
           <FieldError error={errors.target_date} />
         </div>
+        {mode === "create" && (
+          <div style={{ gridColumn: "span 2", paddingTop: 8, borderTop: "1px dashed " + G.border, marginTop: 4 }}>
+            <Label>APPLY TASK TEMPLATE</Label>
+            <Select
+              value={templateId}
+              onChange={setTemplateId}
+              options={[{ value: "", label: templates.length ? "— No template —" : "— No templates configured —" },
+                       ...templates.map(t => ({ value: t.id, label: t.name + (t.is_default ? "  (default)" : "") + "  ·  " + (t.items?.length || 0) + " tasks" }))]}
+            />
+            <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+              Tasks will be added with due dates relative to today. Manage templates under Configuration → Task Templates.
+            </div>
+          </div>
+        )}
       </div>
       {errors._root && (
         <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{errors._root}</div>

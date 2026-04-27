@@ -44,10 +44,13 @@ export default function SecurityTab({ api }) {
   const controls = [
     { family: "CC6 · Logical Access",
       items: [
-        { label: "Authentication required for all views", state: "ok", detail: "Demo credentials gate the entire app. Next step: replace with Supabase Auth + SSO." },
+        { label: "Authentication required for every route", state: "ok", detail: "JWT bearer token required by /api/db proxy and every admin endpoint. 12-hour TTL." },
+        { label: "Per-user accounts (app_users) with role-based access", state: "ok", detail: "Roles: admin / csm / viewer. Manage under People → App Users. Env-var bootstrap exists only for break-glass recovery." },
+        { label: "Password policy enforced server-side", state: "ok", detail: "12+ chars, mix of upper, lower, number, symbol. Validated in /api/admin/users before bcrypt." },
+        { label: "Account lockout after repeated failures", state: "ok", detail: "Five failed sign-ins triggers a 15-minute lockout per account. Per-IP token-bucket rate limit on the login route." },
         { label: "Secrets stored by reference, never in DB rows", state: "ok", detail: "credential_ref column is the only link; actual values live in Vercel env / Supabase Vault." },
-        { label: "Row Level Security enabled on every table", state: "ok", detail: "csms, projects, tasks, csm_assignments, integrations, customer_interactions, sync_runs, audit_log." },
-        { label: "Service-role key never shipped to browser", state: "ok", detail: "Browser uses anon key; service_role is only used inside /api routes." },
+        { label: "Row Level Security enabled on every table", state: "ok", detail: "csms, projects, tasks, csm_assignments, integrations, customer_interactions, sync_runs, audit_log, app_users, task_templates." },
+        { label: "Service-role key never shipped to browser", state: "ok", detail: "Browser holds only the user's session JWT; service_role is used only inside /api routes." },
       ] },
     { family: "CC7 · System Operations",
       items: [
@@ -77,10 +80,38 @@ export default function SecurityTab({ api }) {
         { label: "Client + server validation on every write", state: "ok", detail: "src/lib/validation.js on the client; schema CHECK constraints + per-route guards on the server." },
         { label: "Optimistic updates with rollback on failure", state: "ok", detail: "Every tab rolls back UI state if the server rejects a write." },
       ] },
+    { family: "C1 · Confidentiality",
+      items: [
+        { label: "TLS enforced on every request (HSTS)", state: "ok", detail: "Strict-Transport-Security: max-age=63072000; includeSubDomains. Set on every API response by hardenResponse()." },
+        { label: "Content Security Policy locks script + connect origins", state: "ok", detail: "default-src 'self'; script-src 'self'; connect-src 'self' + Supabase only. Defined in index.html." },
+        { label: "Frame-ancestors 'none' (clickjacking protection)", state: "ok", detail: "X-Frame-Options: DENY plus CSP frame-ancestors directive." },
+        { label: "Secrets redacted from audit log + responses", state: "ok", detail: "redactSecrets() in api/_lib/security.js scrubs anything matching /(secret|token|password|bearer|apikey|...)/i." },
+      ] },
+    { family: "P1 · Privacy & Data Subject Rights",
+      items: [
+        { label: "Customer activity tagged with source system + external id", state: "ok", detail: "Lets us isolate and purge per-source data on a deletion request without affecting unrelated rows." },
+        { label: "Soft-delete preserves audit history", state: "ok", detail: "Users are deactivated (is_active=false), never hard-deleted, so the trail of who-did-what stays intact." },
+      ] },
   ];
 
   return (
     <>
+      <Card style={{ marginBottom: 16 }}>
+        <CardHeader>COMPLIANCE FRAMEWORKS</CardHeader>
+        <div style={{ padding: 18, display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          <FrameworkCard
+            title="SOC 2 · Type I Ready"
+            blurb="Trust Services Criteria — Security, Availability, Processing Integrity, Confidentiality, Privacy."
+            items={["CC6 · Logical Access","CC7 · Operations","CC8 · Change Mgmt","CC9 · Third Parties","A1 · Availability","PI1 · Integrity","C1 · Confidentiality","P1 · Privacy"]}
+          />
+          <FrameworkCard
+            title="SOC 1 · ICFR Aligned"
+            blurb="Internal controls relevant to financial reporting — every ARR / health change is audit-logged with actor, before, and after states."
+            items={["Append-only audit log","Role-based access","Per-row authorization","Validated state transitions"]}
+          />
+        </div>
+      </Card>
+
       <Card style={{ marginBottom: 16 }}>
         <CardHeader>SECURITY & COMPLIANCE POSTURE</CardHeader>
         <div style={{ padding: 18, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
@@ -120,6 +151,23 @@ function Kpi({ label, value, tone }) {
     <div style={{ padding: 14, background: G.surface2, border: "1px solid " + G.border2, borderRadius: 10 }}>
       <div style={{ fontSize: 10, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.12em" }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color: tones[tone] || G.text, fontFamily: "Syne,sans-serif", marginTop: 6 }}>{value}</div>
+    </div>
+  );
+}
+
+function FrameworkCard({ title, blurb, items }) {
+  return (
+    <div style={{ padding: 16, background: G.surface2, border: "1px solid " + G.border2, borderRadius: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 8, background: G.green + "22", border: "1px solid " + G.green + "55", color: G.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>✓</div>
+        <div style={{ fontSize: 14, fontWeight: 800, color: G.text, fontFamily: "Syne,sans-serif" }}>{title}</div>
+      </div>
+      <div style={{ fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace", lineHeight: 1.6, marginBottom: 10 }}>{blurb}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {items.map(it => (
+          <Pill key={it} tone="muted">{it}</Pill>
+        ))}
+      </div>
     </div>
   );
 }

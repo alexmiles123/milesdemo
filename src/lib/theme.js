@@ -29,4 +29,16 @@ export const PROVIDERS = [
 
 export const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}) : "—";
 export const fmtDateTime = (d) => d ? new Date(d).toLocaleString("en-US",{month:"short",day:"numeric",year:"2-digit",hour:"numeric",minute:"2-digit"}) : "—";
-export const fmtArr  = (n) => n!=null ? "$"+(n/1000).toFixed(0)+"K" : "—";
+
+// Compact currency formatter that scales by magnitude. Avoids the "$2,000K"
+// overflow problem on KPI cards — a $2M ARR rolls up to "$2.0M", not a string
+// that gets truncated at the card boundary.
+export const fmtArr = (n) => {
+  if (n == null) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return "$" + (n / 1_000_000_000).toFixed(1) + "B";
+  if (abs >= 1_000_000)     return "$" + (n / 1_000_000).toFixed(1) + "M";
+  if (abs >= 1_000)         return "$" + Math.round(n / 1_000) + "K";
+  return "$" + Math.round(n);
+};
+export const fmtFull = (n) => n == null ? "—" : "$" + Math.round(n).toLocaleString("en-US");
