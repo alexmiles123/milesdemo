@@ -5,6 +5,11 @@
 import { rateLimit, hardenResponse, fail, json } from "./_lib/security.js";
 import { requireAuth } from "./_lib/auth.js";
 
+// Anthropic responses can take 15-30s for analytical prompts. The default
+// Vercel function timeout is 10s, which surfaces in the browser as a generic
+// "Failed to fetch" once the gateway terminates the request.
+export const config = { maxDuration: 60 };
+
 export default async function handler(req, res) {
   hardenResponse(req, res);
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
@@ -36,7 +41,7 @@ export default async function handler(req, res) {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({ model: "claude-opus-4-5", max_tokens: 1024, system, messages }),
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1024, system, messages }),
     });
     const data = await response.json();
     if (!response.ok) return json(res, response.status, { error: data.error?.message || "Upstream error." });
