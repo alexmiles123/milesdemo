@@ -920,9 +920,9 @@ function ExecDashboard({api}) {
           {label:"Late Tasks",         value:String(totalLate),         sub:criticalLate+" critical priority", color:G.red},
           {label:"Go-Live This Month", value:String(goLivesSoon.length),sub:"in prep or live now",             color:G.teal},
         ].map((k,i)=>(
-          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 16px",position:"relative",overflow:"hidden",minWidth:0,animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
+          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 12px",position:"relative",overflow:"hidden",minWidth:0,animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
-            <div style={{fontSize:22,fontWeight:800,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"Syne,sans-serif",fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{k.value}</div>
+            <div style={{fontSize:18,fontWeight:700,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"DM Mono,monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.02em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.value}>{k.value}</div>
             <div style={{fontSize:12,color:G.muted,marginTop:8,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.label}>{k.label}</div>
             <div style={{fontSize:11,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.sub}>{k.sub}</div>
           </div>
@@ -1963,9 +1963,9 @@ function ConsultantPortal({api,csm,allCsms}) {
           {label:"Avg Completion", value:filtered.length?Math.round(filtered.reduce((s,p)=>s+(p.completion_pct||0),0)/filtered.length)+"%":"—", color:G.blue},
           {label:"Late Tasks",     value:String(filtered.reduce((s,p)=>s+(p.tasks_late||0),0)),   color:G.red},
         ].map((k,i)=>(
-          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 16px",position:"relative",overflow:"hidden",minWidth:0}}>
+          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 12px",position:"relative",overflow:"hidden",minWidth:0}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
-            <div style={{fontSize:22,fontWeight:800,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"Syne,sans-serif",fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{k.value}</div>
+            <div style={{fontSize:18,fontWeight:700,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"DM Mono,monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.02em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.value}>{k.value}</div>
             <div style={{fontSize:12,color:G.muted,marginTop:8,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.label}</div>
           </div>
         ))}
