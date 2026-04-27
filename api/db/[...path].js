@@ -11,10 +11,25 @@
 // loaded the site could read/write every table. This proxy makes the
 // anon key obsolete and gates every DB call on a signed session.
 
-import { hardenResponse, fail, rateLimit } from "../_lib/security.js";
+import { hardenResponse, fail, rateLimit, redactSecrets, requestId } from "../_lib/security.js";
 import { requireAuth } from "../_lib/auth.js";
+import { writeAudit } from "../_lib/supabase.js";
 
 const ALLOWED_METHODS = new Set(["GET", "POST", "PATCH", "DELETE", "PUT"]);
+
+// Tables that count as "system configuration" for the audit log. Mutations on
+// these are recorded; reads are not (end-user navigation/dashboard views are
+// noise). Tables outside this set — e.g. sync_runs telemetry — are skipped to
+// keep the audit screen focused on changes a human made.
+const AUDIT_TABLES = new Set([
+  "csms", "csm_roles", "csm_assignments",
+  "projects", "tasks",
+  "capacity_entries", "project_commitments",
+  "customers", "customer_interactions",
+  "integrations",
+  "notification_rules",
+]);
+const AUDIT_VERB = { POST: "create", PUT: "update", PATCH: "update", DELETE: "delete" };
 
 // Tables the frontend is allowed to touch. Anything outside this set 404s.
 // The cron/webhook paths hit Supabase directly with the service key, not
@@ -115,6 +130,40 @@ export default async function handler(req, res) {
     res.statusCode = upstream.status;
     const ct = upstream.headers.get("content-type");
     if (ct) res.setHeader("Content-Type", ct);
+
+    // Audit configuration mutations (POST/PATCH/DELETE on tracked tables).
+    // Reads, sync telemetry, and audit_log itself are skipped. Failures here
+    // never block the user response — writeAudit() swallows its own errors.
+    if (
+      req.method !== "GET" &&
+      AUDIT_TABLES.has(table) &&
+      upstream.status >= 200 && upstream.status < 300
+    ) {
+      let after = null;
+      try { after = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
+      const afterRow = Array.isArray(after) ? (after[0] ?? null) : after;
+      const targetId = afterRow && afterRow.id != null ? String(afterRow.id) : null;
+      let reqBody = null;
+      try { reqBody = body ? (typeof body === "string" ? JSON.parse(body) : body) : null; } catch { /* noop */ }
+      const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket?.remoteAddress || null;
+      const ua = String(req.headers["user-agent"] || "").slice(0, 200);
+      await writeAudit({
+        actor:        String(session.user || "unknown").slice(0, 200),
+        actor_role:   String(session.role || "user").slice(0, 200),
+        action:       table + "." + (AUDIT_VERB[req.method] || req.method.toLowerCase()),
+        target_table: table,
+        target_id:    targetId ? targetId.slice(0, 120) : null,
+        // For deletes the response body is the row that was removed; for
+        // create/update it's the row as it stands after the change.
+        before_state: req.method === "DELETE" ? redactSecrets(afterRow) : null,
+        after_state:  req.method === "DELETE" ? null : redactSecrets(afterRow),
+        ip_address:   ip,
+        user_agent:   ua,
+        request_id:   requestId(req),
+        metadata:     { query: qs || null, request_body: redactSecrets(reqBody) },
+      });
+    }
+
     return res.end(text);
   } catch (e) {
     return fail(res, 502, "Upstream request failed.", { detail: e.message });
