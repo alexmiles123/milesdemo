@@ -907,23 +907,26 @@ function ExecDashboard({api}) {
       ) : (
     <div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,display:"flex",overflow:"hidden"}}><div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .3s ease"}}>
 
-      {/* ── SECTION: KPI Strip ── */}
+      {/* ── SECTION: KPI Strip ──
+          Two rows of cards on a 4-column grid. Each card is wide enough to
+          host a fully-spelled "$99,999,999" without truncation, and every
+          value uses the same fontSize so a "2" reads at the same visual
+          weight as a "$2,000,000". */}
       {shown('kpi-strip') && (
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:10,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12,marginBottom:16}}>
         {[
-          {label:"Total Customers",    value:portfolio.length,          sub:"active implementations", color:G.purple},
-          {label:"Total ARR",          value:fmtArr(totalArr),          sub:fmtFull(totalArr),         color:G.green},
-          {label:"ARR at Risk",        value:fmtArr(arrAtRisk),         sub:atRisk+" at risk  "+critical+" critical", color:G.yellow},
-          {label:"ARR Critical",       value:fmtArr(arrCritical),       sub:critical+" red accounts",  color:G.red},
-          {label:"Avg Completion",     value:avgCompl+"%",              sub:"across portfolio",        color:G.blue},
-          {label:"Late Tasks",         value:totalLate,                 sub:criticalLate+" critical priority", color:G.red},
-          {label:"Go-Live This Month", value:goLivesSoon.length,        sub:"in prep or live now",     color:G.teal},
+          {label:"Total Customers",    value:String(portfolio.length),  sub:"active implementations",          color:G.purple},
+          {label:"Total ARR",          value:fmtFull(totalArr),         sub:portfolio.length+" customers",     color:G.green},
+          {label:"ARR at Risk",        value:fmtFull(arrAtRisk),        sub:atRisk+" at risk · "+critical+" critical", color:G.yellow},
+          {label:"ARR Critical",       value:fmtFull(arrCritical),      sub:critical+" red accounts",          color:G.red},
+          {label:"Avg Completion",     value:avgCompl+"%",              sub:"across portfolio",                color:G.blue},
+          {label:"Late Tasks",         value:String(totalLate),         sub:criticalLate+" critical priority", color:G.red},
+          {label:"Go-Live This Month", value:String(goLivesSoon.length),sub:"in prep or live now",             color:G.teal},
         ].map((k,i)=>(
-          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden",minWidth:0,animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
+          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 16px",position:"relative",overflow:"hidden",minWidth:0,animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
-            <div className="num-fit" title={typeof k.value==="string" ? k.value : String(k.value)}
-              style={{fontSize:24,fontWeight:800,color:k.color,lineHeight:1.05,marginTop:4,fontFamily:"Syne,sans-serif",fontVariantNumeric:"tabular-nums"}}>{k.value}</div>
-            <div style={{fontSize:12,color:G.muted,marginTop:6,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.label}>{k.label}</div>
+            <div style={{fontSize:22,fontWeight:800,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"Syne,sans-serif",fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{k.value}</div>
+            <div style={{fontSize:12,color:G.muted,marginTop:8,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.label}>{k.label}</div>
             <div style={{fontSize:11,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.sub}>{k.sub}</div>
           </div>
         ))}
@@ -1953,18 +1956,20 @@ function ConsultantPortal({api,csm,allCsms}) {
         <CsmCapacityPanel api={api} csm={csm}/>
       ) : (
     <div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .25s ease"}}>
-      {/* KPIs */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:14}}>
+      {/* KPIs — same sizing rules as the exec strip: full-precision values,
+          uniform fontSize, auto-fit grid that gives every card room for an
+          8-figure currency without truncating. */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:12,marginBottom:14}}>
         {[
-          {label:"My Accounts",    value:filtered.length,                                         color:G.purple},
-          {label:"Total ARR",      value:fmtArr(filtered.reduce((s,p)=>s+(p.arr||0),0)),          color:G.green},
+          {label:"My Accounts",    value:String(filtered.length),                                 color:G.purple},
+          {label:"Total ARR",      value:fmtFull(filtered.reduce((s,p)=>s+(p.arr||0),0)),         color:G.green},
           {label:"Avg Completion", value:filtered.length?Math.round(filtered.reduce((s,p)=>s+(p.completion_pct||0),0)/filtered.length)+"%":"—", color:G.blue},
-          {label:"Late Tasks",     value:filtered.reduce((s,p)=>s+(p.tasks_late||0),0),           color:G.red},
+          {label:"Late Tasks",     value:String(filtered.reduce((s,p)=>s+(p.tasks_late||0),0)),   color:G.red},
         ].map((k,i)=>(
-          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 16px",position:"relative",overflow:"hidden"}}>
+          <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 16px",position:"relative",overflow:"hidden",minWidth:0}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
-            <div style={{fontSize:26,fontWeight:800,color:k.color,lineHeight:1,marginTop:4,fontFamily:"Syne,sans-serif"}}>{k.value}</div>
-            <div style={{fontSize:13,color:G.muted,marginTop:4,fontFamily:"DM Mono,monospace"}}>{k.label}</div>
+            <div style={{fontSize:22,fontWeight:800,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"Syne,sans-serif",fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>{k.value}</div>
+            <div style={{fontSize:12,color:G.muted,marginTop:8,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.label}</div>
           </div>
         ))}
       </div>
