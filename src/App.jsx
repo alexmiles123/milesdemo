@@ -96,7 +96,11 @@ function makeApi() {
     }
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
-      throw new Error(e.message || e.hint || e.error || "HTTP " + res.status);
+      // Combine the headline error with any `detail` the server attached so
+      // the UI surfaces the real cause (e.g. "Failed to update policy. —
+      // Supabase 404: table not found") instead of just the generic message.
+      const head = e.message || e.error || e.hint || ("HTTP " + res.status);
+      throw new Error(e.detail ? `${head} — ${e.detail}` : head);
     }
     const ct = res.headers.get("content-type") || "";
     return ct.includes("application/json") ? res.json() : true;

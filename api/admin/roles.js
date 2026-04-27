@@ -44,7 +44,13 @@ export default async function handler(req, res) {
     try {
       const rows = await sbGet("app_roles", { select: "*", order: "sort_order.asc,name.asc" });
       return json(res, 200, { roles: rows || [] });
-    } catch (e) { return fail(res, 502, "Failed to list roles.", { detail: e.message }); }
+    } catch (e) {
+      const msg = String(e.message || "");
+      if (msg.includes("42P01") || /relation .*app_roles.* does not exist/i.test(msg)) {
+        return fail(res, 503, "App roles table is missing. Apply migration 010_app_roles.sql in Supabase, then try again.");
+      }
+      return fail(res, 502, "Failed to list roles.", { detail: msg });
+    }
   }
 
   if (req.method === "POST") {

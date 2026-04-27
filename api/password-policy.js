@@ -75,7 +75,16 @@ export default async function handler(req, res) {
         metadata:     { fields: Object.keys(patch).filter(k => k !== "updated_by") },
       });
       return json(res, 200, { policy: after });
-    } catch (e) { return fail(res, 502, "Failed to update policy.", { detail: e.message }); }
+    } catch (e) {
+      const msg = String(e.message || "");
+      // PostgREST returns 404 with code 42P01 when the table doesn't exist —
+      // tell the admin exactly which migration they're missing rather than
+      // just bubbling the raw Postgres error up.
+      if (msg.includes("42P01") || /relation .*password_policy.* does not exist/i.test(msg)) {
+        return fail(res, 503, "Password policy table is missing. Apply migration 009_password_policy.sql in Supabase, then try again.");
+      }
+      return fail(res, 502, "Failed to update policy.", { detail: msg });
+    }
   }
 
   return fail(res, 405, "Method not allowed.");
