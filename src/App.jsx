@@ -274,7 +274,10 @@ function AiPanel({ portfolio, tasks, csms }) {
     try {
       const totalArr = portfolio.reduce((s,p)=>s+(p.arr||0),0);
       const sysP = 'You are an expert Customer Success operations analyst for Monument. Live data: ' + portfolio.length + ' customers, \$' + (totalArr/1000).toFixed(0) + 'K ARR. On Track: ' + portfolio.filter(p=>p.health==='green').length + '. At Risk: ' + portfolio.filter(p=>p.health==='yellow').length + '. Critical: ' + portfolio.filter(p=>p.health==='red').length + '. Late tasks: ' + tasks.filter(t=>t.status==='late').length + '. Customers: ' + portfolio.map(p=>p.customer+': '+p.stage+', '+p.health_label+', '+p.completion_pct+'% done, \$'+(p.arr/1000).toFixed(0)+'K ARR, CSM: '+p.csm+', '+(p.tasks_late||0)+' late tasks').join('; ') + '. CSMs: ' + csms.map(c=>c.csm+': '+c.total_accounts+' accounts, \$'+((c.total_arr||0)/1000).toFixed(0)+'K ARR, '+c.late_tasks+' late tasks').join('; ') + '. Be concise and executive-level in responses.';
-      const res = await fetch('/api/claude', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ system:sysP, messages:newMessages }) });
+      const token = getToken();
+      const headers = { 'Content-Type':'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      const res = await fetch('/api/claude', { method:'POST', headers, body:JSON.stringify({ system:sysP, messages:newMessages }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setMessages(prev => [...prev, { role:'assistant', content:data.content }]);
