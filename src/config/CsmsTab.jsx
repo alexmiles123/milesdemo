@@ -74,7 +74,7 @@ export default function CsmsTab({ api, onChanged }) {
     <>
       <Card>
         <CardHeader right={<div style={{ display: "flex", gap: 8 }}>
-          <Button variant="ghost" onClick={() => setShowRolesModal(true)}>Manage Roles</Button>
+          <Button variant="ghost" onClick={() => setShowRolesModal(true)}>Manage Titles</Button>
           <Button variant="primary" onClick={() => setModal({ mode:"create", data:{ ...BLANK } })}>+ Add User</Button>
         </div>}>
           CUSTOMER SUCCESS MANAGERS ({visible.length}{visible.length !== csms.length ? ` of ${csms.length}` : ""})
@@ -282,7 +282,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
                     <div style={helperText}>Cannot be changed later.</div>
                   </div>
                   <div style={{ gridColumn:"span 2" }}>
-                    <Label>APP ROLE</Label>
+                    <Label>ADMIN ROLES</Label>
                     <Select value={loginRole} onChange={setLoginRole} options={roleOptions(appRoles)} />
                     <div style={helperText}>Admins can access every dashboard; other roles are limited to the consultant portal.</div>
                   </div>
@@ -352,6 +352,39 @@ function RolesModal({ api, roles, onClose, onChanged }) {
   const [newName, setNewName] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
+  // id of the row currently in rename mode; null when no row is being edited
+  const [editingId, setEditingId] = useState(null);
+  const [editingName, setEditingName] = useState("");
+
+  const startRename = (r) => {
+    setEditingId(r.id);
+    setEditingName(r.name);
+    setErr(null);
+  };
+
+  const cancelRename = () => {
+    setEditingId(null);
+    setEditingName("");
+    setErr(null);
+  };
+
+  const saveRename = async (r) => {
+    const name = editingName.trim();
+    if (!name) { setErr("Title cannot be empty."); return; }
+    if (name === r.name) { cancelRename(); return; }
+    if (rows.some(x => x.id !== r.id && x.name.toLowerCase() === name.toLowerCase())) {
+      setErr("That title already exists."); return;
+    }
+    setSaving(true); setErr(null);
+    try {
+      await audited("csm_role.update", "csm_roles", r.id, () => api.patch("csm_roles", r.id, { name }), { before: r, after: { ...r, name } });
+      cancelRename();
+      onChanged && onChanged();
+    } catch (e) {
+      setErr(e.message || "Rename failed.");
+    }
+    setSaving(false);
+  };
 
   const add = async () => {
     const name = newName.trim();
@@ -392,9 +425,9 @@ function RolesModal({ api, roles, onClose, onChanged }) {
   };
 
   return (
-    <Modal title="Manage CSM Roles" onClose={onClose} width={560}>
+    <Modal title="Manage CSM Titles" onClose={onClose} width={560}>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-        <Input value={newName} onChange={setNewName} placeholder="New role (e.g. Staff CSM)" />
+        <Input value={newName} onChange={setNewName} placeholder="New title (e.g. Staff CSM)" />
         <Button variant="primary" onClick={add} disabled={saving || !newName.trim()}>Add</Button>
       </div>
       {err && (
@@ -404,29 +437,52 @@ function RolesModal({ api, roles, onClose, onChanged }) {
         <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "DM Mono,monospace", fontSize: 12 }}>
           <thead style={{ background: G.surface }}>
             <tr style={{ borderBottom: "1px solid " + G.border }}>
-              <th style={{ padding: "8px 12px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>ROLE</th>
+              <th style={{ padding: "8px 12px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>TITLE</th>
               <th style={{ padding: "8px 12px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>STATUS</th>
               <th style={{ padding: "8px 12px", color: G.muted }}></th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
-              <tr><td colSpan={3} style={{ padding: 16, textAlign: "center", color: G.muted }}>No roles defined.</td></tr>
+              <tr><td colSpan={3} style={{ padding: 16, textAlign: "center", color: G.muted }}>No titles defined.</td></tr>
             )}
-            {rows.map(r => (
-              <tr key={r.id} style={{ borderBottom: "1px solid " + G.faint }}>
-                <td style={{ padding: "8px 12px", color: G.text, fontWeight: 700 }}>{r.name}</td>
-                <td style={{ padding: "8px 12px" }}>
-                  <Pill tone={r.is_active ? "green" : "muted"}>{r.is_active ? "ACTIVE" : "DISABLED"}</Pill>
-                </td>
-                <td style={{ padding: "6px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
-                  <Button variant="ghost" onClick={() => toggleActive(r)} style={{ marginRight: 6 }}>
-                    {r.is_active ? "Disable" : "Enable"}
-                  </Button>
-                  <Button variant="danger" onClick={() => remove(r)}>Delete</Button>
-                </td>
-              </tr>
-            ))}
+            {rows.map(r => {
+              const isEditing = editingId === r.id;
+              return (
+                <tr key={r.id} style={{ borderBottom: "1px solid " + G.faint }}>
+                  <td style={{ padding: "8px 12px", color: G.text, fontWeight: 700 }}>
+                    {isEditing ? (
+                      <Input
+                        value={editingName}
+                        onChange={setEditingName}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveRename(r); if (e.key === "Escape") cancelRename(); }}
+                        autoFocus
+                        style={{ padding: "5px 8px" }}
+                      />
+                    ) : r.name}
+                  </td>
+                  <td style={{ padding: "8px 12px" }}>
+                    <Pill tone={r.is_active ? "green" : "muted"}>{r.is_active ? "ACTIVE" : "DISABLED"}</Pill>
+                  </td>
+                  <td style={{ padding: "6px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                    {isEditing ? (
+                      <>
+                        <Button variant="primary" onClick={() => saveRename(r)} disabled={saving} style={{ marginRight: 6 }}>Save</Button>
+                        <Button variant="ghost" onClick={cancelRename} disabled={saving}>Cancel</Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" onClick={() => startRename(r)} style={{ marginRight: 6 }}>Rename</Button>
+                        <Button variant="ghost" onClick={() => toggleActive(r)} style={{ marginRight: 6 }}>
+                          {r.is_active ? "Disable" : "Enable"}
+                        </Button>
+                        <Button variant="danger" onClick={() => remove(r)}>Delete</Button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
