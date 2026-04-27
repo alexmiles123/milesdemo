@@ -129,16 +129,80 @@ export default function CsmsTab({ api, onChanged }) {
   );
 }
 
+// Mirrors the server-side check in api/admin/users.js. Kept inline rather
+// than imported to avoid leaking a security policy into a shared module.
+function validatePasswordPolicy(pw) {
+  if (typeof pw !== "string" || pw.length < 12) return "Password must be at least 12 characters.";
+  if (!/[A-Z]/.test(pw)) return "Password must include an uppercase letter.";
+  if (!/[a-z]/.test(pw)) return "Password must include a lowercase letter.";
+  if (!/[0-9]/.test(pw)) return "Password must include a number.";
+  if (!/[^A-Za-z0-9]/.test(pw)) return "Password must include a symbol.";
+  return null;
+}
+
 function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+
+  // Login-account state. CSMs are an operational concept; logins live in
+  // app_users. We provision/manage one optionally from this same modal so an
+  // admin doesn't have to bounce between two tabs to onboard someone.
+  const [canManageUsers, setCanManageUsers] = useState(false);
+  const [linkedUser, setLinkedUser] = useState(null);
+  const [showLogin, setShowLogin] = useState(mode === "create");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // Look up the app_user belonging to this CSM (matched by email) so the
+  // edit modal can show "reset password" instead of a blank slate. Silently
+  // hides the section if the current user isn't an admin (the endpoint 403s).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.call("/api/admin/users");
+        if (cancelled) return;
+        setCanManageUsers(true);
+        if (mode === "edit" && initial?.email) {
+          const target = initial.email.trim().toLowerCase();
+          const match = (data?.users || []).find(u => (u.email || "").toLowerCase() === target);
+          setLinkedUser(match || null);
+        }
+      } catch {
+        if (!cancelled) setCanManageUsers(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [api, mode, initial]);
 
   const save = async () => {
     const e = validateCsm(form);
+
+    // Validate credentials only when the user actually filled them in.
+    if (mode === "create" && showLogin) {
+      if (!username.trim()) e.username = "Username is required to provision a login.";
+      const pwErr = validatePasswordPolicy(password);
+      if (pwErr) e.password = pwErr;
+      else if (password !== confirmPw) e.confirmPw = "Passwords don't match.";
+    }
+    if (mode === "edit" && (password || confirmPw)) {
+      if (!linkedUser) {
+        e.password = "This CSM has no login account yet — create one from App Users.";
+      } else {
+        const pwErr = validatePasswordPolicy(password);
+        if (pwErr) e.password = pwErr;
+        else if (password !== confirmPw) e.confirmPw = "Passwords don't match.";
+      }
+    }
+
     setErrors(e);
     if (hasErrors(e)) return;
+
     setSaving(true);
     try {
       const payload = {
@@ -149,9 +213,21 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
       };
       if (mode === "create") {
         const rows = await audited("csm.create", "csms", null, () => api.post("csms", [payload]), { after: payload });
+        if (showLogin && username.trim() && password) {
+          await api.call("/api/admin/users", { method: "POST", body: {
+            username: username.trim(),
+            email: payload.email || (username.trim() + "@local"),
+            full_name: payload.name,
+            role: "csm",
+            password,
+          }});
+        }
         onSaved(rows[0], "create");
       } else {
         await audited("csm.update", "csms", initial.id, () => api.patch("csms", initial.id, payload), { before: initial, after: payload });
+        if (linkedUser && password) {
+          await api.call("/api/admin/users", { method: "PATCH", body: { id: linkedUser.id, password } });
+        }
         onSaved({ ...initial, ...payload }, "edit");
       }
     } catch (err) {
@@ -160,8 +236,11 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
     setSaving(false);
   };
 
+  const sectionLabel = { fontFamily:"Syne, sans-serif", fontSize:13, fontWeight:700, color:G.text, letterSpacing:"0.05em", textTransform:"uppercase" };
+  const helperText   = { fontSize:10, color:G.faint, fontFamily:"DM Mono,monospace", marginTop:4 };
+
   return (
-    <Modal title={mode === "create" ? "New CSM" : "Edit CSM"} onClose={onClose} width={520}>
+    <Modal title={mode === "create" ? "New CSM" : "Edit CSM"} onClose={onClose} width={560}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div style={{ gridColumn: "span 2" }}>
           <Label>FULL NAME</Label>
@@ -183,6 +262,75 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
           </label>
         </div>
       </div>
+
+      {canManageUsers && (
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: "1px solid " + G.border }}>
+          {mode === "create" ? (
+            <>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: 12 }}>
+                <div style={sectionLabel}>App Login (Optional)</div>
+                <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontFamily:"DM Mono,monospace", fontSize:11, color:G.muted }}>
+                  <input type="checkbox" checked={showLogin} onChange={e => setShowLogin(e.target.checked)} /> Provision login
+                </label>
+              </div>
+              {showLogin && (
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                  <div style={{ gridColumn:"span 2" }}>
+                    <Label>USERNAME</Label>
+                    <Input value={username} onChange={setUsername} placeholder="alex.miles" autoComplete="off" />
+                    <FieldError error={errors.username} />
+                    <div style={helperText}>Cannot be changed later.</div>
+                  </div>
+                  <div>
+                    <Label>PASSWORD</Label>
+                    <Input value={password} onChange={setPassword} type="password" placeholder="Min 12 chars" autoComplete="new-password" />
+                    <FieldError error={errors.password} />
+                  </div>
+                  <div>
+                    <Label>CONFIRM PASSWORD</Label>
+                    <Input value={confirmPw} onChange={setConfirmPw} type="password" autoComplete="new-password" />
+                    <FieldError error={errors.confirmPw} />
+                  </div>
+                  <div style={{ gridColumn:"span 2", fontSize:11, color:G.muted, fontFamily:"DM Mono,monospace" }}>
+                    12+ chars · upper · lower · number · symbol.
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div style={{ ...sectionLabel, marginBottom: 12 }}>Login Account</div>
+              {linkedUser ? (
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                  <div style={{ gridColumn:"span 2" }}>
+                    <Label>USERNAME</Label>
+                    <Input value={linkedUser.username} disabled />
+                    <div style={helperText}>Usernames cannot be changed.</div>
+                  </div>
+                  <div>
+                    <Label>NEW PASSWORD (OPTIONAL)</Label>
+                    <Input value={password} onChange={setPassword} type="password" placeholder="Leave blank to keep current" autoComplete="new-password" />
+                    <FieldError error={errors.password} />
+                  </div>
+                  <div>
+                    <Label>CONFIRM NEW PASSWORD</Label>
+                    <Input value={confirmPw} onChange={setConfirmPw} type="password" autoComplete="new-password" />
+                    <FieldError error={errors.confirmPw} />
+                  </div>
+                  <div style={{ gridColumn:"span 2", fontSize:11, color:G.muted, fontFamily:"DM Mono,monospace" }}>
+                    12+ chars · upper · lower · number · symbol. Leave blank to keep the current password.
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: "10px 12px", background: "#0a1420", border: "1px solid " + G.border, borderRadius: 8, fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace" }}>
+                  No login account is linked to this CSM&apos;s email. Provision one from the App Users tab.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {errors._root && (
         <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{errors._root}</div>
       )}
