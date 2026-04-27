@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { G } from "../lib/theme.js";
+import { fetchPasswordPolicy, describePolicy, validatePasswordWith, DEFAULT_POLICY } from "../lib/password.js";
 import { Card, CardHeader, Label, Input, Select, Button, Toast, Modal, Empty, Th, Td, Pill, Confirm, FieldError } from "./common.jsx";
 
 const ROLES = [
@@ -10,14 +11,12 @@ const ROLES = [
 
 const BLANK_NEW = { username: "", email: "", full_name: "", role: "viewer", password: "", must_reset: true };
 
-const validateNew = (u) => {
+const validateNew = (u, policy) => {
   const e = {};
   if (!u.username || u.username.length < 3) e.username = "Username is required (3+ characters).";
   if (!u.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u.email)) e.email = "Valid email required.";
-  if (!u.password || u.password.length < 12) e.password = "Password must be at least 12 characters.";
-  else if (!/[A-Z]/.test(u.password) || !/[a-z]/.test(u.password) || !/[0-9]/.test(u.password) || !/[^A-Za-z0-9]/.test(u.password)) {
-    e.password = "Must include upper + lower + number + symbol.";
-  }
+  const pwErr = validatePasswordWith(u.password, policy);
+  if (pwErr) e.password = pwErr;
   return e;
 };
 
@@ -31,6 +30,7 @@ export default function UsersTab({ api }) {
   const [resetUser, setResetUser] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [toast, setToast] = useState(null);
+  const [policy, setPolicy] = useState(DEFAULT_POLICY);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,7 +45,7 @@ export default function UsersTab({ api }) {
   }, [api]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); fetchPasswordPolicy(api).then(setPolicy); }, [api, load]);
 
   const visible = users.filter(u => showInactive || u.is_active);
 
@@ -138,28 +138,28 @@ export default function UsersTab({ api }) {
       <Card>
         <CardHeader>SECURITY POSTURE</CardHeader>
         <div style={{ padding: 18, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12, fontFamily: "DM Mono,monospace", fontSize: 12, color: G.muted, lineHeight: 1.6 }}>
-          <div><div style={{ color: G.text, fontWeight: 700, marginBottom: 4 }}>Password policy</div>12+ chars, mix of upper, lower, number, symbol.</div>
+          <div><div style={{ color: G.text, fontWeight: 700, marginBottom: 4 }}>Password policy</div>{describePolicy(policy)}.</div>
           <div><div style={{ color: G.text, fontWeight: 700, marginBottom: 4 }}>Account lockout</div>15 minutes after 5 failed sign-in attempts.</div>
           <div><div style={{ color: G.text, fontWeight: 700, marginBottom: 4 }}>Session length</div>12-hour signed JWT, no server-side store.</div>
           <div><div style={{ color: G.text, fontWeight: 700, marginBottom: 4 }}>Audit trail</div>Every create / update / disable is logged to audit_log.</div>
         </div>
       </Card>
 
-      {createOpen && <CreateUserModal api={api} onClose={() => setCreateOpen(false)} onCreated={() => { setCreateOpen(false); setToast({ tone: "success", msg: "User created." }); load(); }} setToast={setToast} />}
-      {resetUser && <ResetPasswordModal api={api} user={resetUser} onClose={() => setResetUser(null)} onDone={() => { setResetUser(null); setToast({ tone: "success", msg: "Password reset." }); load(); }} setToast={setToast} />}
+      {createOpen && <CreateUserModal api={api} policy={policy} onClose={() => setCreateOpen(false)} onCreated={() => { setCreateOpen(false); setToast({ tone: "success", msg: "User created." }); load(); }} setToast={setToast} />}
+      {resetUser && <ResetPasswordModal api={api} user={resetUser} policy={policy} onClose={() => setResetUser(null)} onDone={() => { setResetUser(null); setToast({ tone: "success", msg: "Password reset." }); load(); }} setToast={setToast} />}
       {confirm && <Confirm message={`Disable ${confirm.username}? They will no longer be able to sign in. You can re-enable them later.`} onCancel={() => setConfirm(null)} onConfirm={() => disable(confirm)} />}
       {toast && <Toast tone={toast.tone}>{toast.msg}<button onClick={() => setToast(null)} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", marginLeft: 12 }}>×</button></Toast>}
     </div>
   );
 }
 
-function CreateUserModal({ api, onClose, onCreated, setToast }) {
+function CreateUserModal({ api, policy, onClose, onCreated, setToast }) {
   const [form, setForm] = useState(BLANK_NEW);
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    const e = validateNew(form);
+    const e = validateNew(form, policy);
     setErrors(e);
     if (Object.keys(e).length) return;
     setBusy(true);
@@ -198,7 +198,7 @@ function CreateUserModal({ api, onClose, onCreated, setToast }) {
           <Input value={form.password} onChange={(v) => set("password", v)} type="text" placeholder="At least 12 characters" />
           <FieldError error={errors.password} />
           <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
-            12+ chars · upper + lower + number + symbol. Share this securely; the user will be required to reset it on first login.
+            {describePolicy(policy)}. Share this securely; the user will be required to reset it on first login.
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted }}>
@@ -214,17 +214,15 @@ function CreateUserModal({ api, onClose, onCreated, setToast }) {
   );
 }
 
-function ResetPasswordModal({ api, user, onClose, onDone, setToast }) {
+function ResetPasswordModal({ api, user, policy, onClose, onDone, setToast }) {
   const [pw, setPw] = useState("");
   const [mustReset, setMustReset] = useState(true);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    if (pw.length < 12 || !/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw) || !/[^A-Za-z0-9]/.test(pw)) {
-      setError("12+ chars with upper + lower + number + symbol.");
-      return;
-    }
+    const pwErr = validatePasswordWith(pw, policy);
+    if (pwErr) { setError(pwErr); return; }
     setBusy(true);
     try {
       await api.call("/api/admin/users", { method: "PATCH", body: { id: user.id, password: pw, must_reset: mustReset } });
@@ -238,8 +236,9 @@ function ResetPasswordModal({ api, user, onClose, onDone, setToast }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div>
           <Label>NEW PASSWORD</Label>
-          <Input value={pw} onChange={setPw} type="text" placeholder="At least 12 characters" />
+          <Input value={pw} onChange={setPw} type="text" placeholder={`At least ${policy.min_length} characters`} />
           <FieldError error={error} />
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>{describePolicy(policy)}.</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted }}>
           <input id="reset-mustreset" type="checkbox" checked={mustReset} onChange={(e) => setMustReset(e.target.checked)} />

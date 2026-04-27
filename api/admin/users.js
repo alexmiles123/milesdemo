@@ -22,18 +22,10 @@ import bcrypt from "bcryptjs";
 import { hardenResponse, fail, json, rateLimit } from "../_lib/security.js";
 import { requireAuth, requireRole } from "../_lib/auth.js";
 import { sbGet, sbInsert, sbUpdate, sbConfigured } from "../_lib/sb.js";
+import { validatePassword } from "../_lib/password.js";
 
 const PUBLIC_FIELDS = "id,username,email,full_name,role,is_active,must_reset,last_login_at,failed_attempts,locked_until,created_at,updated_at";
 const VALID_ROLES = new Set(["admin", "csm", "viewer"]);
-
-function validatePassword(pw) {
-  if (typeof pw !== "string" || pw.length < 12) return "Password must be at least 12 characters.";
-  if (!/[A-Z]/.test(pw)) return "Password must include an uppercase letter.";
-  if (!/[a-z]/.test(pw)) return "Password must include a lowercase letter.";
-  if (!/[0-9]/.test(pw)) return "Password must include a number.";
-  if (!/[^A-Za-z0-9]/.test(pw)) return "Password must include a symbol.";
-  return null;
-}
 
 async function audit(actor, action, entityId, metadata) {
   try {
@@ -79,7 +71,7 @@ export default async function handler(req, res) {
     const password = (body.password || "").toString();
     if (!username || !email) return fail(res, 400, "Username and email are required.");
     if (!VALID_ROLES.has(role)) return fail(res, 400, "Invalid role.");
-    const pwErr = validatePassword(password);
+    const pwErr = await validatePassword(password);
     if (pwErr) return fail(res, 400, pwErr);
 
     try {
@@ -113,7 +105,7 @@ export default async function handler(req, res) {
     }
     if (body.must_reset != null) patch.must_reset = !!body.must_reset;
     if (typeof body.password === "string" && body.password.length > 0) {
-      const pwErr = validatePassword(body.password);
+      const pwErr = await validatePassword(body.password);
       if (pwErr) return fail(res, 400, pwErr);
       patch.password_hash = await bcrypt.hash(body.password, 10);
       patch.must_reset = !!body.must_reset; // admin can require re-set on next login

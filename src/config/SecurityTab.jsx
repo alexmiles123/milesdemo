@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { G } from "../lib/theme.js";
-import { Card, CardHeader, Pill } from "./common.jsx";
+import { fetchPasswordPolicy, describePolicy, DEFAULT_POLICY } from "../lib/password.js";
+import { Card, CardHeader, Pill, Label, Input, Button, Toast } from "./common.jsx";
 
 // The security tab is a live posture summary — it reads from environment
 // metadata + recent audit events and flags controls that are OK, warn, or
@@ -122,6 +123,8 @@ export default function SecurityTab({ api }) {
         </div>
       </Card>
 
+      <PasswordPolicyCard api={api} />
+
       {controls.map(group => (
         <Card key={group.family} style={{ marginBottom: 14 }}>
           <CardHeader>{group.family}</CardHeader>
@@ -169,6 +172,102 @@ function FrameworkCard({ title, blurb, items }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function PasswordPolicyCard({ api }) {
+  const [policy, setPolicy] = useState(DEFAULT_POLICY);
+  const [draft, setDraft] = useState(DEFAULT_POLICY);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [error, setError] = useState("");
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    fetchPasswordPolicy(api).then(p => { setPolicy(p); setDraft(p); setLoaded(true); });
+  }, [api]);
+
+  const dirty =
+    draft.min_length     !== policy.min_length     ||
+    draft.require_upper  !== policy.require_upper  ||
+    draft.require_lower  !== policy.require_lower  ||
+    draft.require_number !== policy.require_number ||
+    draft.require_symbol !== policy.require_symbol;
+
+  const save = async () => {
+    setError("");
+    const n = Number(draft.min_length);
+    if (!Number.isInteger(n) || n < 8 || n > 128) {
+      setError("Minimum length must be a whole number between 8 and 128.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const data = await api.call("/api/password-policy", { method: "PATCH", body: {
+        min_length: n,
+        require_upper:  !!draft.require_upper,
+        require_lower:  !!draft.require_lower,
+        require_number: !!draft.require_number,
+        require_symbol: !!draft.require_symbol,
+      }});
+      const next = data?.policy || draft;
+      setPolicy(next);
+      setDraft(next);
+      setToast({ tone: "success", msg: "Password policy updated." });
+    } catch (e) {
+      setError(e.message || "Failed to update policy.");
+    }
+    setSaving(false);
+  };
+
+  const reset = () => { setDraft(policy); setError(""); };
+
+  const checkRow = (label, key) => (
+    <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "DM Mono,monospace", fontSize: 12, color: G.text, cursor: "pointer" }}>
+      <input type="checkbox" checked={!!draft[key]} onChange={(e) => setDraft({ ...draft, [key]: e.target.checked })} />
+      {label}
+    </label>
+  );
+
+  return (
+    <Card style={{ marginBottom: 14 }}>
+      <CardHeader>PASSWORD POLICY · CONFIGURABLE</CardHeader>
+      <div style={{ padding: 18, display: "grid", gridTemplateColumns: "240px 1fr", gap: 24 }}>
+        <div>
+          <Label>MINIMUM LENGTH</Label>
+          <Input
+            type="number"
+            value={draft.min_length}
+            onChange={(v) => setDraft({ ...draft, min_length: v === "" ? "" : Number(v) })}
+            disabled={!loaded}
+          />
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 6 }}>
+            8–128 characters. NIST SP 800-63B recommends 8 minimum; 12+ is industry baseline.
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
+          <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.1em", marginBottom: 2 }}>CHARACTER REQUIREMENTS</div>
+          {checkRow("Require an uppercase letter (A–Z)", "require_upper")}
+          {checkRow("Require a lowercase letter (a–z)", "require_lower")}
+          {checkRow("Require a number (0–9)", "require_number")}
+          {checkRow("Require a symbol (!@#$…)", "require_symbol")}
+        </div>
+      </div>
+      <div style={{ padding: "0 18px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace" }}>
+          Currently enforced: <span style={{ color: G.text }}>{describePolicy(policy)}</span>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button variant="ghost" onClick={reset} disabled={!dirty || saving}>Revert</Button>
+          <Button variant="primary" onClick={save} disabled={!dirty || saving}>{saving ? "Saving…" : "Save Policy"}</Button>
+        </div>
+      </div>
+      {error && (
+        <div style={{ margin: "0 18px 16px", padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{error}</div>
+      )}
+      {toast && <Toast tone={toast.tone} onClose={() => setToast(null)}>{toast.msg}</Toast>}
+    </Card>
   );
 }
 

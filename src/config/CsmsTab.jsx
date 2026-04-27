@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { G, ROLE_OPTIONS } from "../lib/theme.js";
 import { validateCsm, hasErrors } from "../lib/validation.js";
 import { audited } from "../lib/audit.js";
+import { fetchPasswordPolicy, describePolicy, validatePasswordWith, DEFAULT_POLICY } from "../lib/password.js";
 import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm } from "./common.jsx";
 
 const BLANK = { name:"", email:"", role:"CSM", is_active:true };
@@ -73,7 +74,7 @@ export default function CsmsTab({ api, onChanged }) {
       <Card>
         <CardHeader right={<div style={{ display: "flex", gap: 8 }}>
           <Button variant="ghost" onClick={() => setShowRolesModal(true)}>Manage Roles</Button>
-          <Button variant="primary" onClick={() => setModal({ mode:"create", data:{ ...BLANK } })}>+ New CSM</Button>
+          <Button variant="primary" onClick={() => setModal({ mode:"create", data:{ ...BLANK } })}>+ Add User</Button>
         </div>}>
           CUSTOMER SUCCESS MANAGERS ({visible.length}{visible.length !== csms.length ? ` of ${csms.length}` : ""})
         </CardHeader>
@@ -129,17 +130,6 @@ export default function CsmsTab({ api, onChanged }) {
   );
 }
 
-// Mirrors the server-side check in api/admin/users.js. Kept inline rather
-// than imported to avoid leaking a security policy into a shared module.
-function validatePasswordPolicy(pw) {
-  if (typeof pw !== "string" || pw.length < 12) return "Password must be at least 12 characters.";
-  if (!/[A-Z]/.test(pw)) return "Password must include an uppercase letter.";
-  if (!/[a-z]/.test(pw)) return "Password must include a lowercase letter.";
-  if (!/[0-9]/.test(pw)) return "Password must include a number.";
-  if (!/[^A-Za-z0-9]/.test(pw)) return "Password must include a symbol.";
-  return null;
-}
-
 function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
@@ -154,6 +144,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
+  const [policy, setPolicy] = useState(DEFAULT_POLICY);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -164,17 +155,21 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const data = await api.call("/api/admin/users");
-        if (cancelled) return;
+      const [usersResult, p] = await Promise.all([
+        api.call("/api/admin/users").catch(() => null),
+        fetchPasswordPolicy(api),
+      ]);
+      if (cancelled) return;
+      setPolicy(p);
+      if (usersResult) {
         setCanManageUsers(true);
         if (mode === "edit" && initial?.email) {
           const target = initial.email.trim().toLowerCase();
-          const match = (data?.users || []).find(u => (u.email || "").toLowerCase() === target);
+          const match = (usersResult.users || []).find(u => (u.email || "").toLowerCase() === target);
           setLinkedUser(match || null);
         }
-      } catch {
-        if (!cancelled) setCanManageUsers(false);
+      } else {
+        setCanManageUsers(false);
       }
     })();
     return () => { cancelled = true; };
@@ -186,7 +181,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
     // Validate credentials only when the user actually filled them in.
     if (mode === "create" && showLogin) {
       if (!username.trim()) e.username = "Username is required to provision a login.";
-      const pwErr = validatePasswordPolicy(password);
+      const pwErr = validatePasswordWith(password, policy);
       if (pwErr) e.password = pwErr;
       else if (password !== confirmPw) e.confirmPw = "Passwords don't match.";
     }
@@ -194,7 +189,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
       if (!linkedUser) {
         e.password = "This CSM has no login account yet — create one from App Users.";
       } else {
-        const pwErr = validatePasswordPolicy(password);
+        const pwErr = validatePasswordWith(password, policy);
         if (pwErr) e.password = pwErr;
         else if (password !== confirmPw) e.confirmPw = "Passwords don't match.";
       }
@@ -240,7 +235,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
   const helperText   = { fontSize:10, color:G.faint, fontFamily:"DM Mono,monospace", marginTop:4 };
 
   return (
-    <Modal title={mode === "create" ? "New CSM" : "Edit CSM"} onClose={onClose} width={560}>
+    <Modal title={mode === "create" ? "Add User" : "Edit CSM"} onClose={onClose} width={560}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div style={{ gridColumn: "span 2" }}>
           <Label>FULL NAME</Label>
@@ -292,7 +287,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
                     <FieldError error={errors.confirmPw} />
                   </div>
                   <div style={{ gridColumn:"span 2", fontSize:11, color:G.muted, fontFamily:"DM Mono,monospace" }}>
-                    12+ chars · upper · lower · number · symbol.
+                    {describePolicy(policy)}.
                   </div>
                 </div>
               )}
@@ -318,7 +313,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
                     <FieldError error={errors.confirmPw} />
                   </div>
                   <div style={{ gridColumn:"span 2", fontSize:11, color:G.muted, fontFamily:"DM Mono,monospace" }}>
-                    12+ chars · upper · lower · number · symbol. Leave blank to keep the current password.
+                    {describePolicy(policy)}. Leave blank to keep the current password.
                   </div>
                 </div>
               ) : (
@@ -336,7 +331,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
       )}
       <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop: 20 }}>
         <Button onClick={onClose} variant="ghost">Cancel</Button>
-        <Button onClick={save} variant="primary" disabled={saving}>{saving ? "Saving…" : mode === "create" ? "Add CSM" : "Save Changes"}</Button>
+        <Button onClick={save} variant="primary" disabled={saving}>{saving ? "Saving…" : mode === "create" ? "Add User" : "Save Changes"}</Button>
       </div>
     </Modal>
   );
