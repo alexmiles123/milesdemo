@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Tests need a JWT secret long enough to satisfy api/_lib/auth.js.
+      APP_JWT_SECRET: ${{ secrets.CI_APP_JWT_SECRET || 'ci-secret-must-be-at-least-thirty-two-chars-long' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run build
+      - run: npm test --if-present
+
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Fail only on high/critical vulnerabilities so we don't block on a
+      # transitive moderate that we can't fix without a breaking upgrade.
+      - run: npm audit --omit=dev --audit-level=high
+        continue-on-error: false
