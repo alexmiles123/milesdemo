@@ -35,8 +35,8 @@ export default async function handler(req, res) {
     const [appUsers, csms, customers, interactions] = await Promise.all([
       sbGet("app_users",     { select: "id,username,email,full_name,role,is_active,created_at,updated_at,last_login_at", email: "ilike." + email }),
       sbGet("csms",          { select: "id,name,email,role,is_active,created_at",                                       email: "ilike." + email }),
-      sbGet("customers",     { select: "id,name,primary_email,phone,address,notes,is_active,created_at",                primary_email: "ilike." + email }),
-      sbGet("customer_interactions", { select: "id,customer_id,subject,body,occurred_at,source_system,interaction_type", body: "ilike.*" + email + "*" }),
+      sbGet("customers",     { select: "id,name,contact_name,contact_email,contact_phone,address,notes,is_active,created_at", contact_email: "ilike." + email }),
+      sbGet("customer_interactions", { select: "id,project_id,csm_id,subject,body,occurred_at,source_system,interaction_type", body: "ilike.*" + email + "*" }),
     ]);
 
     await writeAudit({

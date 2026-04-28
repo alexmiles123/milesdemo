@@ -10,7 +10,7 @@
 // Tables touched (PII columns only):
 //   • app_users.email, app_users.full_name
 //   • csms.email
-//   • customers.primary_email, customers.phone, customers.address, customers.notes
+//   • customers.contact_email, customers.contact_phone, customers.address, customers.notes
 //   • customer_interactions: rows where body ILIKE %email% have body cleared
 //
 // The username and the row id stay intact so foreign keys and audit history
@@ -71,8 +71,8 @@ export default async function handler(req, res) {
     });
     result.csms = csmIds;
 
-    const customerIds = await scrub("customers", { primary_email: "ilike." + email }, {
-      primary_email: ANON_EMAIL, phone: null, address: null, notes: ANON_TEXT,
+    const customerIds = await scrub("customers", { contact_email: "ilike." + email }, {
+      contact_email: ANON_EMAIL, contact_phone: null, address: null, notes: ANON_TEXT,
     });
     result.customers = customerIds;
 
