@@ -54,6 +54,10 @@ export default async function handler(req, res) {
     });
     if (!items || !items.length) return fail(res, 400, "Template has no items.");
 
+    // Leave assignee_type unset — the DB has a CHECK constraint
+    // (tasks_assignee_type_check) whose allowed values are project-specific,
+    // and template-applied tasks are unassigned by default anyway. The
+    // column is nullable; assignment happens later via the project UI.
     const tasksToInsert = items.map(it => ({
       project_id,
       name: it.name,
@@ -62,7 +66,6 @@ export default async function handler(req, res) {
       estimated_hours: it.estimated_hours,
       proj_date: addDays(startDate, it.day_offset || 0),
       notes: it.notes || null,
-      assignee_type: "csm",
       status: "upcoming",
     }));
 
