@@ -20,6 +20,11 @@
 
 import bcrypt from "bcryptjs";
 import { hardenResponse, fail, json, rateLimit } from "../_lib/security.js";
+
+// 12 rounds — ~250ms on commodity hardware. 10 was the bcryptjs default but
+// is now considered borderline against modern GPU rigs; 12 quadruples the
+// per-guess cost without making interactive sign-up feel slow.
+const BCRYPT_ROUNDS = 12;
 import { requireAuth, requireRole } from "../_lib/auth.js";
 import { sbGet, sbInsert, sbUpdate, sbConfigured } from "../_lib/sb.js";
 import { validatePassword } from "../_lib/password.js";
@@ -75,7 +80,7 @@ export default async function handler(req, res) {
     if (pwErr) return fail(res, 400, pwErr);
 
     try {
-      const hash = await bcrypt.hash(password, 10);
+      const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
       const inserted = await sbInsert("app_users", [{
         username, email, full_name: fullName, password_hash: hash, role, is_active: true, must_reset: !!body.must_reset,
       }]);
@@ -107,7 +112,7 @@ export default async function handler(req, res) {
     if (typeof body.password === "string" && body.password.length > 0) {
       const pwErr = await validatePassword(body.password);
       if (pwErr) return fail(res, 400, pwErr);
-      patch.password_hash = await bcrypt.hash(body.password, 10);
+      patch.password_hash = await bcrypt.hash(body.password, BCRYPT_ROUNDS);
       patch.must_reset = !!body.must_reset; // admin can require re-set on next login
       patch.failed_attempts = 0;
       patch.locked_until = null;

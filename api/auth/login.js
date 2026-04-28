@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   if (sbConfigured()) {
     try {
       const rows = await sbGet("app_users", {
-        select: "id,username,email,full_name,password_hash,role,is_active,must_reset,failed_attempts,locked_until",
+        select: "id,username,email,full_name,password_hash,role,csm_id,is_active,must_reset,failed_attempts,locked_until",
         username: "ilike." + username,
         limit: "1",
       });
@@ -75,12 +75,14 @@ export default async function handler(req, res) {
           user: user.username,
           role: user.role || "viewer",
           user_id: user.id,
+          csm_id: user.csm_id || null,
           must_reset: !!user.must_reset,
         });
         const refresh = await signRefresh({
           user: user.username,
           role: user.role || "viewer",
           user_id: user.id,
+          csm_id: user.csm_id || null,
         });
         const csrf = issueSessionCookies(res, { accessToken: token, refreshToken: refresh });
         return json(res, 200, {

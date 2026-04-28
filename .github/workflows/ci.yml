@@ -1,20 +1,49 @@
 name: ci
 
+# Trigger model — `pull_request` runs in the FORK's context, never with our
+# repo secrets, so a malicious contributor can't exfiltrate them by editing
+# the workflow. We deliberately avoid `pull_request_target` (which runs
+# trusted code against untrusted refs) here.
+#
+# To make that explicit:
+#   * The build/test job runs on every PR but receives ONLY the dummy CI
+#     secret literal below if `secrets.CI_APP_JWT_SECRET` isn't available
+#     (forks never see it). No real secrets are exposed.
+#   * The audit job has no env at all.
+#   * Anything that needs production-like credentials must run after merge,
+#     under the `push: main` trigger, which is what the `protected-checks`
+#     job below gates.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
+# Drop ALL default token permissions; each job re-grants only what it needs.
+# This way a compromised step can't push to the repo, edit issues, etc.
+permissions: {}
+
+# Cancel in-flight runs when a new commit lands on the same PR/branch so we
+# don't waste minutes verifying a stale ref while the actual head moves.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     env:
       # Tests need a JWT secret long enough to satisfy api/_lib/auth.js.
+      # On fork PRs `secrets.*` resolves to an empty string, so the literal
+      # fallback is what's used — and it's a known throwaway value.
       APP_JWT_SECRET: ${{ secrets.CI_APP_JWT_SECRET || 'ci-secret-must-be-at-least-thirty-two-chars-long' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -29,8 +58,12 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 20

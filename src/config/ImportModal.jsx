@@ -50,12 +50,24 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
     setFileName(file.name);
     setSummary(null);
     try {
+      // Cap upload size (10 MB) and row count (50k) before parsing. SheetJS
+      // is happy to allocate gigabytes for a maliciously-crafted workbook;
+      // the cap shields the tab from a runaway Out-Of-Memory crash and
+      // makes the failure a friendly "file too large" toast instead.
+      const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+      const MAX_ROWS = 50_000;
+      if (file.size > MAX_FILE_BYTES) {
+        throw new Error(`File is too large. Maximum is ${Math.round(MAX_FILE_BYTES / 1024 / 1024)} MB.`);
+      }
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array", cellDates: true });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       if (!sheet) throw new Error("Workbook has no sheets.");
       const raw = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
       if (!raw.length) throw new Error("File has no data rows.");
+      if (raw.length > MAX_ROWS) {
+        throw new Error(`Too many rows: ${raw.length}. Maximum is ${MAX_ROWS}. Split the file into smaller batches.`);
+      }
 
       const normHeaders = {};
       Object.keys(raw[0]).forEach(h => {

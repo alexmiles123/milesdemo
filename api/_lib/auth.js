@@ -45,9 +45,10 @@ function getKey() {
   return cachedKey;
 }
 
-export async function signSession({ user, role = "user", user_id = null, must_reset = false }) {
+export async function signSession({ user, role = "user", user_id = null, csm_id = null, must_reset = false }) {
   const payload = { user, role, typ: "access" };
   if (user_id) payload.user_id = user_id;
+  if (csm_id)  payload.csm_id  = csm_id;
   if (must_reset) payload.must_reset = true;
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: ALG })
@@ -58,11 +59,17 @@ export async function signSession({ user, role = "user", user_id = null, must_re
     .sign(getKey());
 }
 
-export async function signRefresh({ user, role, user_id = null }) {
+// Refresh tokens carry a unique jti so a stolen cookie can't be replayed
+// after the legitimate user refreshes — /api/auth/refresh records each jti
+// it has consumed and rejects any token whose jti has been seen before.
+export async function signRefresh({ user, role, user_id = null, csm_id = null, jti = null }) {
   const payload = { user, role, typ: "refresh" };
   if (user_id) payload.user_id = user_id;
+  if (csm_id)  payload.csm_id  = csm_id;
+  const tokenId = jti || crypto.randomBytes(16).toString("hex");
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: ALG })
+    .setJti(tokenId)
     .setIssuedAt()
     .setExpirationTime(`${REFRESH_TTL_DAYS}d`)
     .setIssuer("monument")

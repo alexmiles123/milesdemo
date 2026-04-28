@@ -15,6 +15,8 @@ import { hardenResponse, fail, failUpstream, rateLimit, redactSecrets, requestId
 import { requireAuth } from "../_lib/auth.js";
 import { writeAudit } from "../_lib/supabase.js";
 import { validateWrite, checkPayloadSize } from "../_lib/validators.js";
+import { authorizeRequest } from "../_lib/dbAuthz.js";
+import { encryptRowInPlace, decryptRowInPlace, PII_COLUMNS } from "../_lib/pii.js";
 
 const ALLOWED_METHODS = new Set(["GET", "POST", "PATCH", "DELETE", "PUT"]);
 
@@ -80,19 +82,6 @@ export default async function handler(req, res) {
   const table = pathParts[0];
   if (!ALLOWED_TABLES.has(table)) return fail(res, 404, "Unknown table.");
 
-  // audit_log carries sensitive operational data (IPs, UAs, before/after
-  // state of every config change). Reads are admin-only; writes never go
-  // through this proxy — they're produced server-side by /api/audit and
-  // the audited() wrapper around mutations.
-  if (table === "audit_log") {
-    if (req.method !== "GET") {
-      return fail(res, 403, "audit_log is append-only via /api/audit.");
-    }
-    if (session.role !== "admin") {
-      return fail(res, 403, "Audit log is admin-only.");
-    }
-  }
-
   // Strip anything that could be a Vercel-injected route echo from the
   // forwarded query string. Anything with a dot/bracket/paren in the key
   // is suspect — real PostgREST params use underscores and lowercase.
@@ -100,11 +89,55 @@ export default async function handler(req, res) {
   for (const key of Array.from(usp.keys())) {
     if (key === "path" || /[.[\]()]/.test(key)) usp.delete(key);
   }
-  const qs = usp.toString();
 
   const sbUrl = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const sbKey = process.env.SUPABASE_SERVICE_KEY;
   if (!sbUrl || !sbKey) return fail(res, 500, "Supabase not configured.");
+
+  // Parse the body up front — authorization needs to inspect it for csm-role
+  // writes (to confirm the row carries the caller's csm_id).
+  let body = undefined;
+  let bodyParsed = null;
+  if (req.method !== "GET" && req.method !== "DELETE") {
+    body = typeof req.body === "string" ? req.body : JSON.stringify(req.body ?? {});
+    const sizeCheck = checkPayloadSize(body);
+    if (!sizeCheck.ok) return fail(res, 413, sizeCheck.error);
+    try { bodyParsed = body ? JSON.parse(body) : null; } catch { return fail(res, 400, "Invalid JSON body."); }
+    const v = validateWrite(table, bodyParsed);
+    if (!v.ok) return fail(res, 400, v.error);
+  }
+
+  // Per-table authorization (read/write per role + per-row filter for csm).
+  // The proxy used to gate only on "are you logged in?" — this is the layer
+  // that stops a viewer from PATCHing integrations or a CSM from reassigning
+  // someone else's project.
+  const authz = authorizeRequest({
+    table,
+    method: req.method,
+    role: session.role || "viewer",
+    csmId: session.csm_id || null,
+    bodyParsed,
+    usp,
+  });
+  if (!authz.ok) return fail(res, authz.status, authz.message);
+
+  // Transparent PII encryption on the way in. Only fires for tables whose
+  // entry exists in PII_COLUMNS *and* PII_ENCRYPTION_KEY is configured.
+  // Plaintext writes still work otherwise — encryption is opt-in by env.
+  if (bodyParsed != null && PII_COLUMNS[table]) {
+    if (Array.isArray(bodyParsed)) {
+      bodyParsed.forEach(r => encryptRowInPlace(table, r));
+    } else {
+      encryptRowInPlace(table, bodyParsed);
+    }
+  }
+
+  // authorizeRequest may have mutated bodyParsed (auto-filling csm_id) or
+  // appended filters to the query string. Re-serialize before forwarding.
+  if (bodyParsed != null && body !== undefined) {
+    body = JSON.stringify(bodyParsed);
+  }
+  const qs = usp.toString();
 
   // Path under rest/v1 — allow sub-paths (e.g. /rpc/some_fn) if we ever add them.
   const subPath = pathParts.join("/");
@@ -127,26 +160,32 @@ export default async function handler(req, res) {
     Prefer: req.headers["prefer"] || "return=representation",
   };
 
-  let body = undefined;
-  if (req.method !== "GET" && req.method !== "DELETE") {
-    body = typeof req.body === "string" ? req.body : JSON.stringify(req.body ?? {});
-    // Server-side validation of write payloads. Mirrors src/lib/validation.js
-    // but treats client validation as advisory — these checks decide whether
-    // the request reaches Supabase at all.
-    const sizeCheck = checkPayloadSize(body);
-    if (!sizeCheck.ok) return fail(res, 413, sizeCheck.error);
-    let parsed = null;
-    try { parsed = body ? JSON.parse(body) : null; } catch { return fail(res, 400, "Invalid JSON body."); }
-    const v = validateWrite(table, parsed);
-    if (!v.ok) return fail(res, 400, v.error);
-  }
-
   try {
     const upstream = await fetch(target, { method: req.method, headers, body });
-    const text = await upstream.text();
+    let text = await upstream.text();
     res.statusCode = upstream.status;
     const ct = upstream.headers.get("content-type");
     if (ct) res.setHeader("Content-Type", ct);
+
+    // Transparent PII decryption on the way out. The response is whatever
+    // PostgREST returned; we only re-serialize when the table actually has
+    // encrypted columns to spend cycles on.
+    if (
+      PII_COLUMNS[table] &&
+      upstream.status >= 200 && upstream.status < 300 &&
+      text && (ct || "").includes("application/json")
+    ) {
+      try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(r => decryptRowInPlace(table, r));
+          text = JSON.stringify(parsed);
+        } else if (parsed && typeof parsed === "object") {
+          decryptRowInPlace(table, parsed);
+          text = JSON.stringify(parsed);
+        }
+      } catch { /* not valid JSON — leave as-is */ }
+    }
 
     // Audit configuration mutations (POST/PATCH/DELETE on tracked tables).
     // Reads, sync telemetry, and audit_log itself are skipped. Failures here

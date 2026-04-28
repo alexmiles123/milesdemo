@@ -85,3 +85,66 @@ export function redactRecord(row, fields) {
   }
   return { row: out, touched };
 }
+
+// Per-table encryption config used by the /api/db proxy. Adding a column
+// here makes future writes through the proxy encrypted at rest, and reads
+// transparently decrypted on the way out. NEVER add a column that is also
+// queried with `ilike.` filters (e.g. customer_interactions.body, which
+// the GDPR export searches by email substring) — encryption breaks that.
+//
+// Encryption only activates when PII_ENCRYPTION_KEY is configured. Without
+// the key the proxy is a no-op; legacy plaintext values keep working
+// because decryptIfPossible() falls back to the original value when the
+// payload doesn't look like a sealed envelope.
+export const PII_COLUMNS = {
+  customers: ["notes"],
+};
+
+const ENVELOPE_PREFIX = "pii:v1:";
+
+// Wrap encrypted output with a tag so the read path can recognize values
+// that need decryption versus plaintext rows written before encryption was
+// turned on. Removing the tag is harmless — decryptIfPossible() will fall
+// through to plaintext rather than throwing.
+function sealEnvelope(packaged) {
+  return ENVELOPE_PREFIX + packaged;
+}
+function isSealedEnvelope(value) {
+  return typeof value === "string" && value.startsWith(ENVELOPE_PREFIX);
+}
+
+export function encryptIfConfigured(value) {
+  if (value == null || typeof value !== "string" || value.length === 0) return value;
+  if (isSealedEnvelope(value)) return value;
+  if (!piiConfigured()) return value;
+  try { return sealEnvelope(encryptPii(value)); } catch { return value; }
+}
+
+export function decryptIfPossible(value) {
+  if (!isSealedEnvelope(value)) return value;
+  if (!piiConfigured()) return value;
+  try { return decryptPii(value.slice(ENVELOPE_PREFIX.length)); } catch { return value; }
+}
+
+// Mutates the row in place: every column listed in PII_COLUMNS[table] is
+// encrypted before writing. Safe on partial PATCH payloads (only touches
+// fields actually present).
+export function encryptRowInPlace(table, row) {
+  if (!row || typeof row !== "object") return row;
+  const cols = PII_COLUMNS[table];
+  if (!cols || !cols.length) return row;
+  for (const col of cols) {
+    if (col in row) row[col] = encryptIfConfigured(row[col]);
+  }
+  return row;
+}
+
+export function decryptRowInPlace(table, row) {
+  if (!row || typeof row !== "object") return row;
+  const cols = PII_COLUMNS[table];
+  if (!cols || !cols.length) return row;
+  for (const col of cols) {
+    if (col in row) row[col] = decryptIfPossible(row[col]);
+  }
+  return row;
+}
