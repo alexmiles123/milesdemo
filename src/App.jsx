@@ -434,8 +434,7 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
   const totalCommitted=weekStats.reduce((s,w)=>s+w.committed,0);
 
   return (
-    <div onClick={e=>{if(e.target===e.currentTarget)saveAll();}}
-      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:960,maxHeight:"85vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         {/* Header */}
         <div style={{padding:"16px 22px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
@@ -1397,8 +1396,7 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
   const stats={ complete:tasks.filter(t=>t.status==="complete").length, upcoming:tasks.filter(t=>t.status==="upcoming").length, late:tasks.filter(t=>t.status==="late").length };
 
   return (
-    <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
-      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:1001,background:toast.type==="error"?G.redBg:G.greenBg,border:"1px solid "+(toast.type==="error"?G.red:G.green)+"55",borderRadius:8,padding:"10px 18px",fontFamily:"DM Mono,monospace",fontSize:12,color:toast.type==="error"?G.red:G.green}}>{toast.msg}</div>}
       <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:1020,maxHeight:"92vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
         {/* Header */}
@@ -1571,8 +1569,7 @@ function AddCommitmentModal({api,csm,onClose,onAdded}) {
 
   const weeks=getWeeks(12);
   return (
-    <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
-      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:420,padding:24}}>
         <div style={{fontSize:17,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif",marginBottom:18}}>Add Commitment Block</div>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>

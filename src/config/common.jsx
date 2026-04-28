@@ -114,7 +114,6 @@ export const Toast = ({ tone = "success", children, onClose }) => {
 
 export const Modal = ({ title, onClose, children, width = 560 }) => (
   <div
-    onClick={(e) => { if (e.target === e.currentTarget) onClose && onClose(); }}
     style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.78)", zIndex: 900, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
   >
     <div style={{ background: G.surface, border: "1px solid " + G.border, borderRadius: 14, width: "100%", maxWidth: width, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
