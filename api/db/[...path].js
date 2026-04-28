@@ -14,6 +14,7 @@
 import { hardenResponse, fail, failUpstream, rateLimit, redactSecrets, requestId } from "../_lib/security.js";
 import { requireAuth } from "../_lib/auth.js";
 import { writeAudit } from "../_lib/supabase.js";
+import { validateWrite, checkPayloadSize } from "../_lib/validators.js";
 
 const ALLOWED_METHODS = new Set(["GET", "POST", "PATCH", "DELETE", "PUT"]);
 
@@ -129,6 +130,15 @@ export default async function handler(req, res) {
   let body = undefined;
   if (req.method !== "GET" && req.method !== "DELETE") {
     body = typeof req.body === "string" ? req.body : JSON.stringify(req.body ?? {});
+    // Server-side validation of write payloads. Mirrors src/lib/validation.js
+    // but treats client validation as advisory — these checks decide whether
+    // the request reaches Supabase at all.
+    const sizeCheck = checkPayloadSize(body);
+    if (!sizeCheck.ok) return fail(res, 413, sizeCheck.error);
+    let parsed = null;
+    try { parsed = body ? JSON.parse(body) : null; } catch { return fail(res, 400, "Invalid JSON body."); }
+    const v = validateWrite(table, parsed);
+    if (!v.ok) return fail(res, 400, v.error);
   }
 
   try {
