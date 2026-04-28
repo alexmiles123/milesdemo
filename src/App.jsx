@@ -775,6 +775,7 @@ function ExecDashboard({api}) {
   const [portfolio, setPortfolio] = useState([]);
   const [tasks,     setTasks]     = useState([]);
   const [csms,      setCsms]      = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [selProject,setSelProject]= useState(null);
   const [execTab,   setExecTab]   = useState("dashboard");
@@ -795,14 +796,16 @@ function ExecDashboard({api}) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [port, tsk, csmData] = await Promise.all([
+      const [port, tsk, csmData, custData] = await Promise.all([
         api.get("vw_portfolio", {"select":"*"}),
         api.get("tasks", {"select":"*", "order":"proj_date.asc"}),
         api.get("vw_csm_scorecard", {"select":"*"}),
+        api.get("customers", {"select":"id,name,is_active"}),
       ]);
       setPortfolio(port||[]);
       setTasks(tsk||[]);
       setCsms(csmData||[]);
+      setCustomers(custData||[]);
     } catch(e){ console.error("ExecDashboard load error:", e.message); }
     setLoading(false);
   },[api]);
@@ -816,18 +819,28 @@ function ExecDashboard({api}) {
   );
 
   // ── Aggregate KPIs ──
-  const totalArr     = portfolio.reduce((s,p)=>s+(p.arr||0),0);
-  const arrAtRisk    = portfolio.filter(p=>p.health!=="green").reduce((s,p)=>s+(p.arr||0),0);
-  const arrCritical  = portfolio.filter(p=>p.health==="red").reduce((s,p)=>s+(p.arr||0),0);
-  const onTrack      = portfolio.filter(p=>p.health==="green").length;
-  const atRisk       = portfolio.filter(p=>p.health==="yellow").length;
-  const critical     = portfolio.filter(p=>p.health==="red").length;
-  const avgCompl     = portfolio.length ? Math.round(portfolio.reduce((s,p)=>s+(p.completion_pct||0),0)/portfolio.length) : 0;
-  const totalLate    = tasks.filter(t=>t.status==="late").length;
-  const totalComplete= tasks.filter(t=>t.status==="complete").length;
-  const totalUpcoming= tasks.filter(t=>t.status==="upcoming").length;
-  const criticalLate = tasks.filter(t=>t.status==="late"&&t.priority==="critical").length;
-  const goLivesSoon  = portfolio.filter(p=>p.stage==="Go-Live Prep"||p.stage==="Go-Live");
+  // Filter out projects whose customer was disabled in Configuration. The
+  // view doesn't apply this filter at the DB layer (intentional — keeps
+  // history queryable), so we apply it client-side here so disabling a
+  // customer is reflected immediately in the strip and charts below.
+  const inactiveCustIds = new Set(customers.filter(c=>c.is_active===false).map(c=>c.id));
+  const visiblePortfolio = portfolio.filter(p => !p.customer_id || !inactiveCustIds.has(p.customer_id));
+  const activeCustomers  = customers.filter(c => c.is_active !== false);
+  const totalCustomers   = activeCustomers.length || new Set(visiblePortfolio.map(p=>p.customer_id||p.customer)).size;
+  const totalArr     = visiblePortfolio.reduce((s,p)=>s+(p.arr||0),0);
+  const arrAtRisk    = visiblePortfolio.filter(p=>p.health!=="green").reduce((s,p)=>s+(p.arr||0),0);
+  const arrCritical  = visiblePortfolio.filter(p=>p.health==="red").reduce((s,p)=>s+(p.arr||0),0);
+  const onTrack      = visiblePortfolio.filter(p=>p.health==="green").length;
+  const atRisk       = visiblePortfolio.filter(p=>p.health==="yellow").length;
+  const critical     = visiblePortfolio.filter(p=>p.health==="red").length;
+  const avgCompl     = visiblePortfolio.length ? Math.round(visiblePortfolio.reduce((s,p)=>s+(p.completion_pct||0),0)/visiblePortfolio.length) : 0;
+  const visibleProjectIds = new Set(visiblePortfolio.map(p=>p.id));
+  const visibleTasks = tasks.filter(t => visibleProjectIds.has(t.project_id));
+  const totalLate    = visibleTasks.filter(t=>t.status==="late").length;
+  const totalComplete= visibleTasks.filter(t=>t.status==="complete").length;
+  const totalUpcoming= visibleTasks.filter(t=>t.status==="upcoming").length;
+  const criticalLate = visibleTasks.filter(t=>t.status==="late"&&t.priority==="critical").length;
+  const goLivesSoon  = visiblePortfolio.filter(p=>p.stage==="Go-Live Prep"||p.stage==="Go-Live");
 
   // ── Chart data ──
   const healthData = [
@@ -839,8 +852,8 @@ function ExecDashboard({api}) {
   const stageData = PHASE_ORDER.map(ph=>({
     name:ph.length>12?ph.split(" ")[0]:ph,
     fullName:ph,
-    count:portfolio.filter(p=>p.stage===ph).length,
-    arr:Math.round(portfolio.filter(p=>p.stage===ph).reduce((s,p)=>s+(p.arr||0),0)/1000),
+    count:visiblePortfolio.filter(p=>p.stage===ph).length,
+    arr:Math.round(visiblePortfolio.filter(p=>p.stage===ph).reduce((s,p)=>s+(p.arr||0),0)/1000),
     fill:PHASE_COLOR[ph],
   })).filter(d=>d.count>0);
 
@@ -853,10 +866,10 @@ function ExecDashboard({api}) {
   }));
 
   const arrBuckets = [
-    {range:"$20-40K",value:portfolio.filter(p=>p.arr<40000).length,color:"#6366f1"},
-    {range:"$40-60K",value:portfolio.filter(p=>p.arr>=40000&&p.arr<60000).length,color:"#3b82f6"},
-    {range:"$60-80K",value:portfolio.filter(p=>p.arr>=60000&&p.arr<80000).length,color:"#06b6d4"},
-    {range:"$80-100K",value:portfolio.filter(p=>p.arr>=80000).length,color:"#22c55e"},
+    {range:"$20-40K",value:visiblePortfolio.filter(p=>p.arr<40000).length,color:"#6366f1"},
+    {range:"$40-60K",value:visiblePortfolio.filter(p=>p.arr>=40000&&p.arr<60000).length,color:"#3b82f6"},
+    {range:"$60-80K",value:visiblePortfolio.filter(p=>p.arr>=60000&&p.arr<80000).length,color:"#06b6d4"},
+    {range:"$80-100K",value:visiblePortfolio.filter(p=>p.arr>=80000).length,color:"#22c55e"},
   ];
 
   const taskStatusData = [
@@ -865,15 +878,15 @@ function ExecDashboard({api}) {
     {name:"Late",value:totalLate,color:G.red},
   ];
 
-  // Late tasks grouped by project
-  const lateTasks = tasks.filter(t=>t.status==="late")
-    .map(t=>({...t,project:portfolio.find(p=>p.id===t.project_id)}))
+  // Late tasks grouped by project (skip ones whose customer was disabled)
+  const lateTasks = visibleTasks.filter(t=>t.status==="late")
+    .map(t=>({...t,project:visiblePortfolio.find(p=>p.id===t.project_id)}))
     .filter(t=>t.project)
     .sort((a,b)=>new Date(a.proj_date)-new Date(b.proj_date))
     .slice(0,12);
 
   // Upcoming go-lives
-  const upcomingGoLives = portfolio
+  const upcomingGoLives = visiblePortfolio
     .filter(p=>["Go-Live Prep","Go-Live"].includes(p.stage))
     .sort((a,b)=>new Date(a.target_date)-new Date(b.target_date));
 
@@ -929,8 +942,8 @@ function ExecDashboard({api}) {
       {shown('kpi-strip') && (
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:12,marginBottom:16}}>
         {[
-          {label:"Total Customers",    value:String(portfolio.length),  sub:"active implementations",          color:G.purple},
-          {label:"Total ARR",          value:fmtMill(totalArr),         sub:portfolio.length+" customers",     color:G.green},
+          {label:"Total Customers",    value:String(totalCustomers),    sub:visiblePortfolio.length+" active project"+(visiblePortfolio.length===1?"":"s"), color:G.purple},
+          {label:"Total ARR",          value:fmtMill(totalArr),         sub:totalCustomers+" customer"+(totalCustomers===1?"":"s"), color:G.green},
           {label:"Avg Completion",     value:avgCompl+"%",              sub:"across portfolio",                color:G.blue},
           {label:"Late Tasks",         value:String(totalLate),         sub:criticalLate+" critical priority", color:G.red},
           {label:"Go-Live This Month", value:String(goLivesSoon.length),sub:"in prep or live now",             color:G.teal},
