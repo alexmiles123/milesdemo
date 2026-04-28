@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
   if (req.method !== "POST") return fail(res, 405, "Method not allowed.");
 
-  const rl = rateLimit(req, "salesforce-webhook");
+  const rl = await rateLimit(req, "salesforce-webhook");
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Rate limit exceeded."); }
 
   const rid = requestId(req);

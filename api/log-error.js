@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
   if (req.method !== "POST") return fail(res, 405, "Method not allowed.");
 
-  const rl = rateLimit(req, "log-error", 1);
+  const rl = await rateLimit(req, "log-error", 1);
   if (!rl.ok) return json(res, 200, { ok: true });
 
   let body = req.body;

@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
   if (req.method !== "POST") return fail(res, 405, "Method not allowed.");
 
-  const rl = rateLimit(req, "salesforce-test", 2);
+  const rl = await rateLimit(req, "salesforce-test", 2);
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Rate limit exceeded."); }
 
   const session = await requireAuth(req, res);

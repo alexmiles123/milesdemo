@@ -17,17 +17,36 @@
 import crypto from "node:crypto";
 
 // ─── Rate limit ─────────────────────────────────────────────────────────────
+//
+// Two-tier limiter:
+//   • Upstash Redis (production): globally consistent across Vercel regions.
+//     Requires UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.
+//   • In-memory token bucket (dev / Upstash outage): per-instance, so a
+//     determined attacker hitting multiple regions can outpace it. Still
+//     defensible for a single-region deploy and prevents accidental DoS.
+//
+// rateLimit() is async — callers must `await`. The function never throws;
+// an Upstash failure silently degrades to the memory bucket.
+
 const BUCKETS = new Map();
-const BUCKET_CAP  = 60;   // max burst
+const BUCKET_CAP = 60;
 const BUCKET_REFILL_PER_MIN = 60;
 
-function bucketKey(req, scope) {
+const UPSTASH_URL   = process.env.UPSTASH_REDIS_REST_URL || "";
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || "";
+const UPSTASH_ENABLED = Boolean(UPSTASH_URL && UPSTASH_TOKEN);
+const UPSTASH_WINDOW_SEC = 60;
+
+function clientIp(req) {
   const fwd = (req.headers["x-forwarded-for"] || "").split(",")[0].trim();
-  const ip  = fwd || req.socket?.remoteAddress || "unknown";
-  return scope + ":" + ip;
+  return fwd || req.socket?.remoteAddress || "unknown";
 }
 
-export function rateLimit(req, scope = "default", cost = 1) {
+function bucketKey(req, scope) {
+  return scope + ":" + clientIp(req);
+}
+
+function memoryRateLimit(req, scope, cost) {
   const key = bucketKey(req, scope);
   const now = Date.now();
   const existing = BUCKETS.get(key) || { tokens: BUCKET_CAP, ts: now };
@@ -39,12 +58,42 @@ export function rateLimit(req, scope = "default", cost = 1) {
     return { ok: false, retryAfter: retrySec };
   }
   BUCKETS.set(key, { tokens: refilled - cost, ts: now });
-  // Opportunistic GC so the Map can't grow unbounded inside a warm lambda.
   if (BUCKETS.size > 2000) {
     const cutoff = now - 10 * 60_000;
     for (const [k, v] of BUCKETS) if (v.ts < cutoff) BUCKETS.delete(k);
   }
   return { ok: true };
+}
+
+async function upstashRateLimit(req, scope, cost) {
+  const key = "rl:" + bucketKey(req, scope);
+  // INCRBY n + EXPIRE NX in one round-trip. INCRBY returns the new counter
+  // value; if it's the first hit in the window, EXPIRE NX sets the TTL.
+  const body = [
+    ["INCRBY", key, String(cost)],
+    ["EXPIRE", key, String(UPSTASH_WINDOW_SEC), "NX"],
+  ];
+  const r = await fetch(UPSTASH_URL + "/pipeline", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + UPSTASH_TOKEN, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("upstash " + r.status);
+  const data = await r.json();
+  const n = Number(data?.[0]?.result || 0);
+  if (n > BUCKET_CAP) return { ok: false, retryAfter: UPSTASH_WINDOW_SEC };
+  return { ok: true };
+}
+
+export async function rateLimit(req, scope = "default", cost = 1) {
+  if (UPSTASH_ENABLED) {
+    try {
+      return await upstashRateLimit(req, scope, cost);
+    } catch (_) {
+      // Fall through to memory limiter — never throw from a rate-limit check.
+    }
+  }
+  return memoryRateLimit(req, scope, cost);
 }
 
 // ─── Default response hardening ─────────────────────────────────────────────

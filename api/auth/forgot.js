@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
   if (req.method !== "POST") return fail(res, 405, "Method not allowed.");
 
-  const rl = rateLimit(req, "auth-forgot", 20);
+  const rl = await rateLimit(req, "auth-forgot", 20);
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Too many reset requests."); }
 
   let body = req.body;

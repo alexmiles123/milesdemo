@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   hardenResponse(req, res);
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
 
-  const rl = rateLimit(req, "admin-users");
+  const rl = await rateLimit(req, "admin-users");
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Rate limit exceeded."); }
 
   if (!sbConfigured()) return fail(res, 500, "Supabase not configured.");

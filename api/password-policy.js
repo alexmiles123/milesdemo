@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   hardenResponse(req, res);
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
 
-  const rl = rateLimit(req, "password-policy");
+  const rl = await rateLimit(req, "password-policy");
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Rate limit exceeded."); }
 
   const session = await requireAuth(req, res);

@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") return fail(res, 405, "Method not allowed.");
 
-  const rl = rateLimit(req, "teams-webhook", 1);
+  const rl = await rateLimit(req, "teams-webhook", 1);
   if (!rl.ok) { res.setHeader("Retry-After", String(rl.retryAfter)); return fail(res, 429, "Rate limit exceeded."); }
 
   const rid = requestId(req);
