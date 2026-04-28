@@ -6,7 +6,7 @@ import {
 import ConfigPage from "./config/ConfigPage.jsx";
 import AccountSearch from "./AccountSearch.jsx";
 import AccountDetail from "./AccountDetail.jsx";
-import { getToken, getSession, login as authLogin, logout as authLogout, clearToken } from "./lib/auth.js";
+import { getToken, getSession, login as authLogin, logout as authLogout, clearToken, authedFetch, refreshSession, fetchMe } from "./lib/auth.js";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = {
@@ -80,66 +80,65 @@ const utilBd = (p) => p>100?G.redBd:p>80?G.yellowBd:G.greenBd;
 // Supabase credentials — signing out wipes the only thing it has.
 function makeApi() {
   const base = "/api/db";
-  const authHeaders = () => {
-    const token = getToken();
-    const h = { "Content-Type": "application/json", "Prefer": "return=representation" };
-    if (token) h["Authorization"] = "Bearer " + token;
-    return h;
-  };
-  const handle = async (res) => {
-    if (res.status === 401) {
+  // Cookie-based session: every call goes through authedFetch which attaches
+  // credentials and the X-CSRF-Token header. We try a single silent refresh
+  // on 401 before bouncing the user back to the login screen — handles the
+  // common case where the access cookie just expired but the refresh cookie
+  // is still good.
+  let refreshing = null;
+  const handle = async (res, retry) => {
+    if (res.status === 401 && retry) {
+      refreshing = refreshing || refreshSession().finally(() => { refreshing = null; });
+      const refreshed = await refreshing;
+      if (refreshed) return retry();
       clearToken();
-      // Force the app back to the login screen by reloading — simpler than
-      // threading an auth-error channel through every caller.
       if (typeof window !== "undefined") window.location.reload();
       throw new Error("Session expired. Please sign in again.");
     }
     if (!res.ok) {
       const e = await res.json().catch(() => ({}));
-      // Combine the headline error with any `detail` the server attached so
-      // the UI surfaces the real cause (e.g. "Failed to update policy. —
-      // Supabase 404: table not found") instead of just the generic message.
       const head = e.message || e.error || e.hint || ("HTTP " + res.status);
       throw new Error(e.detail ? `${head} — ${e.detail}` : head);
     }
     const ct = res.headers.get("content-type") || "";
     return ct.includes("application/json") ? res.json() : true;
   };
+  const writeHeaders = { "Prefer": "return=representation" };
+  const upsertHeaders = { "Prefer": "return=representation,resolution=merge-duplicates" };
   return {
     async get(table, params={}) {
       const qs = Object.entries(params).map(([k,v]) => k + "=" + encodeURIComponent(v)).join("&");
       const url = base + "/" + table + (qs ? "?" + qs : "");
-      const res = await fetch(url, { headers: authHeaders() });
-      return handle(res);
+      const exec = () => authedFetch(url);
+      return handle(await exec(), exec);
     },
     async patch(table, id, body) {
-      const res = await fetch(base+"/"+table+"?id=eq."+id,{method:"PATCH",headers:authHeaders(),body:JSON.stringify(body)});
-      await handle(res);
+      const url = base+"/"+table+"?id=eq."+id;
+      const exec = () => authedFetch(url, { method:"PATCH", headers: writeHeaders, body: JSON.stringify(body) });
+      await handle(await exec(), exec);
       return true;
     },
     async post(table, body) {
-      const res = await fetch(base+"/"+table,{method:"POST",headers:authHeaders(),body:JSON.stringify(body)});
-      return handle(res);
+      const url = base+"/"+table;
+      const exec = () => authedFetch(url, { method:"POST", headers: writeHeaders, body: JSON.stringify(body) });
+      return handle(await exec(), exec);
     },
     async del(table, id) {
-      const res = await fetch(base+"/"+table+"?id=eq."+id,{method:"DELETE",headers:authHeaders()});
-      await handle(res);
+      const url = base+"/"+table+"?id=eq."+id;
+      const exec = () => authedFetch(url, { method:"DELETE" });
+      await handle(await exec(), exec);
       return true;
     },
     async upsert(table, body) {
-      const h = { ...authHeaders(), "Prefer":"return=representation,resolution=merge-duplicates" };
-      const res = await fetch(base+"/"+table,{method:"POST",headers:h,body:JSON.stringify(body)});
-      return handle(res);
+      const url = base+"/"+table;
+      const exec = () => authedFetch(url, { method:"POST", headers: upsertHeaders, body: JSON.stringify(body) });
+      return handle(await exec(), exec);
     },
-    // Generic JWT-authenticated call to any /api/* endpoint. Used by admin
-    // tabs (users, task templates) that talk to dedicated endpoints rather
-    // than the catch-all DB proxy.
     async call(path, { method = "GET", body } = {}) {
-      const headers = authHeaders();
-      const init = { method, headers };
+      const init = { method };
       if (body !== undefined) init.body = typeof body === "string" ? body : JSON.stringify(body);
-      const res = await fetch(path, init);
-      return handle(res);
+      const exec = () => authedFetch(path, init);
+      return handle(await exec(), exec);
     },
   };
 }
@@ -286,10 +285,7 @@ function AiPanel({ portfolio, tasks, csms }) {
     try {
       const totalArr = portfolio.reduce((s,p)=>s+(p.arr||0),0);
       const sysP = 'You are an expert Customer Success operations analyst for Monument. Live data: ' + portfolio.length + ' customers, \$' + (totalArr/1000).toFixed(0) + 'K ARR. On Track: ' + portfolio.filter(p=>p.health==='green').length + '. At Risk: ' + portfolio.filter(p=>p.health==='yellow').length + '. Critical: ' + portfolio.filter(p=>p.health==='red').length + '. Late tasks: ' + tasks.filter(t=>t.status==='late').length + '. Customers: ' + portfolio.map(p=>p.customer+': '+p.stage+', '+p.health_label+', '+p.completion_pct+'% done, \$'+(p.arr/1000).toFixed(0)+'K ARR, CSM: '+p.csm+', '+(p.tasks_late||0)+' late tasks').join('; ') + '. CSMs: ' + csms.map(c=>c.csm+': '+c.total_accounts+' accounts, \$'+((c.total_arr||0)/1000).toFixed(0)+'K ARR, '+c.late_tasks+' late tasks').join('; ') + '. Be concise and executive-level in responses.';
-      const token = getToken();
-      const headers = { 'Content-Type':'application/json' };
-      if (token) headers['Authorization'] = 'Bearer ' + token;
-      const res = await fetch('/api/claude', { method:'POST', headers, body:JSON.stringify({ system:sysP, messages:newMessages }) });
+      const res = await authedFetch('/api/claude', { method:'POST', body:JSON.stringify({ system:sysP, messages:newMessages }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setMessages(prev => [...prev, { role:'assistant', content:data.content }]);
@@ -2333,15 +2329,26 @@ export default function App() {
   };
 
   useEffect(()=>{
-    // Rehydrate from the JWT in localStorage. If the token is missing or the
-    // server rejects it, the API call throws and we fall back to the login
-    // screen without any extra cleanup — the 401 handler in makeApi already
-    // clears the token.
-    if(!getToken()) return;
-    const api=makeApi();
-    api.get("csms",{"is_active":"eq.true","select":"*"}).then(data=>{
-      if(Array.isArray(data)) handleConnect(api,data);
-    }).catch(()=>{ /* token invalid; makeApi cleared it already */ });
+    // Rehydrate. The access JWT now lives in an HttpOnly cookie that JS can't
+    // read, so we ask the server who we are via /api/auth/me. If that 401s
+    // we try a one-shot refresh; if that also fails, fall through to the
+    // login screen. Legacy bearer tokens still work because authedFetch
+    // forwards them when no cookie session is present.
+    let cancelled = false;
+    (async () => {
+      let me = await fetchMe();
+      if (!me) {
+        const refreshed = await refreshSession();
+        if (refreshed) me = await fetchMe();
+      }
+      if (cancelled || !me) return;
+      const api = makeApi();
+      try {
+        const data = await api.get("csms", { is_active: "eq.true", select: "*" });
+        if (Array.isArray(data) && !cancelled) handleConnect(api, data);
+      } catch { /* fall through to login */ }
+    })();
+    return () => { cancelled = true; };
   },[]);
 
   if(!api) return <><style>{GLOBAL_CSS}</style><LoginScreen onConnect={handleConnect}/></>;

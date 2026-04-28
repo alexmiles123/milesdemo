@@ -16,7 +16,7 @@
 
 import bcrypt from "bcryptjs";
 import { rateLimit, hardenResponse, fail, json } from "../_lib/security.js";
-import { signSession } from "../_lib/auth.js";
+import { signSession, signRefresh, issueSessionCookies } from "../_lib/auth.js";
 import { sbConfigured, sbGet, sbUpdate } from "../_lib/sb.js";
 
 const MAX_ATTEMPTS = 5;
@@ -77,12 +77,21 @@ export default async function handler(req, res) {
           user_id: user.id,
           must_reset: !!user.must_reset,
         });
+        const refresh = await signRefresh({
+          user: user.username,
+          role: user.role || "viewer",
+          user_id: user.id,
+        });
+        const csrf = issueSessionCookies(res, { accessToken: token, refreshToken: refresh });
         return json(res, 200, {
+          // token field retained for backward-compat with tabs that still
+          // attach a bearer header. New clients ignore it and rely on cookies.
           token,
+          csrf,
           user: user.username,
           role: user.role || "viewer",
           must_reset: !!user.must_reset,
-          expiresIn: 12 * 3600,
+          expiresIn: 3600,
         });
       }
     } catch (_) {
@@ -103,5 +112,7 @@ export default async function handler(req, res) {
   if (!userOk || !passOk) return fail(res, 401, "Invalid username or password.");
 
   const token = await signSession({ user: username, role: "admin" });
-  return json(res, 200, { token, user: username, role: "admin", must_reset: false, expiresIn: 12 * 3600 });
+  const refresh = await signRefresh({ user: username, role: "admin" });
+  const csrf = issueSessionCookies(res, { accessToken: token, refreshToken: refresh });
+  return json(res, 200, { token, csrf, user: username, role: "admin", must_reset: false, expiresIn: 3600 });
 }

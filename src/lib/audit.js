@@ -1,22 +1,18 @@
 // Client-side audit helper. Fires-and-forgets to the server endpoint, which
 // applies the service-role key and writes an immutable row to audit_log.
 //
-// The endpoint requires a valid session JWT. If the user isn't signed in,
-// we simply skip the write — audit rows should only record authenticated
-// actions anyway.
+// The endpoint requires a valid session — cookies are attached automatically
+// by authedFetch.
 
-import { getToken } from "./auth.js";
+import { authedFetch, getCachedSession, getLegacyToken } from "./auth.js";
 
 export async function audit(action, target_table, target_id, { before, after, metadata } = {}) {
-  const token = getToken();
-  if (!token) return;
+  // Skip when the user isn't signed in — audit rows should only record
+  // authenticated actions.
+  if (!getCachedSession() && !getLegacyToken()) return;
   try {
-    await fetch("/api/audit", {
+    await authedFetch("/api/audit", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token,
-      },
       body: JSON.stringify({
         action, target_table, target_id,
         before_state: before || null,

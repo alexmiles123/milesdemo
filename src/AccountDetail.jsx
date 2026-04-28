@@ -10,6 +10,7 @@
 // every change is logged to audit_log automatically by the audit wrapper.
 
 import { useState, useEffect, useCallback } from "react";
+import { authedFetch } from "./lib/auth.js";
 
 const G = {
   bg: "#060c14", surface: "#0b1521", surface2: "#0f1e2d",
@@ -150,10 +151,8 @@ export default function AccountDetail({ api, account, onClose, onUpdated }) {
         "Activity:\n" +
         JSON.stringify(compact, null, 2);
 
-      const token = localStorage.getItem("monument.session") || "";
-      const res = await fetch("/api/claude", {
+      const res = await authedFetch("/api/claude", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
         body: JSON.stringify({ system, messages: [{ role: "user", content: userMsg }] }),
       });
       const data = await res.json();
