@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { G, PHASE_ORDER } from "../lib/theme.js";
 import { Card, CardHeader, Label, Input, Select, Button, Toast, Modal, Empty, Th, Td, Pill, Confirm } from "./common.jsx";
+import ImportModal from "./ImportModal.jsx";
 
 const PRIORITY_OPTS = [
   { value: "critical", label: "Critical" },
@@ -11,6 +12,29 @@ const PRIORITY_OPTS = [
 const PHASE_OPTS = PHASE_ORDER.map(p => ({ value: p, label: p }));
 
 const BLANK_ITEM = { name: "", phase: "Kickoff", priority: "medium", estimated_hours: "", day_offset: 0, notes: "", sort_order: 1 };
+
+const TEMPLATE_ITEM_IMPORT_SPEC = {
+  templateName: "task-template-items.xlsx",
+  templateSample: [
+    ["Kickoff call",              "Kickoff",       "high",     1.5, 0,  "Initial intros and goal-setting"],
+    ["Send welcome email",        "Kickoff",       "medium",   0.5, 1,  ""],
+    ["Discovery workshop",        "Discovery",     "high",     4,   5,  ""],
+    ["Configure tenant",          "Implementation","high",     8,   10, ""],
+    ["UAT cycle",                 "Testing & QA",  "high",     6,   18, ""],
+    ["Go-live readiness check",   "Go-Live Prep",  "critical", 2,   25, ""],
+    ["Go-live",                   "Go-Live",       "critical", 3,   30, ""],
+  ],
+  columns: [
+    { key: "name",            aliases: ["name", "task", "task name"],                          required: true },
+    { key: "phase",           aliases: ["phase", "stage"],                                      parse: "enum",
+      values: PHASE_ORDER },
+    { key: "priority",        aliases: ["priority"],                                            parse: "enum",
+      values: ["critical", "high", "medium", "low"] },
+    { key: "estimated_hours", aliases: ["estimated_hours", "hours", "hrs", "estimated hours"], parse: "number" },
+    { key: "day_offset",      aliases: ["day_offset", "day offset", "day+", "days", "day"],    parse: "number" },
+    { key: "notes",           aliases: ["notes", "note", "description"] },
+  ],
+};
 
 export default function TaskTemplatesTab({ api }) {
   const [templates, setTemplates] = useState([]);
@@ -122,6 +146,7 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
   const [isDefault, setIsDefault]     = useState(!!template?.is_default);
   const [items, setItems]             = useState(template?.items?.length ? template.items.map(it => ({ ...it })) : [{ ...BLANK_ITEM }]);
   const [busy, setBusy]               = useState(false);
+  const [showImport, setShowImport]   = useState(false);
 
   const updateItem = (idx, patch) => setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it));
   const addItem    = () => setItems(prev => [...prev, { ...BLANK_ITEM, sort_order: prev.length + 1 }]);
@@ -133,6 +158,26 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
     [next[idx], next[tgt]] = [next[tgt], next[idx]];
     return next.map((it, i) => ({ ...it, sort_order: i + 1 }));
   });
+
+  const handleImportCommit = async (parsed) => {
+    const incoming = parsed.map(r => ({
+      name:            r.name,
+      phase:           r.phase    || "Kickoff",
+      priority:        r.priority || "medium",
+      estimated_hours: r.estimated_hours ?? "",
+      day_offset:      r.day_offset ?? 0,
+      notes:           r.notes || "",
+      sort_order:      0,
+    }));
+    setItems(prev => {
+      // Replace the lone blank seed row that's there for new templates so the user
+      // doesn't have to delete it after import.
+      const seed = prev.length === 1 && !(prev[0].name || "").trim();
+      const base = seed ? [] : prev;
+      return [...base, ...incoming].map((it, i) => ({ ...it, sort_order: i + 1 }));
+    });
+    return { created: incoming.length };
+  };
 
   const submit = async () => {
     if (!name.trim()) { setToast({ tone: "error", msg: "Template name is required." }); return; }
@@ -181,7 +226,8 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
         <div>
           <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
             <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.12em" }}>TASK ITEMS · {items.length}</div>
-            <div style={{ marginLeft: "auto" }}>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+              <Button variant="default" onClick={() => setShowImport(true)}>↓ Import from Excel</Button>
               <Button variant="default" onClick={addItem}>+ Add task</Button>
             </div>
           </div>
@@ -229,6 +275,17 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
           <Button variant="primary" onClick={submit} disabled={busy}>{busy ? "Saving…" : (template ? "Save Changes" : "Create Template")}</Button>
         </div>
       </div>
+
+      {showImport && (
+        <ImportModal
+          title="Import Task Items from Excel"
+          api={api}
+          spec={TEMPLATE_ITEM_IMPORT_SPEC}
+          onClose={() => setShowImport(false)}
+          onCommit={handleImportCommit}
+          onDone={(r) => setToast({ tone: "success", msg: `Added ${r.created} task item${r.created === 1 ? "" : "s"}. Review then click ${template ? "Save Changes" : "Create Template"} to persist.` })}
+        />
+      )}
     </Modal>
   );
 }

@@ -9,7 +9,7 @@ import { Modal, Button } from "./common.jsx";
 // Props:
 //   title:       string shown in modal header
 //   spec: {
-//     table:       Supabase table name for insert
+//     table:       Supabase table name for insert (ignored when onCommit is set)
 //     auditAction: audit event name (e.g. "project.create")
 //     columns: [
 //       { key: "name",    aliases: ["name","project","project name"], required: true },
@@ -24,10 +24,14 @@ import { Modal, Button } from "./common.jsx";
 //     // optional defaults applied to every row
 //     defaults: { stage: "Kickoff", health: "green" }
 //   }
-//   ctx:    free-form lookup context (e.g., { csms, projects }) forwarded to lookup()
-//   onDone: callback(summary) once import commits
+//   ctx:      free-form lookup context (e.g., { csms, projects }) forwarded to lookup()
+//   onCommit: optional async (rows) => { created, failed?, errors? }. When set, the
+//             default DB insert is skipped and the caller decides what to do with the
+//             parsed rows (e.g., append to local state in a parent form). Needed for
+//             cases where the import is part of a larger unsaved record.
+//   onDone:   callback(summary) once import commits
 //
-export default function ImportModal({ title, spec, ctx, onClose, onDone, api }) {
+export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommit, api }) {
   const [fileName, setFileName] = useState("");
   const [rows, setRows] = useState([]); // parsed, validated preview
   const [parseError, setParseError] = useState(null);
@@ -134,16 +138,30 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, api }) 
   const doImport = async () => {
     setImporting(true);
     const toInsert = rows.filter(r => !r._errors.length).map(r => r.parsed);
-    const results = { created: 0, failed: 0, errors: [] };
-    // Insert in chunks of 50 so one bad row doesn't kill the whole batch
-    for (let i = 0; i < toInsert.length; i += 50) {
-      const chunk = toInsert.slice(i, i + 50);
+    let results;
+    if (typeof onCommit === "function") {
       try {
-        await audited(spec.auditAction, spec.table, null, () => api.post(spec.table, chunk), { after: { count: chunk.length } });
-        results.created += chunk.length;
+        const r = await onCommit(toInsert);
+        results = {
+          created: r?.created ?? toInsert.length,
+          failed:  r?.failed  ?? 0,
+          errors:  r?.errors  ?? [],
+        };
       } catch (e) {
-        results.failed += chunk.length;
-        results.errors.push(e.message);
+        results = { created: 0, failed: toInsert.length, errors: [e.message] };
+      }
+    } else {
+      results = { created: 0, failed: 0, errors: [] };
+      // Insert in chunks of 50 so one bad row doesn't kill the whole batch
+      for (let i = 0; i < toInsert.length; i += 50) {
+        const chunk = toInsert.slice(i, i + 50);
+        try {
+          await audited(spec.auditAction, spec.table, null, () => api.post(spec.table, chunk), { after: { count: chunk.length } });
+          results.created += chunk.length;
+        } catch (e) {
+          results.failed += chunk.length;
+          results.errors.push(e.message);
+        }
       }
     }
     setSummary(results);
