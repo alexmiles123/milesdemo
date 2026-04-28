@@ -2,7 +2,7 @@
 // Authenticated proxy to Anthropic's Messages API. Requires a valid session
 // JWT — without this, the endpoint was an open LLM relay billable to our key.
 
-import { rateLimit, hardenResponse, fail, json } from "./_lib/security.js";
+import { rateLimit, hardenResponse, fail, failUpstream, json } from "./_lib/security.js";
 import { requireAuth } from "./_lib/auth.js";
 
 // Anthropic responses can take 15-30s for analytical prompts. The default
@@ -47,6 +47,6 @@ export default async function handler(req, res) {
     if (!response.ok) return json(res, response.status, { error: data.error?.message || "Upstream error." });
     return json(res, 200, { content: data.content?.[0]?.text || "" });
   } catch (err) {
-    return fail(res, 500, "Upstream request failed.", { detail: err.message });
+    return failUpstream(res, session, 500, "Upstream request failed.", err);
   }
 }

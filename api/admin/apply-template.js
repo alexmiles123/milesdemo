@@ -8,7 +8,7 @@
 // of tasks rather than upserting (no natural key on tasks for that). The
 // UI warns before re-applying.
 
-import { hardenResponse, fail, json, rateLimit } from "../_lib/security.js";
+import { hardenResponse, fail, failUpstream, json, rateLimit } from "../_lib/security.js";
 import { requireAuth } from "../_lib/auth.js";
 import { sbGet, sbInsert, sbConfigured } from "../_lib/sb.js";
 
@@ -84,6 +84,6 @@ export default async function handler(req, res) {
 
     return json(res, 200, { ok: true, tasks_added: tasksToInsert.length });
   } catch (e) {
-    return fail(res, 502, "Failed to apply template.", { detail: e.message });
+    return failUpstream(res, session, 502, "Failed to apply template.", e);
   }
 }

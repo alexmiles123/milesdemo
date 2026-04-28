@@ -133,3 +133,18 @@ export function fail(res, status, message, extra = {}) {
   const safe = typeof message === "string" ? message : "Internal error.";
   json(res, status, { error: safe, ...extra });
 }
+
+// Wrap upstream/database errors. Admins see the full constraint name and
+// PostgREST detail (so they can debug from the UI); everyone else sees a
+// generic friendly message. The full error is always logged server-side
+// regardless of role so ops keeps observability.
+export function failUpstream(res, session, status, friendly, error) {
+  const detail = error && error.message ? String(error.message) : "";
+  // Server-side log — keep the noisy stuff out of the response but in logs.
+  try { console.error("[upstream]", status, friendly, detail); } catch { /* ignore */ }
+  const isAdmin = session && session.role === "admin";
+  if (isAdmin && detail) {
+    return fail(res, status, friendly, { detail });
+  }
+  return fail(res, status, friendly);
+}

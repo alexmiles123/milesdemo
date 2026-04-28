@@ -6,7 +6,7 @@
 // PATCH — admin only. Updates one or more fields and invalidates the
 //         server-side cache. Writes an audit_log row.
 
-import { hardenResponse, fail, json, rateLimit } from "./_lib/security.js";
+import { hardenResponse, fail, failUpstream, json, rateLimit } from "./_lib/security.js";
 import { requireAuth, requireRole } from "./_lib/auth.js";
 import { sbConfigured, sbUpdate, sbInsert } from "./_lib/sb.js";
 import { writeAudit } from "./_lib/supabase.js";
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     try {
       const policy = await loadPolicy();
       return json(res, 200, { policy });
-    } catch (e) { return fail(res, 502, "Failed to read policy.", { detail: e.message }); }
+    } catch (e) { return failUpstream(res, session, 502, "Failed to read policy.", e); }
   }
 
   if (req.method === "PATCH") {

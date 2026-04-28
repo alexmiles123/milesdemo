@@ -11,7 +11,7 @@
 // loaded the site could read/write every table. This proxy makes the
 // anon key obsolete and gates every DB call on a signed session.
 
-import { hardenResponse, fail, rateLimit, redactSecrets, requestId } from "../_lib/security.js";
+import { hardenResponse, fail, failUpstream, rateLimit, redactSecrets, requestId } from "../_lib/security.js";
 import { requireAuth } from "../_lib/auth.js";
 import { writeAudit } from "../_lib/supabase.js";
 
@@ -79,10 +79,17 @@ export default async function handler(req, res) {
   const table = pathParts[0];
   if (!ALLOWED_TABLES.has(table)) return fail(res, 404, "Unknown table.");
 
-  // audit_log is read-only to everyone — writes go through /api/audit which
-  // runs its own server-side validation and fixes the actor field.
-  if (table === "audit_log" && req.method !== "GET") {
-    return fail(res, 403, "audit_log is append-only via /api/audit.");
+  // audit_log carries sensitive operational data (IPs, UAs, before/after
+  // state of every config change). Reads are admin-only; writes never go
+  // through this proxy — they're produced server-side by /api/audit and
+  // the audited() wrapper around mutations.
+  if (table === "audit_log") {
+    if (req.method !== "GET") {
+      return fail(res, 403, "audit_log is append-only via /api/audit.");
+    }
+    if (session.role !== "admin") {
+      return fail(res, 403, "Audit log is admin-only.");
+    }
   }
 
   // Strip anything that could be a Vercel-injected route echo from the
@@ -166,6 +173,6 @@ export default async function handler(req, res) {
 
     return res.end(text);
   } catch (e) {
-    return fail(res, 502, "Upstream request failed.", { detail: e.message });
+    return failUpstream(res, session, 502, "Upstream request failed.", e);
   }
 }
