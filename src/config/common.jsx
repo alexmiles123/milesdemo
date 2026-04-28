@@ -140,8 +140,8 @@ export const Th = ({ children, style = {} }) => (
   </th>
 );
 
-export const Td = ({ children, style = {} }) => (
-  <td style={{ padding: "12px 14px", fontSize: 12, color: G.text, fontFamily: "DM Mono,monospace", borderBottom: "1px solid " + G.border, ...style }}>{children}</td>
+export const Td = ({ children, style = {}, ...rest }) => (
+  <td {...rest} style={{ padding: "12px 14px", fontSize: 12, color: G.text, fontFamily: "DM Mono,monospace", borderBottom: "1px solid " + G.border, ...style }}>{children}</td>
 );
 
 export const Pill = ({ tone = "muted", children }) => {

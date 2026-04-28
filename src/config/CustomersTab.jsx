@@ -314,22 +314,26 @@ export default function CustomersTab({ api, csms, onChanged }) {
 
 // ── Customer row + expanded projects panel ────────────────────────────────
 function CustomerRow({ customer, projects, csmById, isOpen, inactive, onToggle, onAddProject, onEditProject, onDeleteProject, onImportTasks, onEdit, onDisable, onEnable }) {
+  const hasProjects = projects.length > 0;
+  const rowClick = hasProjects ? onToggle : undefined;
   return (
     <>
-      <tr className="rh" style={{ cursor: "pointer", opacity: inactive ? 0.55 : 1 }}>
-        <Td style={{ width: 32, textAlign: "center" }} onClick={onToggle}>
-          <span style={{ display: "inline-block", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform .15s", color: G.muted }}>▶</span>
+      <tr className="rh" style={{ cursor: hasProjects ? "pointer" : "default", opacity: inactive ? 0.55 : 1 }}>
+        <Td style={{ width: 32, textAlign: "center" }} onClick={rowClick}>
+          {hasProjects ? (
+            <span style={{ display: "inline-block", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform .15s", color: G.muted }}>▶</span>
+          ) : null}
         </Td>
-        <Td style={{ fontWeight: 700, color: G.text }} onClick={onToggle}>
+        <Td style={{ fontWeight: 700, color: G.text }} onClick={rowClick}>
           {customer.name}
           {inactive && <span style={{ marginLeft: 8 }}><Pill tone="muted">Disabled</Pill></span>}
         </Td>
-        <Td onClick={onToggle}>
+        <Td onClick={rowClick}>
           <div>{customer.contact_name || <span style={{ color: G.faint }}>—</span>}</div>
           {customer.contact_email && <div style={{ fontSize: 10, color: G.muted }}>{customer.contact_email}</div>}
         </Td>
-        <Td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }} onClick={onToggle}>{projects.length}</Td>
-        <Td onClick={onToggle}>
+        <Td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }} onClick={rowClick}>{projects.length}</Td>
+        <Td onClick={rowClick}>
           {inactive ? <Pill tone="muted">Inactive</Pill> : <Pill tone="green">Active</Pill>}
         </Td>
         <Td style={{ textAlign: "right", whiteSpace: "nowrap" }}>

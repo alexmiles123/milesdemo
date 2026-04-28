@@ -22,7 +22,16 @@ function sbHeaders(extra = {}) {
 async function parse(res) {
   const text = await res.text();
   if (!res.ok) {
-    const err = new Error("Supabase request failed: " + res.status + " " + text.slice(0, 240));
+    // PostgREST returns JSON like { code, message, details, hint }. Pull the
+    // useful pieces up so callers (and audit logs) see the constraint name
+    // instead of a row dump that overflows our generic 240-char snippet.
+    let summary = text.slice(0, 800);
+    try {
+      const j = JSON.parse(text);
+      const parts = [j.code, j.message, j.details, j.hint].filter(Boolean);
+      if (parts.length) summary = parts.join(" — ");
+    } catch { /* not JSON, keep raw */ }
+    const err = new Error("Supabase request failed: " + res.status + " " + summary);
     err.status = res.status;
     throw err;
   }
