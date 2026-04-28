@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { G } from "../lib/theme.js";
-import ProjectsTab from "./ProjectsTab.jsx";
+import CustomersTab from "./CustomersTab.jsx";
 import CsmsTab from "./CsmsTab.jsx";
 import AssignmentsTab from "./AssignmentsTab.jsx";
 import IntegrationsTab from "./IntegrationsTab.jsx";
@@ -22,7 +22,7 @@ const SECTIONS = [
     label: "Accounts",
     desc: "Customers, projects, and onboarding templates.",
     items: [
-      { id: "projects",       label: "Customers & Projects", desc: "Active engagements and the projects under them." },
+      { id: "customers",      label: "Customers",            desc: "Customer accounts and the projects under each one." },
       { id: "task-templates", label: "Task Templates",       desc: "Reusable task lists applied when a new project starts." },
     ],
   },
@@ -64,8 +64,12 @@ export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
   const [tab, setTab] = useState(() => {
     const hash = (typeof window !== "undefined" && window.location.hash) || "";
     const m = hash.match(/^#config\/([\w-]+)/);
-    const fromHash = m && ALL_TABS.find(t => t.id === m[1])?.id;
-    return fromHash || "projects";
+    // Map the legacy "projects" hash to the new Customers tab so deep links
+    // bookmarked before the rename still resolve.
+    const raw = m && m[1];
+    const id = raw === "projects" ? "customers" : raw;
+    const fromHash = id && ALL_TABS.find(t => t.id === id)?.id;
+    return fromHash || "customers";
   });
   const [csms, setCsms] = useState(initialCsms || []);
 
@@ -149,7 +153,7 @@ export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
           </div>
 
           <div style={{ animation: "fadein .2s ease" }}>
-            {tab === "projects"       && <ProjectsTab       api={api} csms={csms} onChanged={refreshCsms} />}
+            {tab === "customers"      && <CustomersTab      api={api} csms={csms} onChanged={refreshCsms} />}
             {tab === "task-templates" && <TaskTemplatesTab  api={api} />}
             {tab === "csms"           && <CsmsTab           api={api} onChanged={refreshCsms} />}
             {tab === "users"          && <UsersTab          api={api} />}

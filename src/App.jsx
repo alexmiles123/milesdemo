@@ -1921,6 +1921,7 @@ function CsmCapacityPanel({api,csm}) {
 
 function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
   const [projects, setProjects] = useState([]);
+  const [customers,setCustomers]= useState([]);
   const [loading,  setLoading]  = useState(true);
   const [selected, setSelected] = useState(null);
   const [search,   setSearch]   = useState("");
@@ -1931,24 +1932,36 @@ function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
   const [cTab,     setCTab]     = useState("accounts");
   const [openingAccount, setOpeningAccount] = useState(null);
 
-  // Customer rows live in `customers`, but the portfolio view stores the
-  // customer name as text — so look up by name to get the row AccountDetail
-  // expects. If the customer record doesn't exist yet, create a stub so the
-  // user can start adding notes/contacts immediately.
-  const openAccount = useCallback(async (project) => {
-    if (!onAccountSelect || !project?.customer) return;
-    setOpeningAccount(project.id);
+  // Open AccountDetail for a project's customer. Post-FK migration the
+  // customer_id on each portfolio row is the source of truth; the legacy
+  // name lookup is a fallback for any row that hasn't been backfilled yet.
+  // No stub-creation here — rows should only get into `customers` via the
+  // Customers config tab, never as a side effect of a click.
+  const openAccountByCustomerId = useCallback(async (id) => {
+    if (!onAccountSelect || !id) return;
+    const cached = customers.find(c => c.id === id);
+    if (cached) { onAccountSelect(cached); return; }
     try {
-      let rows = await api.get("customers", { name: "eq." + project.customer, select: "*", limit: "1" });
-      let row = Array.isArray(rows) ? rows[0] : null;
-      if (!row) {
-        const created = await api.post("customers", [{ name: project.customer }]);
-        row = Array.isArray(created) ? created[0] : created;
-      }
+      const rows = await api.get("customers", { id: "eq." + id, select: "*", limit: "1" });
+      const row = Array.isArray(rows) ? rows[0] : null;
       if (row) onAccountSelect(row);
     } catch (e) { console.error(e); }
+  }, [api, onAccountSelect, customers]);
+
+  const openAccountFromProject = useCallback(async (project) => {
+    if (!onAccountSelect || !project) return;
+    setOpeningAccount(project.id);
+    try {
+      if (project.customer_id) {
+        await openAccountByCustomerId(project.customer_id);
+      } else if (project.customer) {
+        const rows = await api.get("customers", { name: "eq." + project.customer, select: "*", limit: "1" });
+        const row = Array.isArray(rows) ? rows[0] : null;
+        if (row) onAccountSelect(row);
+      }
+    } catch (e) { console.error(e); }
     setOpeningAccount(null);
-  }, [api, onAccountSelect]);
+  }, [api, onAccountSelect, openAccountByCustomerId]);
 
   const load=useCallback(async()=>{
     setLoading(true);
@@ -1956,8 +1969,12 @@ function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
       const params = csm
         ? {"select":"*","csm":"eq."+csm.name}
         : {"select":"*"};
-      const d=await api.get("vw_portfolio",params);
-      setProjects(d||[]);
+      const [d, cs] = await Promise.all([
+        api.get("vw_portfolio", params),
+        api.get("customers", { select: "*", is_active: "eq.true", order: "name.asc" }).catch(() => []),
+      ]);
+      setProjects(d || []);
+      setCustomers(cs || []);
     }catch(e){console.error(e);}
     setLoading(false);
   },[api,csm]);
@@ -2039,11 +2056,11 @@ function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
         </div>
       </div>
       <div style={{textAlign:"right",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",marginBottom:6}}>Click an account name to view notes · double-click any row to manage tasks</div>
-      {/* Table */}
+      {/* Active projects */}
       <Card style={{overflow:"hidden"}}>
         <div style={{padding:"10px 14px",borderBottom:"1px solid "+G.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>{csm ? "ACCOUNTS — "+csm.name.toUpperCase() : "ALL ACCOUNTS"}</span>
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{filtered.length} accounts</span>
+          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>{csm ? "ACTIVE PROJECTS — "+csm.name.toUpperCase() : "ACTIVE PROJECTS"}</span>
+          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{filtered.length} project{filtered.length===1?"":"s"}</span>
         </div>
         <div style={{overflowX:"auto"}}>
           {loading?<div style={{padding:40,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace"}}>Loading…</div>:(
@@ -2065,7 +2082,7 @@ function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
                     <tr key={p.id} className="rh" onDoubleClick={()=>setSelected(p)}
                       style={{borderBottom:i<filtered.length-1?"1px solid "+G.faint:"none"}}>
                       <td style={{padding:"10px 12px",fontSize:15,fontWeight:700}}>
-                        <button onClick={(e)=>{e.stopPropagation();openAccount(p);}}
+                        <button onClick={(e)=>{e.stopPropagation();openAccountFromProject(p);}}
                           disabled={openingAccount===p.id}
                           style={{background:"none",border:"none",padding:0,color:G.blue,fontWeight:700,fontSize:15,fontFamily:"inherit",cursor:openingAccount===p.id?"wait":"pointer",textAlign:"left",textDecoration:"underline",textDecorationColor:G.blue+"55",textUnderlineOffset:3}}>
                           {p.customer}
@@ -2098,12 +2115,56 @@ function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
                     </tr>
                   );
                 })}
-                {filtered.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:"center",color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>No accounts match</td></tr>}
+                {filtered.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:"center",color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>No projects match</td></tr>}
               </tbody>
             </table>
           )}
         </div>
       </Card>
+
+      {/* All accounts — every active customer, regardless of project state. */}
+      {(() => {
+        const projCount = {};
+        for (const p of projects) { if (p.customer_id) projCount[p.customer_id] = (projCount[p.customer_id] || 0) + 1; }
+        const accounts = customers
+          .filter(c => !search || (c.name || "").toLowerCase().includes(search.toLowerCase())
+                                || (c.contact_name || "").toLowerCase().includes(search.toLowerCase())
+                                || (c.contact_email || "").toLowerCase().includes(search.toLowerCase()))
+          .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+        return (
+          <Card style={{overflow:"hidden",marginTop:14}}>
+            <div style={{padding:"10px 14px",borderBottom:"1px solid "+G.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>ALL ACCOUNTS</span>
+              <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{accounts.length} account{accounts.length===1?"":"s"}</span>
+            </div>
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",minWidth:600}}>
+                <thead>
+                  <tr style={{borderBottom:"1px solid "+G.border}}>
+                    {["Customer","Contact","Email","Projects"].map(h=>(
+                      <th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts.map((c,i)=>(
+                    <tr key={c.id} className="rh"
+                      style={{borderBottom:i<accounts.length-1?"1px solid "+G.faint:"none",cursor:"pointer"}}
+                      onClick={()=>onAccountSelect&&onAccountSelect(c)}>
+                      <td style={{padding:"10px 12px",fontSize:15,fontWeight:700,color:G.blue,textDecoration:"underline",textDecorationColor:G.blue+"55",textUnderlineOffset:3}}>{c.name}</td>
+                      <td style={{padding:"10px 12px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.text}}>{c.contact_name||<span style={{color:G.faint}}>—</span>}</td>
+                      <td style={{padding:"10px 12px",fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted}}>{c.contact_email||"—"}</td>
+                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,fontVariantNumeric:"tabular-nums"}}>{projCount[c.id]||0}</td>
+                    </tr>
+                  ))}
+                  {accounts.length===0&&<tr><td colSpan={4} style={{padding:30,textAlign:"center",color:"#5a7a94",fontFamily:"DM Mono,monospace",fontSize:12}}>{customers.length===0?"No customers yet — add one from Configuration → Customers.":"No accounts match your search."}</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        );
+      })()}
+
       {selected&&<TaskModal project={selected} api={api} allCsms={allCsms} onClose={()=>setSelected(null)} onUpdated={load}/>}
     </div>
       )}

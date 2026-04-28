@@ -22,6 +22,7 @@ export function validateProject(v) {
   const e = {};
   if (!v.name || !v.name.trim()) push(e,"name","Project name is required.");
   else if (v.name.length > 160) push(e,"name","Name is too long.");
+  if (!v.customer_id) push(e,"customer_id","Pick a customer.");
   if (v.stage && !STAGES.includes(v.stage)) push(e,"stage","Invalid stage.");
   if (v.health && !HEALTHS.includes(v.health)) push(e,"health","Invalid health.");
   const arr = v.arr === "" || v.arr == null ? 0 : Number(v.arr);

@@ -5,7 +5,7 @@ import { audited } from "../lib/audit.js";
 import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm, TextArea } from "./common.jsx";
 import ImportModal from "./ImportModal.jsx";
 
-const BLANK = { name:"", customer:"", csm_id:"", stage:"Kickoff", health:"green", arr:0, completion_pct:0, target_date:"", notes:"" };
+const BLANK = { name:"", customer_id:"", customer:"", csm_id:"", stage:"Kickoff", health:"green", arr:0, completion_pct:0, target_date:"", notes:"" };
 
 export default function ProjectsTab({ api, csms, onChanged }) {
   const [projects, setProjects] = useState([]);
@@ -155,7 +155,7 @@ export default function ProjectsTab({ api, csms, onChanged }) {
   );
 }
 
-const PROJECT_IMPORT_SPEC = {
+export const PROJECT_IMPORT_SPEC = {
   table: "projects",
   auditAction: "project.import",
   templateName: "projects-import-template.xlsx",
@@ -183,7 +183,17 @@ const PROJECT_IMPORT_SPEC = {
     { key: "target_date", aliases: ["target date", "target", "go-live", "target go-live"], parse: "date" },
     { key: "notes", aliases: ["notes"] },
   ],
-  transformRow: (r) => ({ ...r, start_date: new Date().toISOString().slice(0, 10) }),
+  // Resolve customer text → customer_id from the import context. Unknown
+  // customers are passed through with customer_id=null so the row still
+  // imports; the user can backfill the FK later from the Customers tab.
+  transformRow: (r, ctx) => {
+    const out = { ...r, start_date: new Date().toISOString().slice(0, 10) };
+    if (r.customer && ctx?.customers) {
+      const match = ctx.customers.find(c => (c.name || "").toLowerCase() === r.customer.toLowerCase());
+      if (match) out.customer_id = match.id;
+    }
+    return out;
+  },
 };
 
 // Task import is scoped to one project — the row's project_id is injected
@@ -191,7 +201,7 @@ const PROJECT_IMPORT_SPEC = {
 const PRIORITY_OPTIONS = ["critical", "high", "medium", "low"];
 const STATUS_OPTIONS   = ["complete", "upcoming", "late"];
 
-const TASK_IMPORT_SPEC = {
+export const TASK_IMPORT_SPEC = {
   table: "tasks",
   auditAction: "task.import",
   templateName: "tasks-import-template.xlsx",
@@ -215,7 +225,7 @@ const TASK_IMPORT_SPEC = {
   transformRow: (r, ctx) => ({ ...r, project_id: ctx.project.id }),
 };
 
-function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
+export function ProjectModal({ api, csms, customers = [], initial, mode, onClose, onSaved, lockCustomer = false }) {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -223,6 +233,9 @@ function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
   const [templateId, setTemplateId] = useState("");
   const [templatesLoaded, setTemplatesLoaded] = useState(false);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const customerOptions = [{ value: "", label: "— Select customer —" },
+    ...customers.filter(c => c.is_active !== false)
+                .map(c => ({ value: c.id, label: c.name }))];
 
   // Load templates once when the create modal opens. Edit mode never needs
   // them — applying retroactively belongs on the project detail page.
@@ -250,9 +263,13 @@ function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
     setSaving(true);
     try {
       const startDate = new Date().toISOString().slice(0, 10);
+      const picked = customers.find(c => c.id === form.customer_id);
       const payload = {
         name: form.name.trim(),
-        customer: form.customer?.trim() || null,
+        customer_id: form.customer_id || null,
+        // Keep the denormalized customer-name cache in sync so legacy reads
+        // (imports, exports, existing reports) keep working.
+        customer: picked ? picked.name : (form.customer?.trim() || null),
         csm_id: form.csm_id || null,
         stage: form.stage,
         health: form.health,
@@ -297,7 +314,13 @@ function ProjectModal({ api, csms, initial, mode, onClose, onSaved }) {
         </div>
         <div>
           <Label>CUSTOMER</Label>
-          <Input value={form.customer} onChange={v => set("customer", v)} placeholder="Customer / account name" />
+          <Select value={form.customer_id} onChange={v => set("customer_id", v)} options={customerOptions} disabled={lockCustomer} />
+          <FieldError error={errors.customer_id} />
+          {customers.length === 0 && (
+            <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+              No customers yet — add one from the Customers list first.
+            </div>
+          )}
         </div>
         <div>
           <Label>CSM</Label>
