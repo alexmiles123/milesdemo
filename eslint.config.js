@@ -23,7 +23,21 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', {
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+      // React 19's compiler-aware rules are advisory: they flag patterns
+      // (synchronous setState in effects, manual memoization that diverges
+      // from inferred deps, calling impure fns in render) that work today
+      // but limit React Compiler's optimizations. We surface them as
+      // warnings so they're tracked without blocking CI on the pre-existing
+      // patterns scattered across older components.
+      'react-hooks/set-state-in-effect':         'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/purity':                      'warn',
+      'react-hooks/immutability':                'warn',
     },
   },
   {
@@ -40,7 +54,11 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', {
+        varsIgnorePattern: '^[A-Z_]',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
     },
   },
 ])

@@ -6,7 +6,7 @@ import {
 import ConfigPage from "./config/ConfigPage.jsx";
 import AccountSearch from "./AccountSearch.jsx";
 import AccountDetail from "./AccountDetail.jsx";
-import { getToken, getSession, login as authLogin, logout as authLogout, clearToken, authedFetch, refreshSession, fetchMe } from "./lib/auth.js";
+import { getSession, login as authLogin, logout as authLogout, clearToken, authedFetch, refreshSession, fetchMe } from "./lib/auth.js";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = {
@@ -284,7 +284,7 @@ function AiPanel({ portfolio, tasks, csms }) {
     setLoading(true);
     try {
       const totalArr = portfolio.reduce((s,p)=>s+(p.arr||0),0);
-      const sysP = 'You are an expert Customer Success operations analyst for Monument. Live data: ' + portfolio.length + ' customers, \$' + (totalArr/1000).toFixed(0) + 'K ARR. On Track: ' + portfolio.filter(p=>p.health==='green').length + '. At Risk: ' + portfolio.filter(p=>p.health==='yellow').length + '. Critical: ' + portfolio.filter(p=>p.health==='red').length + '. Late tasks: ' + tasks.filter(t=>t.status==='late').length + '. Customers: ' + portfolio.map(p=>p.customer+': '+p.stage+', '+p.health_label+', '+p.completion_pct+'% done, \$'+(p.arr/1000).toFixed(0)+'K ARR, CSM: '+p.csm+', '+(p.tasks_late||0)+' late tasks').join('; ') + '. CSMs: ' + csms.map(c=>c.csm+': '+c.total_accounts+' accounts, \$'+((c.total_arr||0)/1000).toFixed(0)+'K ARR, '+c.late_tasks+' late tasks').join('; ') + '. Be concise and executive-level in responses.';
+      const sysP = 'You are an expert Customer Success operations analyst for Monument. Live data: ' + portfolio.length + ' customers, $' + (totalArr/1000).toFixed(0) + 'K ARR. On Track: ' + portfolio.filter(p=>p.health==='green').length + '. At Risk: ' + portfolio.filter(p=>p.health==='yellow').length + '. Critical: ' + portfolio.filter(p=>p.health==='red').length + '. Late tasks: ' + tasks.filter(t=>t.status==='late').length + '. Customers: ' + portfolio.map(p=>p.customer+': '+p.stage+', '+p.health_label+', '+p.completion_pct+'% done, $'+(p.arr/1000).toFixed(0)+'K ARR, CSM: '+p.csm+', '+(p.tasks_late||0)+' late tasks').join('; ') + '. CSMs: ' + csms.map(c=>c.csm+': '+c.total_accounts+' accounts, $'+((c.total_arr||0)/1000).toFixed(0)+'K ARR, '+c.late_tasks+' late tasks').join('; ') + '. Be concise and executive-level in responses.';
       const res = await authedFetch('/api/claude', { method:'POST', body:JSON.stringify({ system:sysP, messages:newMessages }) });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -467,7 +467,7 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((proj,pi)=>{
+                {projects.map((proj)=>{
                   const projTotal=weeks.reduce((sum,ws)=>sum+getCellHours(proj.id,ws),0);
                   const isExpanded=expandedProjects.has(proj.id);
                   const projTasks=tasks.filter(t=>t.project_id===proj.id);
@@ -500,7 +500,7 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
                     </tr>,
                     // Expanded task rows
                     ...(isExpanded?Object.entries(phaseGroups).map(([phase,phaseTasks])=>
-                      phaseTasks.map((t,ti)=>(
+                      phaseTasks.map((t)=>(
                         <tr key={"task-"+t.id} style={{background:"#080e18"}}>
                           <td style={{padding:"4px 12px 4px 42px",fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1,whiteSpace:"nowrap"}}>
                             <span style={{color:PHASE_COLOR[phase]||G.faint,marginRight:6,fontSize:9,fontWeight:700}}>{phase}</span>
@@ -772,7 +772,6 @@ function ExecDashboard({api}) {
   const [csms,      setCsms]      = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading,   setLoading]   = useState(true);
-  const [selProject,setSelProject]= useState(null);
   const [execTab,   setExecTab]   = useState("dashboard");
   const [hiddenWidgets, setHiddenWidgets] = useState(loadHiddenWidgets);
   const [showCustomize, setShowCustomize] = useState(false);
@@ -823,8 +822,6 @@ function ExecDashboard({api}) {
   const activeCustomers  = customers.filter(c => c.is_active !== false);
   const totalCustomers   = activeCustomers.length || new Set(visiblePortfolio.map(p=>p.customer_id||p.customer)).size;
   const totalArr     = visiblePortfolio.reduce((s,p)=>s+(p.arr||0),0);
-  const arrAtRisk    = visiblePortfolio.filter(p=>p.health!=="green").reduce((s,p)=>s+(p.arr||0),0);
-  const arrCritical  = visiblePortfolio.filter(p=>p.health==="red").reduce((s,p)=>s+(p.arr||0),0);
   const onTrack      = visiblePortfolio.filter(p=>p.health==="green").length;
   const atRisk       = visiblePortfolio.filter(p=>p.health==="yellow").length;
   const critical     = visiblePortfolio.filter(p=>p.health==="red").length;

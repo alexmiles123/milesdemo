@@ -13,7 +13,8 @@ import { G, fmtArr, fmtDate, HEALTH_OPTIONS } from "../lib/theme.js";
 import { audited } from "../lib/audit.js";
 import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm, TextArea } from "./common.jsx";
 import ImportModal from "./ImportModal.jsx";
-import { ProjectModal, PROJECT_IMPORT_SPEC, TASK_IMPORT_SPEC } from "./ProjectsTab.jsx";
+import { ProjectModal } from "./ProjectsTab.jsx";
+import { PROJECT_IMPORT_SPEC, TASK_IMPORT_SPEC } from "./importSpecs.js";
 
 const BLANK_CUSTOMER = {
   name: "", contact_name: "", contact_email: "", contact_phone: "",

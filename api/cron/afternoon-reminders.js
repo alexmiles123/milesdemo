@@ -146,7 +146,6 @@ export default async function handler(req, res) {
       byCsm[csm.id].tasks.push({ ...t, customerName: proj.name });
     });
 
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     const dateRange = fmtDate(startDate) + ' — ' + fmtDate(endDate);
     const results = [];
 

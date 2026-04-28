@@ -74,7 +74,7 @@ export default async function handler(req, res) {
     .replace(/^\/api\/db\/?/, "")
     .split("/")
     .filter(Boolean)
-    .filter(p => !/^[\[\(].*[\]\)]$/.test(p)); // drop literal route placeholders
+    .filter(p => !/^[[(].*[\])]$/.test(p)); // drop literal route placeholders
   if (!pathParts.length) return fail(res, 400, "Missing table path.");
 
   const table = pathParts[0];
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
   // is suspect — real PostgREST params use underscores and lowercase.
   const usp = new URLSearchParams(rawQs);
   for (const key of Array.from(usp.keys())) {
-    if (key === "path" || /[\.\[\]\(\)]/.test(key)) usp.delete(key);
+    if (key === "path" || /[.[\]()]/.test(key)) usp.delete(key);
   }
   const qs = usp.toString();
 
