@@ -1471,9 +1471,9 @@ function CsmCapacityPanel({api,csm}) {
 
   if(!csm) return (
     <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13,padding:40,gap:10,textAlign:"center"}}>
-      <div style={{fontSize:32}}>📋</div>
-      <div style={{fontWeight:700,fontSize:15,color:G.text}}>No CSM profile linked</div>
-      <div>Ask an admin to link your user account to a CSM title in Configuration → Users.</div>
+      <div style={{fontSize:32}}>📅</div>
+      <div style={{fontWeight:700,fontSize:15,color:G.text}}>Select a CSM to view capacity</div>
+      <div>Use the CSM dropdown in the top nav to pick yourself, or ask an admin to link your user account to a CSM title in Configuration → Users.</div>
     </div>
   );
   if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>Loading capacity…</div>;
@@ -1822,7 +1822,7 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
             style={{background:cTab===k?G.blueBg:"none",border:"1px solid "+(cTab===k?G.blue+"44":"transparent"),borderBottom:cTab===k?"2px solid "+G.blue:"2px solid transparent",color:cTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
         ))}
       </div>
-      {cTab==="capacity"&&csm ? (
+      {cTab==="capacity" ? (
         <CsmCapacityPanel api={api} csm={csm}/>
       ) : (
     <div style={{flex:1,overflowY:"auto",padding:"18px 24px",animation:"fadein .25s ease"}}>
