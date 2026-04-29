@@ -21,7 +21,7 @@ const BLANK_CUSTOMER = {
   address: "", notes: "", is_active: true,
 };
 const BLANK_PROJECT = {
-  name: "", customer_id: "", customer: "", csm_id: "", stage: "Kickoff",
+  name: "", customer_id: "", customer: "", csm_id: "", stage: "Analysis",
   health: "green", arr: 0, completion_pct: 0, target_date: "", notes: "",
 };
 
@@ -103,7 +103,7 @@ export default function CustomersTab({ api, csms, onChanged }) {
   };
 
   const requestDisable = (c) => {
-    const active = (projectsByCustomer[c.id] || []).filter(p => p.stage !== "Go-Live").length;
+    const active = (projectsByCustomer[c.id] || []).filter(p => p.stage !== "Deploy").length;
     setConfirmDisable({ customer: c, activeProjects: active });
   };
 

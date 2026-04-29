@@ -18,8 +18,8 @@ import { G, PHASE_ORDER, fmtDate, fmtArr } from "./lib/theme.js";
 // Mirror App.jsx — these aren't exported from theme.js so we duplicate the
 // short maps locally rather than reach into another module.
 const PHASE_COLOR = {
-  "Kickoff":"#6366f1","Discovery":"#8b5cf6","Implementation":"#3b82f6",
-  "Testing & QA":"#06b6d4","Go-Live Prep":"#f59e0b","Go-Live":"#22c55e",
+  "Analysis":"#6366f1","Design":"#8b5cf6","Develop":"#3b82f6",
+  "Evaluate":"#06b6d4","Deploy":"#22c55e",
 };
 const HEALTH_COLOR = { green:G.green, yellow:G.yellow, red:G.red };
 const STATUS_CFG = {
@@ -496,7 +496,7 @@ function useTaskHandlers(api, tasks, setTasks, showToast) {
     const result = await api.post("tasks", [{
       project_id: projectId,
       name: data.name,
-      phase: data.phase || currentStage || "Kickoff",
+      phase: data.phase || currentStage || "Analysis",
       proj_date: data.proj_date,
       priority: data.priority || "medium",
       assignee_name: data.assignee_name,
@@ -560,7 +560,7 @@ function TasksTab({ project, tasks, handlers }) {
 
       {showAddTask && (
         <AddTaskRow
-          defaultPhase={phase === "all" ? (project.stage || "Kickoff") : phase}
+          defaultPhase={phase === "all" ? (project.stage || "Analysis") : phase}
           onSave={async (data) => {
             await handlers.addTask(project.id, project.stage, data);
             setShowAddTask(false);
@@ -630,7 +630,7 @@ function TasksTab({ project, tasks, handlers }) {
 
 function AddTaskRow({ defaultPhase, onSave, onCancel }) {
   const [name, setName] = useState("");
-  const [phase, setPhase] = useState(defaultPhase || "Kickoff");
+  const [phase, setPhase] = useState(defaultPhase || "Analysis");
   const [projDate, setProjDate] = useState("");
   const [priority, setPriority] = useState("medium");
   const [assignee, setAssignee] = useState("");

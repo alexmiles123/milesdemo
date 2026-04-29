@@ -15,13 +15,13 @@ import { requireAuth, requireRole } from "../_lib/auth.js";
 import { sbGet, sbInsert, sbUpdate, sbDelete, sbConfigured } from "../_lib/sb.js";
 
 const VALID_PRIORITY = new Set(["critical", "high", "medium", "low"]);
-const VALID_PHASE    = new Set(["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"]);
+const VALID_PHASE    = new Set(["Analysis","Design","Develop","Evaluate","Deploy"]);
 
 function sanitizeItem(it, idx) {
   return {
     sort_order:      Number.isFinite(+it.sort_order) ? +it.sort_order : idx + 1,
     name:            (it.name || "").toString().trim().slice(0, 200),
-    phase:           VALID_PHASE.has(it.phase) ? it.phase : "Kickoff",
+    phase:           VALID_PHASE.has(it.phase) ? it.phase : "Analysis",
     priority:        VALID_PRIORITY.has(it.priority) ? it.priority : "medium",
     estimated_hours: it.estimated_hours == null || it.estimated_hours === "" ? null : +it.estimated_hours,
     day_offset:      Number.isFinite(+it.day_offset) ? +it.day_offset : 0,

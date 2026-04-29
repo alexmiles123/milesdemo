@@ -11,18 +11,18 @@ const PRIORITY_OPTS = [
 ];
 const PHASE_OPTS = PHASE_ORDER.map(p => ({ value: p, label: p }));
 
-const BLANK_ITEM = { name: "", phase: "Kickoff", priority: "medium", estimated_hours: "", day_offset: 0, notes: "", sort_order: 1 };
+const BLANK_ITEM = { name: "", phase: "Analysis", priority: "medium", estimated_hours: "", day_offset: 0, notes: "", sort_order: 1 };
 
 const TEMPLATE_ITEM_IMPORT_SPEC = {
   templateName: "task-template-items.xlsx",
   templateSample: [
-    ["Kickoff call",              "Kickoff",       "high",     1.5, 0,  "Initial intros and goal-setting"],
-    ["Send welcome email",        "Kickoff",       "medium",   0.5, 1,  ""],
-    ["Discovery workshop",        "Discovery",     "high",     4,   5,  ""],
-    ["Configure tenant",          "Implementation","high",     8,   10, ""],
-    ["UAT cycle",                 "Testing & QA",  "high",     6,   18, ""],
-    ["Go-live readiness check",   "Go-Live Prep",  "critical", 2,   25, ""],
-    ["Go-live",                   "Go-Live",       "critical", 3,   30, ""],
+    ["Kickoff call",              "Analysis",  "high",     1.5, 0,  "Initial intros and goal-setting"],
+    ["Send welcome email",        "Analysis",  "medium",   0.5, 1,  ""],
+    ["Discovery workshop",        "Design",    "high",     4,   5,  ""],
+    ["Configure tenant",          "Develop",   "high",     8,   10, ""],
+    ["UAT cycle",                 "Evaluate",  "high",     6,   18, ""],
+    ["Readiness check",           "Deploy",    "critical", 2,   25, ""],
+    ["Go-live",                   "Deploy",    "critical", 3,   30, ""],
   ],
   columns: [
     { key: "name",            aliases: ["name", "task", "task name"],                          required: true },
@@ -206,7 +206,7 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
   const handleImportCommit = async (parsed) => {
     const incoming = parsed.map(r => ({
       name:            r.name,
-      phase:           r.phase    || "Kickoff",
+      phase:           r.phase    || "Analysis",
       priority:        r.priority || "medium",
       estimated_hours: r.estimated_hours ?? "",
       day_offset:      r.day_offset ?? 0,

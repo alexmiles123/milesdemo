@@ -19,7 +19,7 @@
 // we'd rather miss validation on a low-value table than block writes the
 // frontend already needs to make.
 
-const STAGES = new Set(["Kickoff", "Discovery", "Implementation", "Testing & QA", "Go-Live Prep", "Go-Live"]);
+const STAGES = new Set(["Analysis", "Design", "Develop", "Evaluate", "Deploy"]);
 const HEALTHS = new Set(["green", "yellow", "red"]);
 const PRIORITIES = new Set(["critical", "high", "medium", "low"]);
 const ASSIGNMENT_ROLES = new Set(["primary", "secondary", "observer"]);

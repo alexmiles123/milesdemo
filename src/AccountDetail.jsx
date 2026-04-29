@@ -229,7 +229,7 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
 // ─── SUMMARY TAB ─────────────────────────────────────────────────────────────
 function SummaryTab({ account, projects, recent, summary, summarizing, summaryErr, onSummarize, onProjectSelect, loading }) {
   const totalArr = projects.reduce((s, p) => s + (Number(p.arr) || 0), 0);
-  const activeProjects = projects.filter(p => p.stage !== "Go-Live").length;
+  const activeProjects = projects.filter(p => p.stage !== "Deploy").length;
   const atRisk = projects.filter(p => p.health === "yellow" || p.health === "red").length;
   const recentActivity = recent.length;
 

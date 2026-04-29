@@ -5,10 +5,10 @@ export const PROJECT_IMPORT_SPEC = {
   auditAction: "project.import",
   templateName: "projects-import-template.xlsx",
   templateSample: [
-    ["Acme Implementation", "Acme Corp", "Alex Miles", "Kickoff", "On Track", 120000, 0, "2026-09-30"],
-    ["Globex Rollout", "Globex", "Morgan Wu", "Discovery", "At Risk", 80000, 25, "2026-07-15"],
+    ["Acme Onboarding", "Acme Corp", "Alex Miles", "Analysis", "On Track", 120000, 0, "2026-09-30"],
+    ["Globex Rollout", "Globex", "Morgan Wu", "Design", "At Risk", 80000, 25, "2026-07-15"],
   ],
-  defaults: { stage: "Kickoff", health: "green", completion_pct: 0, arr: 0 },
+  defaults: { stage: "Analysis", health: "green", completion_pct: 0, arr: 0 },
   columns: [
     { key: "name", aliases: ["name", "project name", "project"], required: true },
     { key: "customer", aliases: ["customer", "account", "customer name"] },
@@ -51,12 +51,12 @@ export const TASK_IMPORT_SPEC = {
   auditAction: "task.import",
   templateName: "tasks-import-template.xlsx",
   templateSample: [
-    ["Kickoff meeting",       "Kickoff",        "high",   "upcoming", "2026-05-01", "Jordan Lee", 4, "Introduce the team"],
-    ["Environment access",    "Discovery",      "medium", "upcoming", "2026-05-10", "IT Ops",     2, ""],
-    ["Data migration script", "Implementation", "high",   "upcoming", "2026-06-05", "Alex Miles", 8, "Pulls from legacy DB"],
-    ["UAT sign-off",          "Testing & QA",   "critical","upcoming","2026-07-01", "Customer",   3, "Blocks go-live"],
+    ["Kickoff meeting",       "Analysis", "high",   "upcoming", "2026-05-01", "Jordan Lee", 4, "Introduce the team"],
+    ["Environment access",    "Design",   "medium", "upcoming", "2026-05-10", "IT Ops",     2, ""],
+    ["Data migration script", "Develop",  "high",   "upcoming", "2026-06-05", "Alex Miles", 8, "Pulls from legacy DB"],
+    ["UAT sign-off",          "Evaluate", "critical","upcoming","2026-07-01", "Customer",   3, "Blocks go-live"],
   ],
-  defaults: { phase: "Kickoff", priority: "medium", status: "upcoming" },
+  defaults: { phase: "Analysis", priority: "medium", status: "upcoming" },
   columns: [
     { key: "name",            aliases: ["task", "name", "task name"], required: true },
     { key: "phase",           aliases: ["phase", "milestone", "stage"], parse: "enum", values: PHASE_ORDER },

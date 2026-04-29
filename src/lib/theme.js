@@ -64,7 +64,7 @@ export const THEME_CSS = `
 }
 `;
 
-export const PHASE_ORDER = ["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"];
+export const PHASE_ORDER = ["Analysis","Design","Develop","Evaluate","Deploy"];
 export const HEALTH_OPTIONS = [
   { value:"green",  label:"On Track" },
   { value:"yellow", label:"At Risk" },

@@ -6,7 +6,7 @@ import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Moda
 import ImportModal from "./ImportModal.jsx";
 import { PROJECT_IMPORT_SPEC, TASK_IMPORT_SPEC } from "./importSpecs.js";
 
-const BLANK = { name:"", customer_id:"", customer:"", csm_id:"", stage:"Kickoff", health:"green", arr:0, completion_pct:0, target_date:"", notes:"" };
+const BLANK = { name:"", customer_id:"", customer:"", csm_id:"", stage:"Analysis", health:"green", arr:0, completion_pct:0, target_date:"", notes:"" };
 
 export default function ProjectsTab({ api, csms, onChanged }) {
   const [projects, setProjects] = useState([]);

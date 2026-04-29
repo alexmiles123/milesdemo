@@ -1,7 +1,7 @@
 // Lightweight client-side validators. All network writes MUST still be
 // validated server-side — these exist only to give users fast feedback.
 
-const STAGES = ["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"];
+const STAGES = ["Analysis","Design","Develop","Evaluate","Deploy"];
 const HEALTHS = ["green","yellow","red"];
 const PRIORITIES = ["critical","high","medium","low"];
 const ASSIGNMENT_ROLES = ["primary","secondary","observer"];

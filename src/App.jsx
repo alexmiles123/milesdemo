@@ -15,10 +15,10 @@ import { getSession, login as authLogin, logout as authLogout, clearToken, authe
 // rename pass.
 import { G, THEME_CSS } from "./lib/theme.js";
 
-const PHASE_ORDER = ["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"];
+const PHASE_ORDER = ["Analysis","Design","Develop","Evaluate","Deploy"];
 const PHASE_COLOR = {
-  "Kickoff":"#6366f1","Discovery":"#8b5cf6","Implementation":"#3b82f6",
-  "Testing & QA":"#06b6d4","Go-Live Prep":"#f59e0b","Go-Live":"#22c55e",
+  "Analysis":"#6366f1","Design":"#8b5cf6","Develop":"#3b82f6",
+  "Evaluate":"#06b6d4","Deploy":"#22c55e",
 };
 const HEALTH_COLOR = { green:G.green, yellow:G.yellow, red:G.red };
 const STATUS_CFG = {
@@ -840,11 +840,6 @@ function ExecDashboard({api}) {
   const totalComplete= visibleTasks.filter(t=>t.status==="complete").length;
   const totalUpcoming= visibleTasks.filter(t=>t.status==="upcoming").length;
   const criticalLate = visibleTasks.filter(t=>t.status==="late"&&t.priority==="critical").length;
-  // "Go-Live This Month" — filter by target_date falling in the current
-  // calendar month, regardless of stage. The previous version filtered by
-  // stage ("Go-Live Prep"/"Go-Live"), which silently hid any project whose
-  // owner hadn't manually advanced the dropdown — even if the date was
-  // two days away.
   const _now = new Date();
   const _monthStart = new Date(_now.getFullYear(), _now.getMonth(), 1);
   const _monthEnd   = new Date(_now.getFullYear(), _now.getMonth()+1, 0, 23,59,59,999);
@@ -897,13 +892,10 @@ function ExecDashboard({api}) {
     .sort((a,b)=>new Date(a.proj_date)-new Date(b.proj_date))
     .slice(0,12);
 
-  // Upcoming go-lives — anything with a target_date in the next 60 days,
-  // regardless of stage. Stage-only filtering used to hide projects that
-  // were two days from launch but still tagged "Implementation" because
-  // a CSM hadn't bumped the dropdown.
   const _horizon = new Date(_now.getTime() + 60*24*60*60*1000);
   const upcomingGoLives = visiblePortfolio
     .filter(p=>{
+      if (p.stage !== "Deploy") return false;
       if (!p.target_date) return false;
       const td = new Date(p.target_date);
       return td >= _now && td <= _horizon;
@@ -1916,7 +1908,7 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
                         </button>
                       </td>
                       <td style={{padding:"10px 12px"}} onDoubleClick={e=>e.stopPropagation()}>
-                        <select value={p.stage||"Kickoff"} disabled={stageSaving===p.id}
+                        <select value={p.stage||"Analysis"} disabled={stageSaving===p.id}
                           onClick={e=>e.stopPropagation()}
                           onChange={e=>updateProjectStage(p,e.target.value)}
                           title="Click to change stage"

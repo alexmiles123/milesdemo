@@ -16,7 +16,7 @@ test("projects: rejects out-of-range completion_pct", () => {
 
 test("projects: accepts a well-formed row", () => {
   const r = validateWrite("projects", {
-    name: "Acme onboarding", stage: "Discovery", health: "green",
+    name: "Acme onboarding", stage: "Design", health: "green",
     arr: 100000, completion_pct: 25, target_date: "2026-06-01",
   });
   assert.equal(r.ok, true);
