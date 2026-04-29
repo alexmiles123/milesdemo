@@ -211,12 +211,9 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
     : [["consultant","Consultant Portal"]];
   return (
     <div style={{borderBottom:"1px solid "+G.border,padding:"0 24px",display:"flex",alignItems:"center",gap:14,height:60,background:G.surface,flexShrink:0,zIndex:10}}>
-      <div style={{display:"flex",alignItems:"center",gap:9}}>
-        <Logo size={28}/>
-        <div>
-          <div style={{fontSize:16,fontWeight:700,letterSpacing:"-0.01em",color:G.text}}>Monument</div>
-          <div style={{fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.12em",marginTop:1}}>CUSTOMER SUCCESS</div>
-        </div>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <Logo size={32}/>
+        <div style={{fontSize:22,fontWeight:800,letterSpacing:"-0.02em",color:G.text}}>Monument</div>
       </div>
       <div style={{width:1,height:26,background:G.border,marginLeft:8}}/>
       {/* View tabs (Gainsight-style underline indicator) */}
