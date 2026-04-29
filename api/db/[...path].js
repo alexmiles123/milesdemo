@@ -31,6 +31,7 @@ const AUDIT_TABLES = new Set([
   "customers", "customer_interactions",
   "integrations",
   "notification_rules",
+  "project_notes", "project_attachments",
 ]);
 const AUDIT_VERB = { POST: "create", PUT: "update", PATCH: "update", DELETE: "delete" };
 
@@ -45,6 +46,7 @@ const ALLOWED_TABLES = new Set([
   "customers", "customer_interactions",
   "integrations", "sync_runs",
   "notification_rules",
+  "project_notes", "project_attachments",
   "audit_log",
   // Read-only views the dashboards query. Not listing them here silently
   // returns empty arrays (the frontend catches 404s) — exactly the "all

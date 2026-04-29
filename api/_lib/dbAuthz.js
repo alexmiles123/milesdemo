@@ -36,6 +36,8 @@ const POLICY = {
   integrations:           { admin: "rw", csm: "r",  viewer: "r" },
   sync_runs:              { admin: "rw", csm: "r",  viewer: "r" },
   notification_rules:     { admin: "rw", csm: "r",  viewer: "r" },
+  project_notes:          { admin: "rw", csm: "rw", viewer: "r", csmFilter: "csm_id" },
+  project_attachments:    { admin: "rw", csm: "rw", viewer: "r", csmFilter: "csm_id" },
   audit_log:              { admin: "r",  csm: "-",  viewer: "-" },
   vw_portfolio:           { admin: "r",  csm: "r",  viewer: "r" },
   vw_csm_scorecard:       { admin: "r",  csm: "r",  viewer: "r" },
