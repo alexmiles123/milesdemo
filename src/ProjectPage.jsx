@@ -194,6 +194,7 @@ export default function ProjectPage({ api, projectId, onClose }) {
             advanceStage={advanceStage}
             recentNotes={notes.slice(0, 3)}
             fileCount={files.length}
+            taskHandlers={taskHandlers}
           />
         )}
         {tab === "tasks" && (
@@ -281,7 +282,8 @@ function ProjectHeader({ project, savingProject, editingProj, setEditingProj, cy
 }
 
 // ─── OVERVIEW TAB ────────────────────────────────────────────────────────────
-function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceStage, recentNotes, fileCount }) {
+function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceStage, recentNotes, fileCount, taskHandlers }) {
+  const [expandedPhase, setExpandedPhase] = useState(null);
   const stageIdx = PHASE_ORDER.indexOf(project.stage);
   const stagePctByPhase = (ph) => {
     const items = tasks.filter(t => t.phase === ph);
@@ -385,28 +387,56 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
             <div style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",padding:"20px 0",textAlign:"center"}}>No tasks yet</div>
           ) : (
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {phaseBreakdown.map(p => (
-                <div key={p.phase}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:11,fontFamily:"Inter,system-ui,sans-serif"}}>
-                    <span style={{color:PHASE_COLOR[p.phase]||G.muted,fontWeight:600}}>{p.phase}</span>
-                    <span style={{color:G.muted}}>
-                      {p.complete}/{p.total} done
-                      {p.late > 0 && <span style={{color:G.red,marginLeft:8}}>· {p.late} late</span>}
-                    </span>
-                  </div>
-                  <div style={{height:8,background:G.border,borderRadius:4,overflow:"hidden",display:"flex"}}>
-                    {p.total > 0 && (
-                      <>
-                        <div style={{width:(p.complete/p.total*100)+"%",background:G.green}}/>
-                        {p.late > 0 && <div style={{width:(p.late/p.total*100)+"%",background:G.red}}/>}
-                      </>
+              {phaseBreakdown.map(p => {
+                const isOpen = expandedPhase === p.phase;
+                const phaseTasks = tasks.filter(t => t.phase === p.phase);
+                return (
+                  <div key={p.phase}>
+                    <button onClick={() => setExpandedPhase(isOpen ? null : p.phase)}
+                      style={{width:"100%",background:"none",border:"none",padding:0,cursor:p.total>0?"pointer":"default",textAlign:"left"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:11,fontFamily:"Inter,system-ui,sans-serif",alignItems:"center"}}>
+                        <span style={{color:PHASE_COLOR[p.phase]||G.muted,fontWeight:600,display:"flex",alignItems:"center",gap:5}}>
+                          {p.total > 0 && <span style={{fontSize:9,color:G.faint}}>{isOpen ? "▼" : "▶"}</span>}
+                          {p.phase}
+                        </span>
+                        <span style={{color:G.muted}}>
+                          {p.complete}/{p.total} done
+                          {p.late > 0 && <span style={{color:G.red,marginLeft:8}}>· {p.late} late</span>}
+                        </span>
+                      </div>
+                      <div style={{height:8,background:G.border,borderRadius:4,overflow:"hidden",display:"flex"}}>
+                        {p.total > 0 && (
+                          <>
+                            <div style={{width:(p.complete/p.total*100)+"%",background:G.green}}/>
+                            {p.late > 0 && <div style={{width:(p.late/p.total*100)+"%",background:G.red}}/>}
+                          </>
+                        )}
+                      </div>
+                      <div style={{fontSize:9,color:G.faint,fontFamily:"Inter,system-ui,sans-serif",marginTop:3}}>
+                        {p.total > 0 ? `${Math.round(p.total/maxPhase*100)}% of largest phase` : "no tasks"}
+                      </div>
+                    </button>
+                    {isOpen && phaseTasks.length > 0 && (
+                      <div style={{marginTop:8,paddingLeft:12,borderLeft:"2px solid "+(PHASE_COLOR[p.phase]||G.border),display:"flex",flexDirection:"column",gap:4}}>
+                        {phaseTasks.map(t => (
+                          <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 8px",background:G.surface2,borderRadius:6,fontSize:11,fontFamily:"Inter,system-ui,sans-serif"}}>
+                            <button
+                              onClick={() => taskHandlers?.markComplete(t)}
+                              disabled={t.status==="complete" || taskHandlers?.saving===t.id}
+                              title={t.status==="complete" ? "Done" : "Mark complete"}
+                              style={{flexShrink:0,width:16,height:16,borderRadius:3,border:"1.5px solid "+(t.status==="complete"?G.green:G.border2),background:t.status==="complete"?G.green:"transparent",cursor:t.status==="complete"?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
+                              {t.status==="complete" && <span style={{color:"#fff",fontSize:9,fontWeight:900}}>✓</span>}
+                            </button>
+                            <span style={{flex:1,color:t.status==="complete"?G.muted:G.text,textDecoration:t.status==="complete"?"line-through":"none"}}>{t.name}</span>
+                            {t.status==="late" && <span style={{color:G.red,fontSize:9,fontWeight:700}}>LATE</span>}
+                            {t.assignee_name && <span style={{color:G.faint,fontSize:10}}>{t.assignee_name}</span>}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <div style={{fontSize:9,color:G.faint,fontFamily:"Inter,system-ui,sans-serif",marginTop:3}}>
-                    {p.total > 0 ? `${Math.round(p.total/maxPhase*100)}% of largest phase` : "no tasks"}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1314,7 +1344,6 @@ function FilesTab({ files, tasks, handlers }) {
                       title={f.file_name}>
                       {f.file_name}
                     </button>
-                    {f.mime_type && <div style={{fontSize:10,color:G.faint,fontFamily:"Inter,system-ui,sans-serif",marginTop:2}}>{f.mime_type}</div>}
                   </td>
                   <td style={{padding:"11px 12px",fontSize:11,fontFamily:"Inter,system-ui,sans-serif",color:f.phase?(PHASE_COLOR[f.phase]||G.muted):G.faint,whiteSpace:"nowrap"}}>
                     {f.phase || "—"}
