@@ -161,12 +161,8 @@ const GLOBAL_CSS = `
 function Logo({size=32}) {
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
-      <rect width="36" height="36" rx="8" fill="#1a1a2e"/>
-      <path d="M5 28 L12 10 L18 21 L24 10 L31 28 L26 28 L18 15 L10 28 Z" fill="url(#lg)"/>
-      <path d="M10 28 L18 15 L26 28" fill="#7c3aed" opacity="0.35"/>
-      <defs><linearGradient id="lg" x1="5" y1="10" x2="31" y2="28" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#7c3aed"/><stop offset="100%" stopColor="#a855f7"/>
-      </linearGradient></defs>
+      <path d="M5 30 L5 8 L10 8 L18 22 L26 8 L31 8 L31 30 L26 30 L26 17 L20 27 L16 27 L10 17 L10 30 Z" fill="#7c3aed"/>
+      <path d="M7 32 L8 30 L9 32 L11 33 L9 34 L8 36 L7 34 L5 33 Z" fill="#7c3aed"/>
     </svg>
   );
 }
@@ -2042,11 +2038,8 @@ function LoginScreen({onConnect}) {
     <div style={{minHeight:"100vh",background:G.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Syne,sans-serif"}}>
       <div style={{width:460,animation:"fadein .4s ease"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:36,justifyContent:"center"}}>
-          <Logo size={38}/>
-          <div>
-            <div style={{fontSize:22,fontWeight:800,color:G.text,letterSpacing:"0.03em"}}>Monument</div>
-            <div style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.12em"}}>CUSTOMER SUCCESS PLATFORM</div>
-          </div>
+          <Logo size={42}/>
+          <div style={{fontSize:30,fontWeight:800,color:G.text,letterSpacing:"-0.02em"}}>Monument</div>
         </div>
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:14,padding:32}}>
           {!forgotOpen ? (
