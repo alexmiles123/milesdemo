@@ -13,7 +13,7 @@ import { getSession, login as authLogin, logout as authLogout, clearToken, authe
 // Single source of truth lives in src/lib/theme.js. Re-imported here so the
 // huge volume of G.* references in this file keep working without a churn-y
 // rename pass.
-import { G } from "./lib/theme.js";
+import { G, THEME_CSS } from "./lib/theme.js";
 
 const PHASE_ORDER = ["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"];
 const PHASE_COLOR = {
@@ -138,25 +138,26 @@ function makeApi() {
 
 // ─── GLOBAL STYLES ───────────────────────────────────────────────────────────
 const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  ${THEME_CSS}
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body,#root{width:100%;max-width:100% !important;overflow-x:hidden;}
-  body{background:${G.bg};color:${G.text};font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.005em;}
-  ::-webkit-scrollbar{width:8px;height:8px;}
-  ::-webkit-scrollbar-track{background:${G.surface2};}
-  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}
-  ::-webkit-scrollbar-thumb:hover{background:#94a3b8;}
+  body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:19px;line-height:1.55;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.005em;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:var(--surface2);}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
   @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  .rh:hover{background:${G.surface2} !important;cursor:pointer;}
-  select,input,textarea{outline:none;font-size:14px;font-family:Inter,system-ui,sans-serif;}
-  button{font-family:Inter,system-ui,sans-serif;font-size:14px;font-weight:500;}
-  table{font-size:14px;}
-  th{font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${G.muted};}
-  td{font-size:14px;color:${G.text};}
-  label{font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${G.muted};}
+  .rh:hover{background:var(--surface2) !important;cursor:pointer;}
+  select,input,textarea{outline:none;font-size:18px;font-weight:600;font-family:Inter,system-ui,sans-serif;color:var(--text);}
+  button{font-family:Inter,system-ui,sans-serif;font-size:18px;font-weight:600;}
+  table{font-size:18px;}
+  th{font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
+  td{font-size:18px;color:var(--text);}
+  label{font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
   /* Prevent KPI/value overflow inside narrow card columns */
   .num-fit{font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 `;
@@ -200,7 +201,7 @@ const Badge = ({status}) => {
 };
 
 // ─── NAV BAR ─────────────────────────────────────────────────────────────────
-function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLogout,api,onAccountSelect,role}) {
+function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLogout,api,onAccountSelect,role,theme,onThemeToggle}) {
   // Non-admins only see the consultant portal — exec dashboards and the
   // configuration surface are admin-only. Server endpoints already 403 on
   // those paths, but hiding the tabs keeps the UI honest about what's
@@ -258,10 +259,17 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
         )}
         {onLogout && <>
           <div style={{width:1,height:20,background:G.border}}/>
-          <button onClick={onLogout}
-            style={{background:"none",border:"1px solid "+G.border,color:G.muted,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>
-            Logout
-          </button>
+          <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"stretch"}}>
+            <button onClick={onLogout}
+              style={{background:"none",border:"1px solid "+G.border,color:G.muted,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:13,fontWeight:600}}>
+              Logout
+            </button>
+            <button onClick={onThemeToggle} title={theme==="dark"?"Switch to light mode":"Switch to dark mode"}
+              style={{background:"none",border:"1px solid "+G.border,color:G.muted,padding:"4px 12px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:12,fontWeight:500,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <span style={{fontSize:12}}>{theme==="dark"?"☀":"☾"}</span>
+              {theme==="dark"?"Light Mode":"Dark Mode"}
+            </button>
+          </div>
         </>}
       </div>
     </div>
@@ -1233,7 +1241,7 @@ function ExecDashboard({api}) {
                 </thead>
                 <tbody>
                   {portfolio.filter(p=>p.health==="red").map((p,i,arr)=>(
-                    <tr key={p.id} style={{borderBottom:i<arr.length-1?"1px solid "+G.faint:"none",background:G.redBg+"44"}}>
+                    <tr key={p.id} style={{borderBottom:i<arr.length-1?"1px solid "+G.faint:"none",background:G.redSoft}}>
                       <td style={{padding:"7px 10px",fontSize:14,fontWeight:700,color:G.red}}>{p.customer}</td>
                       <td style={{padding:"7px 10px",fontSize:13,color:G.muted}}>{p.csm?.split(" ")[0]}</td>
                       <td style={{padding:"7px 10px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.red,fontWeight:700}}>{fmtArr(p.arr)}</td>
@@ -1273,7 +1281,7 @@ function ExecDashboard({api}) {
                 const daysToTarget = p.days_to_target!=null ? Math.round(p.days_to_target) : null;
                 return (
                   <tr key={p.id} className="rh" style={{borderBottom:i<portfolio.length-1?"1px solid "+G.faint:"none",
-                    background:p.health==="red"?G.redBg+"55":p.health==="yellow"?G.yellowBg+"33":"transparent"}}>
+                    background:p.health==="red"?G.redSoft:p.health==="yellow"?G.yellowSoft:"transparent"}}>
                     <td style={{padding:"9px 12px",fontSize:15,fontWeight:700}}>{p.customer}</td>
                     <td style={{padding:"9px 12px",fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",whiteSpace:"nowrap"}}>{p.csm}</td>
                     <td style={{padding:"9px 12px",fontSize:11,color:PHASE_COLOR[p.stage]||G.muted,fontFamily:"Inter,system-ui,sans-serif",whiteSpace:"nowrap"}}>{p.stage}</td>
@@ -1896,7 +1904,7 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
                       <td style={{padding:"10px 12px",fontSize:15,fontWeight:700,maxWidth:240}}>
                         <button onClick={(e)=>{e.stopPropagation();onProjectSelect&&onProjectSelect(p);}}
                           title="Open project workspace"
-                          style={{background:"none",border:"none",padding:0,color:G.text,fontWeight:700,fontSize:15,fontFamily:"inherit",cursor:"pointer",textAlign:"left",textDecoration:"underline",textDecorationColor:G.text+"33",textUnderlineOffset:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>
+                          style={{background:"none",border:"none",padding:0,color:G.text,fontWeight:700,fontSize:15,fontFamily:"inherit",cursor:"pointer",textAlign:"left",textDecoration:"underline",textDecorationColor:G.textSoft,textUnderlineOffset:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>
                           {p.name || p.customer || "Untitled Project"}
                         </button>
                       </td>
@@ -2127,6 +2135,18 @@ export default function App() {
   const [lastSync,   setLastSync]   = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  // Theme: persists in localStorage. Defaults to light. The actual paint job
+  // is done by CSS variables keyed off [data-theme] on <html>, so flipping
+  // this re-themes everything synchronously without re-rendering inline styles.
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("theme") === "dark" ? "dark" : "light"; }
+    catch { return "light"; }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem("theme", theme); } catch { /* private mode */ }
+  }, [theme]);
+  const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
 
   const handleConnect=(client,csmList)=>{
     setApi(client);
@@ -2180,7 +2200,8 @@ export default function App() {
       <style>{GLOBAL_CSS}</style>
       <NavBar view={safeView} setView={(v)=>{setActiveAccount(null); setActiveProject(null); setView(v);}} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
         lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing} onLogout={handleLogout}
-        api={api} onAccountSelect={setActiveAccount} role={role}/>
+        api={api} onAccountSelect={setActiveAccount} role={role}
+        theme={theme} onThemeToggle={toggleTheme}/>
       {activeProject ? (
         <ProjectPage api={api} projectId={activeProject}
           onClose={()=>setActiveProject(null)}/>

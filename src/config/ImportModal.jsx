@@ -287,7 +287,7 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
                     {rows.slice(0, 100).map((r, i) => {
                       const bad = r._errors.length > 0;
                       return (
-                        <tr key={i} style={{ borderBottom: "1px solid " + G.faint, background: bad ? G.redBg + "22" : "transparent" }}>
+                        <tr key={i} style={{ borderBottom: "1px solid " + G.faint, background: bad ? G.redSoft : "transparent" }}>
                           <td style={{ padding: "5px 8px", color: G.muted }}>{r.row}</td>
                           {validColumns.map(c => (
                             <td key={c.key} style={{ padding: "5px 8px", color: G.text, whiteSpace: "nowrap", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -320,7 +320,7 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
             <div><span style={{ color: G.green }}>✓</span> Created: <strong style={{ color: G.text }}>{summary.created}</strong></div>
             {summary.failed > 0 && <div><span style={{ color: G.red }}>✗</span> Failed: <strong style={{ color: G.text }}>{summary.failed}</strong></div>}
             {summary.errors.length > 0 && (
-              <div style={{ marginTop: 8, padding: 8, background: G.redBg + "33", borderRadius: 6, color: G.red, fontSize: 11 }}>
+              <div style={{ marginTop: 8, padding: 8, background: G.redSoft, borderRadius: 6, color: G.red, fontSize: 11 }}>
                 {summary.errors.map((e, i) => <div key={i}>{e}</div>)}
               </div>
             )}
