@@ -1636,10 +1636,10 @@ function CsmCapacityPanel({api,csm}) {
                               style={{width:44,background:G.bg,border:"1px solid "+G.teal,color:G.text,padding:"4px",borderRadius:4,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,textAlign:"center"}}/>
                           ):(
                             <div onClick={()=>setEditingProj({projectId:proj.id,ws})}
-                              style={{cursor:"pointer",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:hrs>0?G.teal:G.faint,fontWeight:hrs>0?700:400,padding:"4px 2px",borderRadius:4,transition:"background .15s"}}
-                              onMouseEnter={e=>e.currentTarget.style.background=G.surface2}
-                              onMouseLeave={e=>e.currentTarget.style.background=G.surface}>
-                              {hrs>0?hrs+"h":"·"}
+                              style={{cursor:"pointer",fontSize:hrs>0?12:10,fontFamily:"Inter,system-ui,sans-serif",color:hrs>0?G.teal:"#5a7a94",fontWeight:hrs>0?700:400,padding:"4px 2px",borderRadius:4,transition:"background .15s, border-color .15s",border:hrs>0?"1px solid transparent":"1px dashed #3a5a74",textAlign:"center"}}
+                              onMouseEnter={e=>{e.currentTarget.style.background=G.surface2;if(!hrs)e.currentTarget.style.borderColor=G.teal;}}
+                              onMouseLeave={e=>{e.currentTarget.style.background="transparent";if(!hrs)e.currentTarget.style.borderColor="#3a5a74";}}>
+                              {hrs>0?hrs+"h":"+ Add"}
                             </div>
                           )}
                         </td>

@@ -52,6 +52,20 @@ async function projectBelongsToCaller(projectId, session) {
   return Boolean(proj && proj.csm_id === session.csm_id);
 }
 
+// For account-level file uploads, verify the caller has at least one project
+// assigned to this customer (which is how they have access to the account page).
+async function customerBelongsToCaller(customerId, session) {
+  if (session.role === "admin") return true;
+  if (!session.csm_id) return false;
+  const rows = await sbGet("projects", {
+    select: "id",
+    customer_id: "eq." + customerId,
+    csm_id: "eq." + session.csm_id,
+    limit: 1,
+  });
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 async function attachmentBelongsToCaller(attachmentId, session) {
   const rows = await sbGet("project_attachments", {
     select: "id,project_id,csm_id,storage_path,file_name,mime_type",
@@ -70,9 +84,12 @@ async function handleUpload(req, res, session) {
   let body;
   try { body = bodyText ? JSON.parse(bodyText) : {}; } catch { return fail(res, 400, "Invalid JSON body."); }
 
-  const { project_id, task_id, phase, file_name, mime_type, content_base64 } = body || {};
-  if (!project_id || !file_name || !content_base64) {
-    return fail(res, 400, "project_id, file_name, and content_base64 are required.");
+  const { project_id, customer_id, task_id, phase, file_name, mime_type, content_base64 } = body || {};
+  if (!project_id && !customer_id) {
+    return fail(res, 400, "project_id or customer_id is required.");
+  }
+  if (!file_name || !content_base64) {
+    return fail(res, 400, "file_name and content_base64 are required.");
   }
   if (typeof file_name !== "string" || file_name.length > 200) {
     return fail(res, 400, "file_name must be a string ≤ 200 chars.");
@@ -86,14 +103,20 @@ async function handleUpload(req, res, session) {
   if (!bytes.length) return fail(res, 400, "Empty file.");
   if (bytes.length > MAX_BYTES) return fail(res, 413, `File exceeds ${MAX_BYTES} bytes.`);
 
-  const owns = await projectBelongsToCaller(project_id, session);
-  if (!owns) return fail(res, 403, "You do not own this project.");
+  if (project_id) {
+    const owns = await projectBelongsToCaller(project_id, session);
+    if (!owns) return fail(res, 403, "You do not own this project.");
+  } else {
+    const owns = await customerBelongsToCaller(customer_id, session);
+    if (!owns) return fail(res, 403, "You do not have access to this customer.");
+  }
 
-  // Storage path: <project_id>/<uuid>-<safe_name>. The leading project_id
-  // makes per-project cleanup trivial; the UUID prevents collisions when two
-  // uploads share a filename.
+  // Storage path: project-scoped uses <project_id>/<uuid>-<name>;
+  // account-scoped uses customers/<customer_id>/<uuid>-<name>.
   const safeName = file_name.replace(/[^\w.\- ]+/g, "_");
-  const storagePath = `${project_id}/${crypto.randomUUID()}-${safeName}`;
+  const storagePath = project_id
+    ? `${project_id}/${crypto.randomUUID()}-${safeName}`
+    : `customers/${customer_id}/${crypto.randomUUID()}-${safeName}`;
 
   const upUrl = storageUrl(`/object/${BUCKET}/${encodeURI(storagePath)}`);
   const upRes = await fetch(upUrl, {
@@ -114,7 +137,8 @@ async function handleUpload(req, res, session) {
   let row;
   try {
     const inserted = await sbPost("project_attachments", [{
-      project_id,
+      project_id:  project_id || null,
+      customer_id: customer_id || null,
       csm_id:       session.csm_id || null,
       task_id:      task_id || null,
       phase:        phase || null,
@@ -139,7 +163,7 @@ async function handleUpload(req, res, session) {
     target_id:    row && row.id ? String(row.id) : null,
     after_state:  redactSecrets(row),
     request_id:   requestId(req),
-    metadata:     { project_id, file_name, size_bytes: bytes.length },
+    metadata:     { project_id: project_id || null, customer_id: customer_id || null, file_name, size_bytes: bytes.length },
   });
 
   res.statusCode = 201;

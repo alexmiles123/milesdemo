@@ -60,6 +60,7 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
   const [summary, setSummary] = useState(null);
   const [summarizing, setSummarizing] = useState(false);
   const [summaryErr, setSummaryErr] = useState(null);
+  const [files, setFiles] = useState([]);
 
   useEffect(() => { setForm(account); }, [account]);
 
@@ -68,7 +69,7 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
     setLoading(true);
     setError(null);
     try {
-      const [acts, projs] = await Promise.all([
+      const [acts, projs, atts] = await Promise.all([
         api.get("customer_interactions", {
           customer_id: "eq." + account.id,
           select: "*",
@@ -77,13 +78,20 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
         }),
         api.get("projects", {
           customer_id: "eq." + account.id,
-          select: "*",
+          select: "*,csms(name)",
           order: "target_date.asc",
+          limit: "100",
+        }).catch(() => []),
+        api.get("project_attachments", {
+          customer_id: "eq." + account.id,
+          select: "*",
+          order: "created_at.desc",
           limit: "100",
         }).catch(() => []),
       ]);
       setInteractions(acts || []);
       setProjects(projs || []);
+      setFiles(atts || []);
     } catch (e) {
       setError("Failed to load: " + e.message);
     }
@@ -92,11 +100,23 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
 
   useEffect(() => { load(); }, [load]);
 
-  // Last-30-days window powers both the summary KPI and the AI brief input.
+  // Last-30-days window powers the AI brief input.
   const recent = useMemo(() => interactions.filter(i => {
     if (!i.occurred_at) return false;
     return (Date.now() - new Date(i.occurred_at).getTime()) / 86400000 <= 30;
   }), [interactions]);
+
+  // 90-day window for the Activity KPI on the Summary tab.
+  const recent90 = useMemo(() => interactions.filter(i => {
+    if (!i.occurred_at) return false;
+    return (Date.now() - new Date(i.occurred_at).getTime()) / 86400000 <= 90;
+  }), [interactions]);
+
+  // CSM name from the first active project that has one.
+  const csmName = useMemo(() => {
+    const p = projects.find(p => p.stage !== "Deploy" && p.csms?.name) || projects.find(p => p.csms?.name);
+    return p?.csms?.name || "—";
+  }, [projects]);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -109,6 +129,7 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
         contact_phone: form.contact_phone || null,
         address:       form.address       || null,
         notes:         form.notes         || null,
+        renewal_date:  form.renewal_date  || null,
         is_active:     form.is_active ?? true,
       };
       await audited(
@@ -211,8 +232,9 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
       </div>
 
       <div style={{ padding: "24px 28px" }}>
-        {tab === "summary"  && <SummaryTab account={account} projects={projects}
-                                            recent={recent}
+        {tab === "summary"  && <SummaryTab account={account} form={form} projects={projects}
+                                            recent={recent} recent90={recent90} csmName={csmName}
+                                            files={files} api={api} onFilesRefresh={load}
                                             summary={summary} summarizing={summarizing}
                                             summaryErr={summaryErr} onSummarize={summarize}
                                             onProjectSelect={onProjectSelect} loading={loading} />}
@@ -227,20 +249,18 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
 }
 
 // ─── SUMMARY TAB ─────────────────────────────────────────────────────────────
-function SummaryTab({ account, projects, recent, summary, summarizing, summaryErr, onSummarize, onProjectSelect, loading }) {
+function SummaryTab({ account, form, projects, recent, recent90, csmName, files, api, onFilesRefresh,
+                      summary, summarizing, summaryErr, onSummarize, onProjectSelect, loading }) {
   const totalArr = projects.reduce((s, p) => s + (Number(p.arr) || 0), 0);
-  const activeProjects = projects.filter(p => p.stage !== "Deploy").length;
-  const atRisk = projects.filter(p => p.health === "yellow" || p.health === "red").length;
-  const recentActivity = recent.length;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* KPI ROW */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
-        <Kpi label="Combined ARR"        value={fmtArr(totalArr)} accent={G.purple}/>
-        <Kpi label="Active Projects"     value={activeProjects}    accent={G.blue}/>
-        <Kpi label="Projects At Risk"    value={atRisk}            accent={atRisk > 0 ? G.red : G.green}/>
-        <Kpi label="Activity (30d)"      value={recentActivity}    accent={G.teal}/>
+        <Kpi label="ARR"           value={fmtArr(totalArr)}                          accent={G.purple}/>
+        <Kpi label="Renewal Date"  value={fmtDate(form.renewal_date) || "—"}         accent={G.blue}/>
+        <Kpi label="CSM"           value={csmName}                                   accent={G.teal}/>
+        <Kpi label="Activity (90d)" value={recent90.length}                          accent={G.green}/>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
@@ -319,6 +339,9 @@ function SummaryTab({ account, projects, recent, summary, summarizing, summaryEr
           </div>
         )}
       </Card>
+
+      {/* ACCOUNT FILES */}
+      <CustomerFilesSection api={api} account={account} files={files} onRefresh={onFilesRefresh}/>
     </div>
   );
 }
@@ -471,6 +494,8 @@ function ProfileTab({ form, set, onSave, saving }) {
         <Field label="Contact Email"  value={form.contact_email} onChange={v => set("contact_email", v)} type="email"/>
         <Field label="Phone"          value={form.contact_phone} onChange={v => set("contact_phone", v)}/>
         <Field label="Address"        value={form.address}       onChange={v => set("address", v)}/>
+        <Field label="Renewal Date"   value={form.renewal_date}  onChange={v => set("renewal_date", v)} type="date"/>
+        <div/>
         <Field label="Internal Notes" value={form.notes}         onChange={v => set("notes", v)} multiline colSpan={2} rows={4}/>
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
@@ -478,6 +503,114 @@ function ProfileTab({ form, set, onSave, saving }) {
           {saving ? "Saving…" : "Save Contact"}
         </PrimaryButton>
       </div>
+    </Card>
+  );
+}
+
+// ─── ACCOUNT FILES ───────────────────────────────────────────────────────────
+function CustomerFilesSection({ api, account, files, onRefresh }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadErr(null);
+    try {
+      const b64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = ev => resolve(ev.target.result.split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await authedFetch("/api/files", {
+        method: "POST",
+        body: JSON.stringify({ customer_id: account.id, file_name: file.name, mime_type: file.type, content_base64: b64 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      onRefresh();
+    } catch (err) {
+      setUploadErr(err.message);
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const download = async (att) => {
+    try {
+      const res = await authedFetch(`/api/files?id=${att.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Download failed");
+      window.open(data.url, "_blank");
+    } catch (err) {
+      alert("Download failed: " + err.message);
+    }
+  };
+
+  const deleteFile = async (att) => {
+    if (!window.confirm(`Delete "${att.file_name}"?`)) return;
+    try {
+      await authedFetch(`/api/files?id=${att.id}`, { method: "DELETE" });
+      onRefresh();
+    } catch (err) {
+      alert("Delete failed: " + err.message);
+    }
+  };
+
+  return (
+    <Card title={`FILES · ${files.length}`}
+          right={
+            <label style={{ cursor: uploading ? "default" : "pointer" }}>
+              <input type="file" style={{ display: "none" }} onChange={handleFileChange} disabled={uploading}/>
+              <span style={{
+                background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff",
+                padding: "6px 14px", borderRadius: 7, cursor: uploading ? "default" : "pointer",
+                fontSize: 12, fontWeight: 600, fontFamily: "Inter,system-ui,sans-serif",
+                opacity: uploading ? 0.55 : 1, display: "inline-block",
+              }}>
+                {uploading ? "Uploading…" : "+ Upload File"}
+              </span>
+            </label>
+          }>
+      {uploadErr && (
+        <div style={{ color: G.red, fontSize: 12, marginBottom: 8 }}>{uploadErr}</div>
+      )}
+      {files.length === 0 ? (
+        <Empty>No files attached to this account yet.</Empty>
+      ) : (
+        <div>
+          {files.map(f => (
+            <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0",
+                                      borderBottom: "1px solid " + G.faint }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: G.text,
+                               whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {f.file_name}
+                </div>
+                <div style={{ fontSize: 11, color: G.muted, fontFamily: "Inter,system-ui,sans-serif" }}>
+                  {f.size_bytes ? Math.round(f.size_bytes / 1024) + " KB" : ""}
+                  {f.uploaded_by ? " · " + f.uploaded_by : ""}
+                </div>
+              </div>
+              <button onClick={() => download(f)}
+                style={{ background: G.blueBg, border: "1px solid " + G.blue + "55", color: G.blue,
+                          padding: "4px 10px", borderRadius: 5, cursor: "pointer",
+                          fontSize: 11, fontFamily: "Inter,system-ui,sans-serif" }}>
+                Download
+              </button>
+              <button onClick={() => deleteFile(f)}
+                style={{ background: G.redBg, border: "1px solid " + G.red + "55", color: G.red,
+                          padding: "4px 10px", borderRadius: 5, cursor: "pointer",
+                          fontSize: 11, fontFamily: "Inter,system-ui,sans-serif" }}>
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </Card>
   );
 }
