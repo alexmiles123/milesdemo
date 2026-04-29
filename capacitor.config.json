@@ -1,0 +1,13 @@
+{
+  "appId": "com.alexmiles.monument",
+  "appName": "Monument",
+  "webDir": "dist",
+  "server": {
+    "url": "https://milesdemo.vercel.app",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "allowsLinkPreview": false
+  }
+}
