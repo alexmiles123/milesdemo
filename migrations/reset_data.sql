@@ -5,15 +5,20 @@
 -- ============================================================================
 
 -- Tables with user data → truncated.
--- CASCADE handles FK chains (projects → tasks, etc).
+-- CASCADE handles FK chains (projects → tasks/notes/attachments/csm_assignments,
+-- customers → interactions, etc).
 -- audit_log has a trigger blocking UPDATE/DELETE, but TRUNCATE is a separate
 -- operation and is NOT blocked by that trigger.
+-- Hard delete: rows are removed, not flagged inactive.
 TRUNCATE
+  project_notes,
+  project_attachments,
   tasks,
   csm_assignments,
   customer_interactions,
   sync_runs,
   projects,
+  customers,
   csms,
   audit_log
   RESTART IDENTITY CASCADE;
