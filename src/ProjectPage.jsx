@@ -14,6 +14,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { authedFetch } from "./lib/auth.js";
 import { G, PHASE_ORDER, fmtDate, fmtArr } from "./lib/theme.js";
+import { Modal, Button } from "./config/common.jsx";
 
 // Mirror App.jsx — these aren't exported from theme.js so we duplicate the
 // short maps locally rather than reach into another module.
@@ -284,6 +285,7 @@ function ProjectHeader({ project, savingProject, editingProj, setEditingProj, cy
 // ─── OVERVIEW TAB ────────────────────────────────────────────────────────────
 function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceStage, recentNotes, fileCount, taskHandlers }) {
   const [expandedPhase, setExpandedPhase] = useState(null);
+  const [closingTask, setClosingTask] = useState(null);
   const stageIdx = PHASE_ORDER.indexOf(project.stage);
   const stagePctByPhase = (ph) => {
     const items = tasks.filter(t => t.phase === ph);
@@ -421,9 +423,9 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
                         {phaseTasks.map(t => (
                           <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 8px",background:G.surface2,borderRadius:6,fontSize:11,fontFamily:"Inter,system-ui,sans-serif"}}>
                             <button
-                              onClick={() => taskHandlers?.markComplete(t)}
+                              onClick={() => t.status!=="complete" && setClosingTask(t)}
                               disabled={t.status==="complete" || taskHandlers?.saving===t.id}
-                              title={t.status==="complete" ? "Done" : "Mark complete"}
+                              title={t.status==="complete" ? "Done" : "Close task"}
                               style={{flexShrink:0,width:16,height:16,borderRadius:3,border:"1.5px solid "+(t.status==="complete"?G.green:G.border2),background:t.status==="complete"?G.green:"transparent",cursor:t.status==="complete"?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
                               {t.status==="complete" && <span style={{color:"#fff",fontSize:9,fontWeight:900}}>✓</span>}
                             </button>
@@ -463,6 +465,13 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
           )}
         </div>
       </div>
+      {closingTask && (
+        <CloseTaskModal
+          task={closingTask}
+          onConfirm={(note) => { taskHandlers?.markComplete(closingTask, note); setClosingTask(null); }}
+          onCancel={() => setClosingTask(null)}
+        />
+      )}
     </div>
   );
 }
@@ -471,13 +480,15 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
 function useTaskHandlers(api, tasks, setTasks, showToast) {
   const [saving, setSaving] = useState(null);
 
-  const markComplete = async (task) => {
+  const markComplete = async (task, note) => {
     if (task.status === "complete") return;
     setSaving(task.id);
     try {
-      await api.patch("tasks", task.id, { actual_date: todayISO(), status: "complete" });
-      setTasks(p => p.map(t => t.id === task.id ? { ...t, actual_date: todayISO(), status: "complete" } : t));
-      showToast("✓ Task marked complete!");
+      const patch = { actual_date: todayISO(), status: "complete" };
+      if (note) patch.notes = note;
+      await api.patch("tasks", task.id, patch);
+      setTasks(p => p.map(t => t.id === task.id ? { ...t, ...patch } : t));
+      showToast("✓ Task closed");
     } catch (e) { showToast("Failed: " + e.message, "error"); }
     setSaving(null);
   };
@@ -547,6 +558,7 @@ function TasksTab({ project, tasks, handlers }) {
   const [showAddTask, setShowAddTask] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [closingTask, setClosingTask] = useState(null);
 
   const shown = phase === "all" ? tasks : tasks.filter(t => t.phase === phase);
 
@@ -647,6 +659,7 @@ function TasksTab({ project, tasks, handlers }) {
                     handlers={handlers}
                     selected={selected.has(task.id)}
                     onToggleSelect={() => toggleSelect(task.id)}
+                    onRequestClose={() => setClosingTask(task)}
                   />
                 ))}
               </tbody>
@@ -654,6 +667,13 @@ function TasksTab({ project, tasks, handlers }) {
           </>
         )}
       </div>
+      {closingTask && (
+        <CloseTaskModal
+          task={closingTask}
+          onConfirm={(note) => { handlers.markComplete(closingTask, note); setClosingTask(null); }}
+          onCancel={() => setClosingTask(null)}
+        />
+      )}
     </div>
   );
 }
@@ -702,7 +722,43 @@ function AddTaskRow({ defaultPhase, onSave, onCancel }) {
   );
 }
 
-function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers, selected, onToggleSelect }) {
+function CloseTaskModal({ task, onConfirm, onCancel }) {
+  const [note, setNote] = useState("");
+  const today = new Date();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  const yyyy = today.getFullYear();
+  const datePrefix = `${mm}/${dd}/${yyyy}`;
+  const preview = note.trim() ? `${datePrefix}: ${note.trim()}` : "";
+
+  return (
+    <Modal title="Close Task" onClose={onCancel} width={480}>
+      <div style={{marginBottom:8,fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif"}}>
+        Closing: <strong style={{color:G.text}}>{task.name}</strong>
+      </div>
+      <label style={{display:"block",fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.08em",marginBottom:6}}>CLOSING NOTE (optional)</label>
+      <textarea
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="e.g. testing close"
+        autoFocus
+        rows={3}
+        style={{width:"100%",background:"var(--bg)",border:"1px solid var(--border)",color:"var(--text)",padding:"8px 10px",borderRadius:7,fontFamily:"Inter,system-ui,sans-serif",fontSize:13,resize:"vertical",boxSizing:"border-box"}}
+      />
+      {preview && (
+        <div style={{marginTop:8,padding:"8px 10px",background:"var(--surface2)",borderRadius:6,fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:"var(--muted)"}}>
+          Will save as: <span style={{color:"var(--text)",fontWeight:600}}>{preview}</span>
+        </div>
+      )}
+      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:20}}>
+        <Button onClick={onCancel} variant="ghost">Cancel</Button>
+        <Button onClick={() => onConfirm(preview || null)} variant="primary">Close Task</Button>
+      </div>
+    </Modal>
+  );
+}
+
+function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers, selected, onToggleSelect, onRequestClose }) {
   const sc = STATUS_CFG[task.status] || STATUS_CFG.upcoming;
   const variance = task.actual_date
     ? Math.round((new Date(task.actual_date) - new Date(task.proj_date)) / 86400000)
@@ -731,25 +787,19 @@ function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers, selected
         <input type="checkbox" checked={!!selected} onChange={onToggleSelect} style={{cursor:"pointer",accentColor:G.red}} />
       </td>
       <td style={{padding:"11px 8px",textAlign:"center"}}>
-        <div onClick={() => !isSaving && (task.status === "complete" ? handlers.reopenTask(task) : handlers.markComplete(task))}
-          title={task.status === "complete" ? "Click to reopen" : "Click to mark complete"}
+        <div onClick={() => !isSaving && (task.status === "complete" ? handlers.reopenTask(task) : onRequestClose && onRequestClose())}
+          title={task.status === "complete" ? "Click to reopen" : "Click to close task"}
           style={{width:20,height:20,borderRadius:5,border:"2px solid "+(task.status==="complete"?G.green:G.border2),background:task.status==="complete"?G.green:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
           {task.status === "complete" && <span style={{color:"#fff",fontSize:11,fontWeight:800}}>✓</span>}
         </div>
       </td>
       <td style={{padding:"11px 12px",maxWidth:240}}>
-        {isNameEdit ? (
-          <input defaultValue={task.name} autoFocus {...blurOrEnter("name")}
-            style={{width:"100%",background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"5px 8px",borderRadius:5,fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:600}}/>
-        ) : (
-          <div style={{display:"flex",alignItems:"flex-start",gap:7}}>
-            <span style={{width:8,height:8,borderRadius:"50%",background:sc.color,flexShrink:0,marginTop:5,boxShadow:task.status!=="upcoming"?"0 0 5px "+sc.color+"88":"none"}}/>
-            <span onClick={() => setEditing({ id: task.id, field: "name" })} title="Click to rename"
-              style={{fontSize:13,fontWeight:600,color:task.status==="complete"?G.muted:G.text,textDecoration:task.status==="complete"?"line-through":"none",lineHeight:1.4,cursor:"pointer"}}>
-              {task.name}
-            </span>
-          </div>
-        )}
+        <div style={{display:"flex",alignItems:"flex-start",gap:7}}>
+          <span style={{width:8,height:8,borderRadius:"50%",background:sc.color,flexShrink:0,marginTop:5,boxShadow:task.status!=="upcoming"?"0 0 5px "+sc.color+"88":"none"}}/>
+          <span style={{fontSize:13,fontWeight:600,color:task.status==="complete"?G.muted:G.text,textDecoration:task.status==="complete"?"line-through":"none",lineHeight:1.4}}>
+            {task.name}
+          </span>
+        </div>
         {task.notes && !isNameEdit && (
           <div style={{fontSize:10,color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif",marginTop:3,marginLeft:15,lineHeight:1.4}}>
             {task.notes.slice(0, 70)}{task.notes.length > 70 ? "…" : ""}
