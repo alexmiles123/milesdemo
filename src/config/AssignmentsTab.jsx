@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { G, ASSIGNMENT_ROLES, fmtDate } from "../lib/theme.js";
 import { validateAssignment, hasErrors } from "../lib/validation.js";
 import { audited } from "../lib/audit.js";
-import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm, TextArea } from "./common.jsx";
+import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm, TextArea, BulkBar, SelAllCb } from "./common.jsx";
 import ImportModal from "./ImportModal.jsx";
 
 const BLANK = { csm_id:"", project_id:"", role:"primary", allocation_pct:100, start_date:new Date().toISOString().split("T")[0], end_date:"", notes:"" };
@@ -17,6 +17,8 @@ export default function AssignmentsTab({ api, csms, onChanged }) {
   const [csmFilter, setCsmFilter] = useState("all");
   const [activeOnly, setActiveOnly] = useState(true);
   const [showImport, setShowImport] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,6 +59,23 @@ export default function AssignmentsTab({ api, csms, onChanged }) {
     }
   };
 
+  const toggleSelect = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => setSelected(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(a => a.id)));
+  const bulkDelete = async () => {
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map(id => {
+        const a = assignments.find(x => x.id === id);
+        return audited("assignment.delete", "csm_assignments", id, () => api.del("csm_assignments", id), { before: a });
+      }));
+      setToast({ tone:"success", msg:`Removed ${selected.size} assignment${selected.size !== 1 ? "s" : ""}.` });
+      setSelected(new Set());
+      await load();
+      onChanged && onChanged();
+    } catch (e) { setToast({ tone:"error", msg:"Bulk delete failed: " + e.message }); }
+    setBulkBusy(false);
+  };
+
   return (
     <>
       <Card>
@@ -81,8 +100,12 @@ export default function AssignmentsTab({ api, csms, onChanged }) {
           </Empty>
         ) : (
           <div style={{ overflowX:"auto" }}>
+            {selected.size > 0 && <BulkBar count={selected.size} noun="assignment" action="Remove" onDelete={bulkDelete} onClear={() => setSelected(new Set())} busy={bulkBusy} />}
             <table style={{ width:"100%", borderCollapse:"collapse" }}>
               <thead><tr>
+                <Th style={{ width: 38, textAlign: "center" }}>
+                  <SelAllCb checked={selected.size === filtered.length && filtered.length > 0} indeterminate={selected.size > 0 && selected.size < filtered.length} onChange={toggleAll} />
+                </Th>
                 <Th>CSM</Th><Th>Account</Th><Th>Role</Th>
                 <Th style={{ textAlign:"right" }}>Alloc %</Th>
                 <Th>Start</Th><Th>End</Th><Th></Th>
@@ -91,7 +114,10 @@ export default function AssignmentsTab({ api, csms, onChanged }) {
                 {filtered.map(a => {
                   const csm = csmById[a.csm_id], proj = projectById[a.project_id];
                   return (
-                    <tr key={a.id} style={{ cursor:"pointer" }} className="rh" onClick={() => setModal({ mode:"edit", data: { ...BLANK, ...a } })}>
+                    <tr key={a.id} style={{ cursor:"pointer", background: selected.has(a.id) ? G.redBg : undefined }} className="rh" onClick={() => setModal({ mode:"edit", data: { ...BLANK, ...a } })}>
+                      <Td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                        <input type="checkbox" checked={selected.has(a.id)} onChange={() => toggleSelect(a.id)} style={{ cursor: "pointer", accentColor: G.red }} />
+                      </Td>
                       <Td style={{ fontWeight:700, color:G.text }}>{csm?.name || <span style={{ color:G.red }}>Missing CSM</span>}</Td>
                       <Td>{proj?.name || <span style={{ color:G.red }}>Missing project</span>}</Td>
                       <Td><Pill tone={a.role === "primary" ? "purple" : a.role === "secondary" ? "blue" : "muted"}>{(a.role || "").toUpperCase()}</Pill></Td>

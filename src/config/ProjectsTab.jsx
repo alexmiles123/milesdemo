@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { G, PHASE_ORDER, HEALTH_OPTIONS, fmtDate, fmtArr } from "../lib/theme.js";
 import { validateProject, hasErrors } from "../lib/validation.js";
 import { audited } from "../lib/audit.js";
-import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm, TextArea } from "./common.jsx";
+import { Card, CardHeader, Label, Input, Select, Button, FieldError, Toast, Modal, Empty, Th, Td, Pill, Confirm, TextArea, BulkBar, SelAllCb } from "./common.jsx";
 import ImportModal from "./ImportModal.jsx";
 import { PROJECT_IMPORT_SPEC, TASK_IMPORT_SPEC } from "./importSpecs.js";
 
@@ -19,12 +19,15 @@ export default function ProjectsTab({ api, csms, onChanged }) {
   const [toast, setToast] = useState(null);
   const [showImport, setShowImport] = useState(false);
   const [taskImportFor, setTaskImportFor] = useState(null); // project pending task import
+  const [selected, setSelected] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const rows = await api.get("projects", { select: "*", order: "updated_at.desc" });
       setProjects(rows || []);
+      setSelected(new Set());
     } catch (e) {
       setToast({ tone:"error", msg:"Failed to load projects: " + e.message });
     }
@@ -65,6 +68,22 @@ export default function ProjectsTab({ api, csms, onChanged }) {
     }
   };
 
+  const toggleSelect = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => setSelected(prev => prev.size === filtered.length ? new Set() : new Set(filtered.map(p => p.id)));
+  const bulkDelete = async () => {
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map(id => {
+        const p = projects.find(x => x.id === id);
+        return audited("project.delete", "projects", id, () => api.del("projects", id), { before: p });
+      }));
+      setToast({ tone:"success", msg:`Deleted ${selected.size} project${selected.size !== 1 ? "s" : ""}.` });
+      await load();
+      onChanged && onChanged();
+    } catch (e) { setToast({ tone:"error", msg:"Bulk delete failed: " + e.message }); }
+    setBulkBusy(false);
+  };
+
   return (
     <>
       <Card>
@@ -83,9 +102,13 @@ export default function ProjectsTab({ api, csms, onChanged }) {
           <Empty>{projects.length === 0 ? "No projects yet. Create your first one." : "No projects match your filters."}</Empty>
         ) : (
           <div style={{ overflowX: "auto" }}>
+            {selected.size > 0 && <BulkBar count={selected.size} noun="project" onDelete={bulkDelete} onClear={() => setSelected(new Set())} busy={bulkBusy} />}
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
+                  <Th style={{ width: 38, textAlign: "center" }}>
+                    <SelAllCb checked={selected.size === filtered.length && filtered.length > 0} indeterminate={selected.size > 0 && selected.size < filtered.length} onChange={toggleAll} />
+                  </Th>
                   <Th>Name</Th><Th>Customer</Th><Th>CSM</Th><Th>Stage</Th><Th>Health</Th>
                   <Th style={{ textAlign:"right" }}>ARR</Th>
                   <Th style={{ textAlign:"right" }}>Done %</Th>
@@ -94,7 +117,10 @@ export default function ProjectsTab({ api, csms, onChanged }) {
               </thead>
               <tbody>
                 {filtered.map(p => (
-                  <tr key={p.id} style={{ cursor: "pointer" }} className="rh" onClick={() => openEdit(p)}>
+                  <tr key={p.id} style={{ cursor: "pointer", background: selected.has(p.id) ? G.redBg : undefined }} className="rh" onClick={() => openEdit(p)}>
+                    <Td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} style={{ cursor: "pointer", accentColor: G.red }} />
+                    </Td>
                     <Td style={{ fontWeight: 700, color: G.text }}>{p.name}</Td>
                     <Td>{p.customer || "—"}</Td>
                     <Td>{csmById[p.csm_id]?.name || <span style={{ color: G.faint }}>Unassigned</span>}</Td>

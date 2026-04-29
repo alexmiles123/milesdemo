@@ -14,7 +14,7 @@ import { G, ROLE_OPTIONS } from "../lib/theme.js";
 import { audited } from "../lib/audit.js";
 import { fetchPasswordPolicy, describePolicy, validatePasswordWith, DEFAULT_POLICY } from "../lib/password.js";
 import { fetchRoles, roleOptions, SYSTEM_ROLES } from "../lib/roles.js";
-import { Card, CardHeader, Label, Input, Select, Button, Toast, Modal, Empty, Th, Td, Pill, Confirm, FieldError } from "./common.jsx";
+import { Card, CardHeader, Label, Input, Select, Button, Toast, Modal, Empty, Th, Td, Pill, Confirm, FieldError, BulkBar, SelAllCb } from "./common.jsx";
 
 const BLANK_NEW = { username: "", email: "", full_name: "", role: "viewer", csm_title: "", password: "", must_reset: true };
 
@@ -51,6 +51,8 @@ export default function UsersTab({ api, onCsmsChanged }) {
   const [toast, setToast] = useState(null);
   const [policy, setPolicy] = useState(DEFAULT_POLICY);
   const [appRoles, setAppRoles] = useState(SYSTEM_ROLES);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const loadTitles = useCallback(async () => {
     try {
@@ -104,6 +106,22 @@ export default function UsersTab({ api, onCsmsChanged }) {
     } catch (e) { setToast({ tone: "error", msg: e.message }); }
   };
 
+  const toggleSelect = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => setSelected(prev => prev.size === visible.length ? new Set() : new Set(visible.map(u => u.id)));
+  const bulkDisable = async () => {
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map(id =>
+        api.call("/api/admin/users", { method: "DELETE", body: { id } })
+      ));
+      setToast({ tone: "success", msg: `Disabled ${selected.size} user${selected.size !== 1 ? "s" : ""}.` });
+      setSelected(new Set());
+      await load();
+      onCsmsChanged && onCsmsChanged();
+    } catch (e) { setToast({ tone: "error", msg: "Bulk disable failed: " + e.message }); }
+    setBulkBusy(false);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <Card>
@@ -126,9 +144,13 @@ export default function UsersTab({ api, onCsmsChanged }) {
           </Empty>
         ) : (
           <div style={{ overflowX: "auto" }}>
+            {selected.size > 0 && <BulkBar count={selected.size} noun="user" action="Disable" onDelete={bulkDisable} onClear={() => setSelected(new Set())} busy={bulkBusy} />}
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
+                  <Th style={{ width: 38, textAlign: "center" }}>
+                    <SelAllCb checked={selected.size === visible.length && visible.length > 0} indeterminate={selected.size > 0 && selected.size < visible.length} onChange={toggleAll} />
+                  </Th>
                   <Th>USERNAME</Th>
                   <Th>FULL NAME</Th>
                   <Th>EMAIL</Th>
@@ -141,7 +163,10 @@ export default function UsersTab({ api, onCsmsChanged }) {
               </thead>
               <tbody>
                 {visible.map(u => (
-                  <tr key={u.id} style={{ cursor: "pointer" }} onClick={() => setEditUser(u)}>
+                  <tr key={u.id} style={{ cursor: "pointer", background: selected.has(u.id) ? G.redBg : undefined }} onClick={() => setEditUser(u)}>
+                    <Td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSelect(u.id)} style={{ cursor: "pointer", accentColor: G.red }} />
+                    </Td>
                     <Td style={{ color: G.text, fontWeight: 700 }}>{u.username}</Td>
                     <Td>{u.full_name || "—"}</Td>
                     <Td style={{ color: G.muted }}>{u.email}</Td>

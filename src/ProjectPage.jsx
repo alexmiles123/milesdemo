@@ -484,6 +484,14 @@ function useTaskHandlers(api, tasks, setTasks, showToast) {
     setSaving(null);
   };
 
+  const bulkDeleteTasks = async (ids) => {
+    try {
+      await Promise.all(ids.map(id => api.del("tasks", id)));
+      setTasks(p => p.filter(t => !ids.includes(t.id)));
+      showToast(`✓ Deleted ${ids.length} task${ids.length !== 1 ? "s" : ""}`);
+    } catch (e) { showToast("Failed: " + e.message, "error"); }
+  };
+
   const addTask = async (projectId, currentStage, data) => {
     const result = await api.post("tasks", [{
       project_id: projectId,
@@ -500,15 +508,27 @@ function useTaskHandlers(api, tasks, setTasks, showToast) {
     return created;
   };
 
-  return { saving, markComplete, reopenTask, saveEdit, deleteTask, addTask };
+  return { saving, markComplete, reopenTask, saveEdit, deleteTask, addTask, bulkDeleteTasks };
 }
 
 function TasksTab({ project, tasks, handlers }) {
   const [phase, setPhase] = useState("all");
   const [editing, setEditing] = useState(null);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const shown = phase === "all" ? tasks : tasks.filter(t => t.phase === phase);
+
+  const toggleSelect = (id) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => setSelected(prev => prev.size === shown.length ? new Set() : new Set(shown.map(t => t.id)));
+  const bulkDelete = async () => {
+    if (!window.confirm(`Delete ${selected.size} task${selected.size !== 1 ? "s" : ""}? This cannot be undone.`)) return;
+    setBulkBusy(true);
+    await handlers.bulkDeleteTasks([...selected]);
+    setSelected(new Set());
+    setBulkBusy(false);
+  };
   const stats = {
     complete: tasks.filter(t => t.status === "complete").length,
     upcoming: tasks.filter(t => t.status === "upcoming").length,
@@ -555,29 +575,53 @@ function TasksTab({ project, tasks, handlers }) {
             No tasks {phase === "all" ? "yet" : "in " + phase} — click <strong style={{color:G.blue}}>+ ADD TASK</strong> above to create one.
           </div>
         ) : (
-          <table style={{width:"100%",borderCollapse:"collapse"}}>
-            <thead>
-              <tr style={{borderBottom:"1px solid "+G.border,background:G.surface2}}>
-                <th style={{width:44,padding:"10px 8px 10px 18px"}}></th>
-                {["Task","Phase","Assignee","Projected","Actual","Variance","Priority","Status",""].map(h => (
-                  <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+          <>
+            {selected.size > 0 && (
+              <div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:G.redBg,borderBottom:"1px solid "+G.redBd,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>
+                <span style={{color:G.red,fontWeight:700}}>{selected.size} task{selected.size!==1?"s":""} selected</span>
+                <button onClick={() => setSelected(new Set())} style={{background:"none",border:"none",color:G.muted,cursor:"pointer",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",textDecoration:"underline"}}>Clear</button>
+                <div style={{marginLeft:"auto"}}>
+                  <button onClick={bulkDelete} disabled={bulkBusy}
+                    style={{background:G.redBg,border:"1px solid "+G.redBd,color:G.red,padding:"6px 14px",borderRadius:8,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:700,opacity:bulkBusy?0.55:1}}>
+                    {bulkBusy?"Deleting…":`Delete ${selected.size} selected`}
+                  </button>
+                </div>
+              </div>
+            )}
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead>
+                <tr style={{borderBottom:"1px solid "+G.border,background:G.surface2}}>
+                  <th style={{width:36,padding:"10px 8px 10px 14px",textAlign:"center"}}>
+                    <input type="checkbox"
+                      ref={el => { if (el) el.indeterminate = selected.size > 0 && selected.size < shown.length; }}
+                      checked={selected.size === shown.length && shown.length > 0}
+                      onChange={toggleAll}
+                      style={{cursor:"pointer",accentColor:G.red}}
+                    />
+                  </th>
+                  <th style={{width:44,padding:"10px 4px"}}></th>
+                  {["Task","Phase","Assignee","Projected","Actual","Variance","Priority","Status",""].map(h => (
+                    <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((task, i) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    isLast={i === shown.length - 1}
+                    rowIdx={i}
+                    editing={editing}
+                    setEditing={setEditing}
+                    handlers={handlers}
+                    selected={selected.has(task.id)}
+                    onToggleSelect={() => toggleSelect(task.id)}
+                  />
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((task, i) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  isLast={i === shown.length - 1}
-                  rowIdx={i}
-                  editing={editing}
-                  setEditing={setEditing}
-                  handlers={handlers}
-                />
-              ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </>
         )}
       </div>
     </div>
@@ -628,7 +672,7 @@ function AddTaskRow({ defaultPhase, onSave, onCancel }) {
   );
 }
 
-function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers }) {
+function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers, selected, onToggleSelect }) {
   const sc = STATUS_CFG[task.status] || STATUS_CFG.upcoming;
   const variance = task.actual_date
     ? Math.round((new Date(task.actual_date) - new Date(task.proj_date)) / 86400000)
@@ -652,8 +696,11 @@ function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers }) {
   });
 
   return (
-    <tr style={{borderBottom:isLast?"none":"1px solid #0c1828",background:task.status==="late"?"#120400":rowIdx%2===1?G.surface2:"transparent",opacity:isSaving?0.6:1,transition:"opacity .2s"}}>
-      <td style={{padding:"11px 8px 11px 18px",textAlign:"center"}}>
+    <tr style={{borderBottom:isLast?"none":"1px solid #0c1828",background:selected?G.redBg:task.status==="late"?"#120400":rowIdx%2===1?G.surface2:"transparent",opacity:isSaving?0.6:1,transition:"opacity .2s"}}>
+      <td style={{padding:"11px 4px 11px 14px",textAlign:"center"}} onClick={e => e.stopPropagation()}>
+        <input type="checkbox" checked={!!selected} onChange={onToggleSelect} style={{cursor:"pointer",accentColor:G.red}} />
+      </td>
+      <td style={{padding:"11px 8px",textAlign:"center"}}>
         <div onClick={() => !isSaving && (task.status === "complete" ? handlers.reopenTask(task) : handlers.markComplete(task))}
           title={task.status === "complete" ? "Click to reopen" : "Click to mark complete"}
           style={{width:20,height:20,borderRadius:5,border:"2px solid "+(task.status==="complete"?G.green:G.border2),background:task.status==="complete"?G.green:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>

@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { G } from "../lib/theme.js";
 
 // ─── Primitive form controls, styled to match the existing dashboard ────────
@@ -159,6 +160,42 @@ export const Pill = ({ tone = "muted", children }) => {
     </span>
   );
 };
+
+// Checkbox for the select-all header cell; supports indeterminate state.
+export const SelAllCb = ({ checked, indeterminate, onChange }) => {
+  const ref = useRef();
+  useEffect(() => { if (ref.current) ref.current.indeterminate = !!indeterminate; }, [indeterminate]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      style={{ cursor: "pointer", accentColor: G.red }}
+    />
+  );
+};
+
+// Red action bar shown above the table body when rows are selected.
+export const BulkBar = ({ count, noun = "item", action = "Delete", onDelete, onClear, busy }) => (
+  <div style={{
+    display: "flex", alignItems: "center", gap: 12, padding: "8px 14px",
+    background: G.redBg, borderTop: "1px solid " + G.redBd, borderBottom: "1px solid " + G.redBd,
+    fontFamily: "Inter,system-ui,sans-serif", fontSize: 12,
+  }}>
+    <span style={{ color: G.red, fontWeight: 700 }}>
+      {count} {noun}{count !== 1 ? "s" : ""} selected
+    </span>
+    <button onClick={onClear} disabled={busy} style={{ background: "none", border: "none", color: G.muted, cursor: "pointer", fontSize: 12, fontFamily: "Inter,system-ui,sans-serif", textDecoration: "underline" }}>
+      Clear
+    </button>
+    <div style={{ marginLeft: "auto" }}>
+      <Button variant="danger" onClick={onDelete} disabled={busy}>
+        {busy ? "Working…" : `${action} ${count} selected`}
+      </Button>
+    </div>
+  </div>
+);
 
 export const Confirm = ({ message, onConfirm, onCancel }) => (
   <Modal title="Are you sure?" onClose={onCancel} width={420}>

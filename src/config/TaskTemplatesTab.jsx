@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { G, PHASE_ORDER } from "../lib/theme.js";
-import { Card, CardHeader, Label, Input, Select, Button, Toast, Modal, Empty, Th, Td, Pill, Confirm } from "./common.jsx";
+import { Card, CardHeader, Label, Input, Select, Button, Toast, Modal, Empty, Th, Td, Pill, Confirm, BulkBar, SelAllCb } from "./common.jsx";
 import ImportModal from "./ImportModal.jsx";
 
 const PRIORITY_OPTS = [
@@ -42,12 +42,15 @@ export default function TaskTemplatesTab({ api }) {
   const [editing, setEditing] = useState(null); // null | "new" | template object
   const [confirm, setConfirm] = useState(null);
   const [toast, setToast] = useState(null);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.call("/api/admin/templates");
       setTemplates((data && data.templates) || []);
+      setSelected(new Set());
     } catch (e) {
       setTemplates([]);
       setToast({ tone: "error", msg: "Failed to load templates: " + e.message });
@@ -67,6 +70,26 @@ export default function TaskTemplatesTab({ api }) {
     } catch (e) { setToast({ tone: "error", msg: e.message }); }
   };
 
+  const toggleSelect = (id) => setSelected(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const toggleAll = () => setSelected(prev =>
+    prev.size === templates.length ? new Set() : new Set(templates.map(t => t.id))
+  );
+  const bulkDelete = async () => {
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map(id =>
+        api.call("/api/admin/templates", { method: "DELETE", body: { id } })
+      ));
+      setToast({ tone: "success", msg: `Deleted ${selected.size} template${selected.size !== 1 ? "s" : ""}.` });
+      await load();
+    } catch (e) { setToast({ tone: "error", msg: e.message }); }
+    setBulkBusy(false);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <Card>
@@ -81,9 +104,13 @@ export default function TaskTemplatesTab({ api }) {
           </Empty>
         ) : (
           <div style={{ overflowX: "auto" }}>
+            {selected.size > 0 && <BulkBar count={selected.size} noun="template" onDelete={bulkDelete} onClear={() => setSelected(new Set())} busy={bulkBusy} />}
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
+                  <Th style={{ width: 38, textAlign: "center" }}>
+                    <SelAllCb checked={selected.size === templates.length && templates.length > 0} indeterminate={selected.size > 0 && selected.size < templates.length} onChange={toggleAll} />
+                  </Th>
                   <Th>NAME</Th>
                   <Th>DESCRIPTION</Th>
                   <Th style={{ textAlign: "center" }}>TASKS</Th>
@@ -93,7 +120,10 @@ export default function TaskTemplatesTab({ api }) {
               </thead>
               <tbody>
                 {templates.map(t => (
-                  <tr key={t.id}>
+                  <tr key={t.id} style={{ background: selected.has(t.id) ? G.redBg : undefined }}>
+                    <Td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} style={{ cursor: "pointer", accentColor: G.red }} />
+                    </Td>
                     <Td style={{ color: G.text, fontWeight: 700 }}>
                       {t.name}
                       {t.is_default && <span style={{ marginLeft: 8 }}><Pill tone="purple">DEFAULT</Pill></span>}
@@ -147,10 +177,24 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
   const [items, setItems]             = useState(template?.items?.length ? template.items.map(it => ({ ...it })) : [{ ...BLANK_ITEM }]);
   const [busy, setBusy]               = useState(false);
   const [showImport, setShowImport]   = useState(false);
+  const [selItems, setSelItems]       = useState(new Set()); // selected row indices
+
+  const toggleSelItem = (idx) => setSelItems(prev => {
+    const next = new Set(prev);
+    next.has(idx) ? next.delete(idx) : next.add(idx);
+    return next;
+  });
+  const toggleAllItems = () => setSelItems(prev =>
+    prev.size === items.length ? new Set() : new Set(items.map((_, i) => i))
+  );
+  const removeBulkItems = () => {
+    setItems(prev => prev.filter((_, i) => !selItems.has(i)).map((it, i) => ({ ...it, sort_order: i + 1 })));
+    setSelItems(new Set());
+  };
 
   const updateItem = (idx, patch) => setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it));
   const addItem    = () => setItems(prev => [...prev, { ...BLANK_ITEM, sort_order: prev.length + 1 }]);
-  const removeItem = (idx) => setItems(prev => prev.filter((_, i) => i !== idx));
+  const removeItem = (idx) => { setItems(prev => prev.filter((_, i) => i !== idx)); setSelItems(new Set()); };
   const moveItem   = (idx, delta) => setItems(prev => {
     const next = [...prev];
     const tgt = idx + delta;
@@ -232,9 +276,13 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
             </div>
           </div>
           <div style={{ border: "1px solid " + G.border, borderRadius: 10, overflow: "hidden" }}>
+            {selItems.size > 0 && <BulkBar count={selItems.size} noun="task" onDelete={removeBulkItems} onClear={() => setSelItems(new Set())} />}
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{ background: G.surface2 }}>
                 <tr>
+                  <Th style={{ width: 36, textAlign: "center" }}>
+                    <SelAllCb checked={selItems.size === items.length && items.length > 0} indeterminate={selItems.size > 0 && selItems.size < items.length} onChange={toggleAllItems} />
+                  </Th>
                   <Th style={{ width: 32 }}>#</Th>
                   <Th>NAME</Th>
                   <Th style={{ width: 140 }}>PHASE</Th>
@@ -246,7 +294,10 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
               </thead>
               <tbody>
                 {items.map((it, idx) => (
-                  <tr key={idx}>
+                  <tr key={idx} style={{ background: selItems.has(idx) ? G.redBg : undefined }}>
+                    <Td style={{ textAlign: "center" }}>
+                      <input type="checkbox" checked={selItems.has(idx)} onChange={() => toggleSelItem(idx)} style={{ cursor: "pointer", accentColor: G.red }} />
+                    </Td>
                     <Td style={{ color: G.muted, textAlign: "center" }}>{idx + 1}</Td>
                     <Td><Input value={it.name} onChange={(v) => updateItem(idx, { name: v })} placeholder="Task name" /></Td>
                     <Td><Select value={it.phase} onChange={(v) => updateItem(idx, { phase: v })} options={PHASE_OPTS} style={{ padding: "6px 8px", fontSize: 11 }} /></Td>
