@@ -348,7 +348,7 @@ function CustomerRow({ customer, projects, csmById, isOpen, inactive, onToggle, 
 
       {isOpen && (
         <tr>
-          <td colSpan={6} style={{ padding: 0, background: "#080e18", borderBottom: "1px solid " + G.border }}>
+          <td colSpan={6} style={{ padding: 0, background: G.surface2, borderBottom: "1px solid " + G.border }}>
             {projects.length === 0 ? (
               <div style={{ padding: "16px 24px", color: G.muted, fontFamily: "DM Mono,monospace", fontSize: 11 }}>
                 No projects under this customer yet.

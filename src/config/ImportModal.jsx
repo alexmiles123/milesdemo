@@ -209,7 +209,7 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
     <Modal title={title} onClose={onClose} width={780}>
       {!summary && (
         <>
-          <div style={{ border: "1px solid " + G.border, borderRadius: 10, background: "#080e18", marginBottom: 14, overflow: "hidden" }}>
+          <div style={{ border: "1px solid " + G.border, borderRadius: 10, background: G.surface2, marginBottom: 14, overflow: "hidden" }}>
             <div style={{ padding: "10px 14px", borderBottom: "1px solid " + G.border, display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: G.text, fontFamily: "DM Mono,monospace", letterSpacing: "0.05em" }}>TEMPLATE · COLUMN LAYOUT</div>
               <div style={{ fontSize: 10, color: G.muted, fontFamily: "DM Mono,monospace" }}>.xlsx · .xls · .csv · headers case-insensitive</div>
@@ -245,7 +245,7 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
             onClick={() => fileInputRef.current?.click()}
             style={{
               border: "2px dashed " + G.border, borderRadius: 10, padding: "28px 16px",
-              textAlign: "center", cursor: "pointer", background: "#080e18",
+              textAlign: "center", cursor: "pointer", background: G.surface2,
               marginBottom: 14,
             }}
           >
@@ -314,7 +314,7 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
       )}
 
       {summary && (
-        <div style={{ padding: "16px 18px", border: "1px solid " + G.border, borderRadius: 10, background: "#080e18", marginBottom: 14 }}>
+        <div style={{ padding: "16px 18px", border: "1px solid " + G.border, borderRadius: 10, background: G.surface2, marginBottom: 14 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: G.text, fontFamily: "Syne,sans-serif", marginBottom: 10 }}>Import complete</div>
           <div style={{ fontFamily: "DM Mono,monospace", fontSize: 12, color: G.muted, lineHeight: 1.8 }}>
             <div><span style={{ color: G.green }}>✓</span> Created: <strong style={{ color: G.text }}>{summary.created}</strong></div>

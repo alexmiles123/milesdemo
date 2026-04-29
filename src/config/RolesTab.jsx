@@ -209,11 +209,11 @@ function RoleModal({ api, initial, onClose, onSaved }) {
           <TextArea value={form.description || ""} onChange={(v) => set("description", v)} rows={2} placeholder="Briefly describe what this role can do." />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "DM Mono,monospace", fontSize: 12, color: adminLocked ? G.faint : G.text, cursor: adminLocked ? "not-allowed" : "pointer", padding: "10px 12px", border: "1px solid " + G.border, borderRadius: 8, background: "#080e18" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "DM Mono,monospace", fontSize: 12, color: adminLocked ? G.faint : G.text, cursor: adminLocked ? "not-allowed" : "pointer", padding: "10px 12px", border: "1px solid " + G.border, borderRadius: 8, background: G.surface2 }}>
             <input type="checkbox" checked={!!form.can_view_exec} disabled={adminLocked} onChange={(e) => set("can_view_exec", e.target.checked)} />
             Executive View
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "DM Mono,monospace", fontSize: 12, color: adminLocked ? G.faint : G.text, cursor: adminLocked ? "not-allowed" : "pointer", padding: "10px 12px", border: "1px solid " + G.border, borderRadius: 8, background: "#080e18" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "DM Mono,monospace", fontSize: 12, color: adminLocked ? G.faint : G.text, cursor: adminLocked ? "not-allowed" : "pointer", padding: "10px 12px", border: "1px solid " + G.border, borderRadius: 8, background: G.surface2 }}>
             <input type="checkbox" checked={!!form.can_view_config} disabled={adminLocked} onChange={(e) => set("can_view_config", e.target.checked)} />
             Configuration
           </label>

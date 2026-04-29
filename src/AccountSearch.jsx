@@ -5,13 +5,7 @@
 // which opens the AccountDetail view.
 
 import { useState, useEffect, useRef } from "react";
-
-const G = {
-  surface: "#0b1521", surface2: "#0f1e2d",
-  border: "#192d40", border2: "#1e3a52",
-  text: "#e8f0f8", muted: "#8fa3b8", faint: "#4a6480",
-  blue: "#60a5fa",
-};
+import { G } from "./lib/theme.js";
 
 export default function AccountSearch({ api, onSelect }) {
   const [q, setQ] = useState("");
@@ -80,7 +74,7 @@ export default function AccountSearch({ api, onSelect }) {
         onKeyDown={onKey}
         placeholder="Search accounts…"
         style={{
-          width: "100%", background: "#080e18", border: "1px solid " + G.border2,
+          width: "100%", background: G.surface, border: "1px solid " + G.border2,
           color: G.text, padding: "6px 12px 6px 30px", borderRadius: 6,
           fontFamily: "DM Mono,monospace", fontSize: 11,
         }}

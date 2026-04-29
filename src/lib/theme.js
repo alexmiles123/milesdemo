@@ -2,16 +2,20 @@
 // Config / Integration pages feel native. If you add a token here, mirror it
 // in App.jsx (or migrate App.jsx to import from this file in a later pass).
 
+// Light theme. Keeps the same semantic color names the rest of the app uses
+// so swapping was a single-file change. Tinted *Bg / *Bd shades are tuned for
+// pill/badge contrast on a white surface — saturated enough to read at 11px,
+// soft enough not to vibrate next to body text.
 export const G = {
-  bg:"#060c14", surface:"#0b1521", surface2:"#0f1e2d",
-  border:"#192d40", border2:"#1e3a52",
-  text:"#e8f0f8", muted:"#8fa3b8", faint:"#4a6480",
-  green:"#22c55e", greenBg:"#041f10", greenBd:"#0d3d1f",
-  yellow:"#f59e0b", yellowBg:"#1e1400", yellowBd:"#3d2800",
-  red:"#ef4444",   redBg:"#1e0505",   redBd:"#3d0a0a",
-  blue:"#60a5fa",  blueBg:"#0d1e38",  blueBd:"#1a3a5f",
-  purple:"#a78bfa",purpleBg:"#120d24",
-  teal:"#2dd4bf",
+  bg:"#f7f8fb", surface:"#ffffff", surface2:"#f5f7fa",
+  border:"#e5e7eb", border2:"#d1d5db",
+  text:"#111827", muted:"#6b7280", faint:"#9ca3af",
+  green:"#16a34a", greenBg:"#f0fdf4", greenBd:"#bbf7d0",
+  yellow:"#d97706", yellowBg:"#fffbeb", yellowBd:"#fde68a",
+  red:"#dc2626",   redBg:"#fef2f2",   redBd:"#fecaca",
+  blue:"#2563eb",  blueBg:"#eff6ff",  blueBd:"#bfdbfe",
+  purple:"#7c3aed",purpleBg:"#f5f3ff",
+  teal:"#0d9488",
 };
 
 export const PHASE_ORDER = ["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"];

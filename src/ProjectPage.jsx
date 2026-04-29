@@ -154,16 +154,33 @@ export default function ProjectPage({ api, projectId, onClose }) {
         onClose={onClose}
       />
 
-      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0}}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{background:tab===t.id?"#0f2036":"none",border:"1px solid "+(tab===t.id?G.blue+"44":"transparent"),borderBottom:tab===t.id?"2px solid "+G.blue:"2px solid transparent",color:tab===t.id?G.blue:G.muted,padding:"9px 18px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>
-            {t.label}
-            {t.id === "tasks"  && tasks.length > 0 && <span style={{marginLeft:6,background:G.border,color:G.muted,borderRadius:4,padding:"1px 5px",fontSize:9}}>{tasks.length}</span>}
-            {t.id === "notes"  && notes.length > 0 && <span style={{marginLeft:6,background:G.border,color:G.muted,borderRadius:4,padding:"1px 5px",fontSize:9}}>{notes.length}</span>}
-            {t.id === "files"  && files.length > 0 && <span style={{marginLeft:6,background:G.border,color:G.muted,borderRadius:4,padding:"1px 5px",fontSize:9}}>{files.length}</span>}
-          </button>
-        ))}
+      <div style={{display:"flex",gap:0,padding:"0 24px",borderBottom:"1px solid "+G.border,background:G.surface,flexShrink:0}}>
+        {TABS.map(t => {
+          const active = tab === t.id;
+          const counts = { tasks: tasks.length, notes: notes.length, files: files.length };
+          const count = counts[t.id];
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{
+                background:"none",border:"none",
+                color:active?G.text:G.muted,
+                padding:"12px 18px",cursor:"pointer",fontSize:13,
+                fontWeight:active?600:500,letterSpacing:"0",
+                borderBottom:active?"2px solid "+G.purple:"2px solid transparent",
+                marginBottom:-1,display:"inline-flex",alignItems:"center",gap:6,
+              }}>
+              {t.label}
+              {count > 0 && (
+                <span style={{
+                  background:active?G.purple+"1a":G.surface2,
+                  color:active?G.purple:G.muted,
+                  borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:600,
+                  fontFamily:"DM Mono,monospace",
+                }}>{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{flex:1,overflowY:"auto"}}>
@@ -506,7 +523,7 @@ function TasksTab({ project, tasks, handlers }) {
           const late = ph === "all" ? stats.late : tasks.filter(t => t.phase === ph && t.status === "late").length;
           return (
             <button key={ph} onClick={() => setPhase(ph)}
-              style={{background:phase===ph?"#0f2036":"transparent",border:"1px solid "+(phase===ph?G.blue:G.border),color:phase===ph?G.blue:G.muted,padding:"6px 12px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+              style={{background:phase===ph?G.blueBg:"transparent",border:"1px solid "+(phase===ph?G.blue:G.border),color:phase===ph?G.blue:G.muted,padding:"6px 12px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
               {ph === "all" ? "All Phases" : ph}
               <span style={{background:late>0?G.redBg:G.border,color:late>0?G.red:G.muted,borderRadius:4,padding:"1px 5px",fontSize:9}}>{n}</span>
             </button>
@@ -540,7 +557,7 @@ function TasksTab({ project, tasks, handlers }) {
         ) : (
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead>
-              <tr style={{borderBottom:"1px solid "+G.border,background:"#08111c"}}>
+              <tr style={{borderBottom:"1px solid "+G.border,background:G.surface2}}>
                 <th style={{width:44,padding:"10px 8px 10px 18px"}}></th>
                 {["Task","Phase","Assignee","Projected","Actual","Variance","Priority","Status",""].map(h => (
                   <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
@@ -583,7 +600,7 @@ function AddTaskRow({ defaultPhase, onSave, onCancel }) {
   };
 
   return (
-    <div style={{padding:"12px 14px",background:"#08111c",border:"1px solid "+G.blue+"55",borderRadius:8,marginBottom:10,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+    <div style={{padding:"12px 14px",background:G.surface2,border:"1px solid "+G.blue+"55",borderRadius:8,marginBottom:10,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Task name…" autoFocus
         onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onCancel(); }}
         style={{flex:"2 1 200px",background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
@@ -1208,7 +1225,7 @@ function FilesTab({ files, tasks, handlers }) {
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
           <span style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.1em",marginRight:4}}>FILTER BY PHASE</span>
           <button onClick={() => setFilterPhase("all")}
-            style={{background:filterPhase==="all"?"#0f2036":"transparent",border:"1px solid "+(filterPhase==="all"?G.blue:G.border),color:filterPhase==="all"?G.blue:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:600}}>
+            style={{background:filterPhase==="all"?G.blueBg:"transparent",border:"1px solid "+(filterPhase==="all"?G.blue:G.border),color:filterPhase==="all"?G.blue:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:600}}>
             ALL ({files.length})
           </button>
           {PHASE_ORDER.map(p => {
@@ -1216,7 +1233,7 @@ function FilesTab({ files, tasks, handlers }) {
             if (!n) return null;
             return (
               <button key={p} onClick={() => setFilterPhase(p)}
-                style={{background:filterPhase===p?"#0f2036":"transparent",border:"1px solid "+(filterPhase===p?PHASE_COLOR[p]:G.border),color:filterPhase===p?PHASE_COLOR[p]:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:600}}>
+                style={{background:filterPhase===p?G.blueBg:"transparent",border:"1px solid "+(filterPhase===p?PHASE_COLOR[p]:G.border),color:filterPhase===p?PHASE_COLOR[p]:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:600}}>
                 {p.toUpperCase()} ({n})
               </button>
             );
@@ -1235,7 +1252,7 @@ function FilesTab({ files, tasks, handlers }) {
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,overflow:"hidden"}}>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead>
-              <tr style={{borderBottom:"1px solid "+G.border,background:"#08111c"}}>
+              <tr style={{borderBottom:"1px solid "+G.border,background:G.surface2}}>
                 {["File","Phase","Task","Size","Uploaded","Uploaded By",""].map(h => (
                   <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                 ))}

@@ -10,17 +10,10 @@ import ProjectPage from "./ProjectPage.jsx";
 import { getSession, login as authLogin, logout as authLogout, clearToken, authedFetch, refreshSession, fetchMe } from "./lib/auth.js";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
-const G = {
-  bg:"#060c14", surface:"#0b1521", surface2:"#0f1e2d",
-  border:"#192d40", border2:"#1e3a52",
-  text:"#e8f0f8", muted:"#8fa3b8", faint:"#4a6480",
-  green:"#22c55e", greenBg:"#041f10", greenBd:"#0d3d1f",
-  yellow:"#f59e0b", yellowBg:"#1e1400", yellowBd:"#3d2800",
-  red:"#ef4444",   redBg:"#1e0505",   redBd:"#3d0a0a",
-  blue:"#60a5fa",  blueBg:"#0d1e38",  blueBd:"#1a3a5f",
-  purple:"#a78bfa",purpleBg:"#120d24",
-  teal:"#2dd4bf",
-};
+// Single source of truth lives in src/lib/theme.js. Re-imported here so the
+// huge volume of G.* references in this file keep working without a churn-y
+// rename pass.
+import { G } from "./lib/theme.js";
 
 const PHASE_ORDER = ["Kickoff","Discovery","Implementation","Testing & QA","Go-Live Prep","Go-Live"];
 const PHASE_COLOR = {
@@ -145,21 +138,21 @@ function makeApi() {
 
 // ─── GLOBAL STYLES ───────────────────────────────────────────────────────────
 const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0;font-size:15px;}
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
   html,body,#root{width:100%;max-width:100% !important;overflow-x:hidden;}
-  body{background:#060c14;}
-  body{background:${G.bg};font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
-  ::-webkit-scrollbar{width:4px;height:4px;}
-  ::-webkit-scrollbar-track{background:#0a1520;}
-  ::-webkit-scrollbar-thumb{background:#1e3346;border-radius:2px;}
+  body{background:${G.bg};color:${G.text};font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-track{background:${G.surface2};}
+  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}
+  ::-webkit-scrollbar-thumb:hover{background:#94a3b8;}
   @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
   @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
   .rh:hover{background:${G.surface2} !important;cursor:pointer;}
-  select,input,textarea{outline:none;font-size:14px;}
-  button{font-family:Syne,sans-serif;font-size:14px;}
+  select,input,textarea{outline:none;font-size:13px;font-family:Inter,system-ui,sans-serif;}
+  button{font-family:Inter,system-ui,sans-serif;font-size:13px;}
   /* Prevent KPI/value overflow inside narrow card columns */
   .num-fit{font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 `;
@@ -168,7 +161,7 @@ const GLOBAL_CSS = `
 function Logo({size=32}) {
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
-      <rect width="36" height="36" rx="8" fill="#08080f"/>
+      <rect width="36" height="36" rx="8" fill="#1a1a2e"/>
       <path d="M5 28 L12 10 L18 21 L24 10 L31 28 L26 28 L18 15 L10 28 Z" fill="url(#lg)"/>
       <path d="M10 28 L18 15 L26 28" fill="#7c3aed" opacity="0.35"/>
       <defs><linearGradient id="lg" x1="5" y1="10" x2="31" y2="28" gradientUnits="userSpaceOnUse">
@@ -190,7 +183,7 @@ const CardHeader = ({children}) => (
 const Tip = ({active,payload,label}) => {
   if(!active||!payload?.length) return null;
   return (
-    <div style={{background:"#0c1a28",border:"1px solid "+G.border2,borderRadius:8,padding:"8px 14px",fontFamily:"DM Mono,monospace",fontSize:12}}>
+    <div style={{background:G.surface,border:"1px solid "+G.border2,borderRadius:8,padding:"8px 14px",fontFamily:"DM Mono,monospace",fontSize:12,boxShadow:"0 4px 12px rgba(0,0,0,0.08)"}}>
       {label && <div style={{color:G.muted,marginBottom:5}}>{label}</div>}
       {payload.map((p,i)=><div key={i} style={{color:p.color||G.text}}>{p.name}: <b>{p.value}</b></div>)}
     </div>
@@ -217,24 +210,34 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
     ? [["exec","Executive View"],["consultant","Consultant Portal"],["config","Configuration"]]
     : [["consultant","Consultant Portal"]];
   return (
-    <div style={{borderBottom:"1px solid "+G.border,padding:"0 24px",display:"flex",alignItems:"center",gap:14,height:54,background:"#08111c",flexShrink:0,zIndex:10}}>
+    <div style={{borderBottom:"1px solid "+G.border,padding:"0 24px",display:"flex",alignItems:"center",gap:14,height:60,background:G.surface,flexShrink:0,zIndex:10}}>
       <div style={{display:"flex",alignItems:"center",gap:9}}>
         <Logo size={28}/>
         <div>
-          <div style={{fontSize:16,fontWeight:800,letterSpacing:"0.04em",color:G.text,fontFamily:"Syne,sans-serif"}}>Monument</div>
-          <div style={{fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.1em"}}>CUSTOMER SUCCESS</div>
+          <div style={{fontSize:16,fontWeight:700,letterSpacing:"-0.01em",color:G.text}}>Monument</div>
+          <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.12em",marginTop:1}}>CUSTOMER SUCCESS</div>
         </div>
       </div>
-      <div style={{width:1,height:26,background:G.border}}/>
-      {/* View tabs */}
-      <div style={{display:"flex",gap:2}}>
-        {TABS.map(([v,l])=>(
-          <button key={v} onClick={()=>setView(v)}
-            style={{background:view===v?"#0f2036":"none",border:"none",color:view===v?G.blue:G.muted,
-              padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:14,fontWeight:700,letterSpacing:"0.03em"}}>
-            {l}
-          </button>
-        ))}
+      <div style={{width:1,height:26,background:G.border,marginLeft:8}}/>
+      {/* View tabs (Gainsight-style underline indicator) */}
+      <div style={{display:"flex",gap:0,height:"100%",alignItems:"stretch"}}>
+        {TABS.map(([v,l])=>{
+          const active = view===v;
+          return (
+            <button key={v} onClick={()=>setView(v)}
+              style={{
+                background:"none",border:"none",
+                color:active?G.text:G.muted,
+                padding:"0 18px",cursor:"pointer",fontSize:13,
+                fontWeight:active?600:500,letterSpacing:"0",
+                position:"relative",
+                borderBottom:active?"2px solid "+G.purple:"2px solid transparent",
+                marginBottom:-1,
+              }}>
+              {l}
+            </button>
+          );
+        })}
       </div>
       <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:12}}>
         {api && <AccountSearch api={api} onSelect={onAccountSelect}/>}
@@ -293,32 +296,32 @@ function AiPanel({ portfolio, tasks, csms }) {
     setLoading(false);
   };
   return (
-    <div style={{width:open?360:48,flexShrink:0,borderLeft:'1px solid #192d40',background:'#0b1521',display:'flex',flexDirection:'column',transition:'width .25s ease',overflow:'hidden',position:'relative'}}>
+    <div style={{width:open?360:48,flexShrink:0,borderLeft:'1px solid '+G.border,background:G.surface,display:'flex',flexDirection:'column',transition:'width .25s ease',overflow:'hidden',position:'relative'}}>
       <button onClick={()=>setOpen(o=>!o)} style={{position:'absolute',top:12,left:open?12:8,background:'linear-gradient(135deg,#7c3aed,#a855f7)',border:'none',borderRadius:8,width:28,height:28,cursor:'pointer',color:'#fff',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
         {open ? '→' : '✦'}
       </button>
       {open && <>
-        <div style={{padding:'12px 14px 12px 48px',borderBottom:'1px solid #192d40',flexShrink:0}}>
-          <div style={{fontSize:14,fontWeight:800,color:'#e8f0f8',fontFamily:'Syne,sans-serif'}}>AI Analyst</div>
-          <div style={{fontSize:11,color:'#8fa3b8',fontFamily:'DM Mono,monospace',marginTop:2}}>Claude · Live portfolio data</div>
+        <div style={{padding:'12px 14px 12px 48px',borderBottom:'1px solid '+G.border,flexShrink:0}}>
+          <div style={{fontSize:14,fontWeight:700,color:G.text}}>AI Analyst</div>
+          <div style={{fontSize:11,color:G.muted,fontFamily:'DM Mono,monospace',marginTop:2}}>Claude · Live portfolio data</div>
         </div>
         <div style={{flex:1,overflowY:'auto',padding:'12px 14px',display:'flex',flexDirection:'column',gap:10}}>
           {messages.length===0 && <div style={{display:'flex',flexDirection:'column',gap:6}}>
-            <div style={{fontSize:12,color:'#8fa3b8',fontFamily:'DM Mono,monospace',marginBottom:6,textAlign:'center'}}>Ask me anything about your portfolio</div>
+            <div style={{fontSize:12,color:G.muted,marginBottom:6,textAlign:'center'}}>Ask me anything about your portfolio</div>
             {STARTERS.map((s,i)=>(
-              <button key={i} onClick={()=>send(s)} style={{background:'#0f1e2d',border:'1px solid #1e3a52',color:'#8fa3b8',padding:'8px 10px',borderRadius:8,cursor:'pointer',fontFamily:'DM Mono,monospace',fontSize:11,textAlign:'left',lineHeight:1.4}}>{s}</button>
+              <button key={i} onClick={()=>send(s)} style={{background:G.surface2,border:'1px solid '+G.border,color:G.muted,padding:'8px 10px',borderRadius:8,cursor:'pointer',fontFamily:'Inter,system-ui,sans-serif',fontSize:12,textAlign:'left',lineHeight:1.4}}>{s}</button>
             ))}
           </div>}
           {messages.map((m,i)=>(
             <div key={i} style={{display:'flex',flexDirection:'column',alignItems:m.role==='user'?'flex-end':'flex-start'}}>
-              <div style={{maxWidth:'90%',padding:'9px 12px',borderRadius:m.role==='user'?'12px 12px 2px 12px':'12px 12px 12px 2px',background:m.role==='user'?'linear-gradient(135deg,#7c3aed,#a855f7)':'#0f1e2d',border:m.role==='user'?'none':'1px solid #192d40',color:'#e8f0f8',fontSize:12,fontFamily:'DM Mono,monospace',lineHeight:1.6,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{m.content}</div>
+              <div style={{maxWidth:'90%',padding:'9px 12px',borderRadius:m.role==='user'?'12px 12px 2px 12px':'12px 12px 12px 2px',background:m.role==='user'?'linear-gradient(135deg,#7c3aed,#a855f7)':G.surface2,border:m.role==='user'?'none':'1px solid '+G.border,color:m.role==='user'?'#fff':G.text,fontSize:12,lineHeight:1.6,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{m.content}</div>
             </div>
           ))}
-          {loading && <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 0'}}><div style={{width:7,height:7,borderRadius:'50%',background:'#7c3aed',animation:'pulse 1s infinite'}}/><span style={{fontSize:11,color:'#8fa3b8',fontFamily:'DM Mono,monospace'}}>Analyzing...</span></div>}
+          {loading && <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 0'}}><div style={{width:7,height:7,borderRadius:'50%',background:'#7c3aed',animation:'pulse 1s infinite'}}/><span style={{fontSize:11,color:G.muted}}>Analyzing...</span></div>}
         </div>
-        {messages.length>0 && <div style={{padding:'4px 14px',flexShrink:0}}><button onClick={()=>setMessages([])} style={{background:'none',border:'none',color:'#8fa3b8',cursor:'pointer',fontFamily:'DM Mono,monospace',fontSize:10,textDecoration:'underline'}}>Clear</button></div>}
-        <div style={{padding:'10px 14px',borderTop:'1px solid #192d40',flexShrink:0,display:'flex',gap:8}}>
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} placeholder='Ask about your portfolio...' style={{flex:1,background:'#080e18',border:'1px solid #1e3a52',color:'#e8f0f8',padding:'8px 12px',borderRadius:8,fontFamily:'DM Mono,monospace',fontSize:12}}/>
+        {messages.length>0 && <div style={{padding:'4px 14px',flexShrink:0}}><button onClick={()=>setMessages([])} style={{background:'none',border:'none',color:G.muted,cursor:'pointer',fontFamily:'DM Mono,monospace',fontSize:10,textDecoration:'underline'}}>Clear</button></div>}
+        <div style={{padding:'10px 14px',borderTop:'1px solid '+G.border,flexShrink:0,display:'flex',gap:8}}>
+          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} placeholder='Ask about your portfolio...' style={{flex:1,background:G.surface2,border:'1px solid '+G.border,color:G.text,padding:'8px 12px',borderRadius:8,fontFamily:'DM Mono,monospace',fontSize:12}}/>
           <button onClick={()=>send()} disabled={!input.trim()||loading} style={{background:'linear-gradient(135deg,#7c3aed,#a855f7)',border:'none',borderRadius:8,width:36,height:36,cursor:'pointer',color:'#fff',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,opacity:(!input.trim()||loading)?0.5:1}}>↑</button>
         </div>
       </>}
@@ -501,8 +504,8 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
                     // Expanded task rows
                     ...(isExpanded?Object.entries(phaseGroups).map(([phase,phaseTasks])=>
                       phaseTasks.map((t)=>(
-                        <tr key={"task-"+t.id} style={{background:"#080e18"}}>
-                          <td style={{padding:"4px 12px 4px 42px",fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1,whiteSpace:"nowrap"}}>
+                        <tr key={"task-"+t.id} style={{background:G.surface2}}>
+                          <td style={{padding:"4px 12px 4px 42px",fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:G.surface2,zIndex:1,whiteSpace:"nowrap"}}>
                             <span style={{color:PHASE_COLOR[phase]||G.faint,marginRight:6,fontSize:9,fontWeight:700}}>{phase}</span>
                             <span style={{color:G.muted}}>{t.name}</span>
                             <span style={{color:PRIORITY_COLOR[t.priority]||G.faint,marginLeft:6,fontSize:9,fontWeight:700}}>{(t.priority||"").toUpperCase()}</span>
@@ -515,8 +518,8 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
                   ];
                 }).flat()}
                 {/* Total Row */}
-                <tr style={{borderTop:"2px solid "+G.border,background:"#080e18"}}>
-                  <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1}}>TOTAL</td>
+                <tr style={{borderTop:"2px solid "+G.border,background:G.surface2}}>
+                  <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TOTAL</td>
                   {weeks.map((ws,wi)=>{
                     const weekTotal=projects.reduce((sum,proj)=>sum+getCellHours(proj.id,ws),0);
                     return <td key={wi} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:weekTotal>0?G.teal:G.faint,fontWeight:800}}>{weekTotal>0?weekTotal+"h":"—"}</td>;
@@ -690,8 +693,8 @@ function ExecCapacityDashboard({api}) {
             </thead>
             <tbody>
               {/* Summary Row */}
-              <tr style={{borderBottom:"2px solid "+G.border,background:"#080e18"}}>
-                <td style={{padding:"8px 12px",fontSize:12,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1}}>TEAM TOTAL</td>
+              <tr style={{borderBottom:"2px solid "+G.border,background:G.surface2}}>
+                <td style={{padding:"8px 12px",fontSize:12,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TEAM TOTAL</td>
                 {summaryWeeks.map((sw,i)=>(
                   <td key={i} style={{padding:"6px 4px",textAlign:"center"}}>
                     <div style={{background:utilBg(sw.utilization),border:"1px solid "+utilBd(sw.utilization),borderRadius:6,padding:"4px 2px"}}>
@@ -908,14 +911,14 @@ function ExecDashboard({api}) {
       <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0,alignItems:"center",position:"relative"}}>
         {[["dashboard","Dashboard"],["capacity","Capacity"]].map(([k,l])=>(
           <button key={k} onClick={()=>setExecTab(k)}
-            style={{background:execTab===k?"#0f2036":"none",border:"1px solid "+(execTab===k?G.blue+"44":"transparent"),borderBottom:execTab===k?"2px solid "+G.blue:"2px solid transparent",color:execTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
+            style={{background:execTab===k?G.blueBg:"none",border:"1px solid "+(execTab===k?G.blue+"44":"transparent"),borderBottom:execTab===k?"2px solid "+G.blue:"2px solid transparent",color:execTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
         ))}
         {execTab === "dashboard" && (
           <>
             <button
               onClick={()=>setShowCustomize(s=>!s)}
               title="Show/hide dashboard widgets"
-              style={{marginLeft:"auto",background:showCustomize?"#0f2036":"none",border:"1px solid "+(showCustomize?G.purple+"66":G.border),color:showCustomize?G.purple:G.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",borderRadius:6,display:"inline-flex",alignItems:"center",gap:6,marginRight:0,marginTop:6,marginBottom:6}}>
+              style={{marginLeft:"auto",background:showCustomize?G.blueBg:"none",border:"1px solid "+(showCustomize?G.purple+"66":G.border),color:showCustomize?G.purple:G.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",borderRadius:6,display:"inline-flex",alignItems:"center",gap:6,marginRight:0,marginTop:6,marginBottom:6}}>
               <span style={{fontSize:13,lineHeight:1}}>⚙</span> Customize
               {hiddenWidgets.size > 0 && <span style={{background:G.purple,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:800}}>{hiddenWidgets.size}</span>}
             </button>
@@ -929,7 +932,7 @@ function ExecDashboard({api}) {
                   </div>
                   {EXEC_WIDGETS.map(w=>(
                     <label key={w.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 4px",fontFamily:"DM Mono,monospace",fontSize:12,color:G.text,cursor:"pointer",borderRadius:4}}
-                      onMouseEnter={e=>e.currentTarget.style.background="#0f2036"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      onMouseEnter={e=>e.currentTarget.style.background=G.blueBg} onMouseLeave={e=>e.currentTarget.style.background=G.surface}>
                       <input type="checkbox" checked={shown(w.id)} onChange={()=>toggleWidget(w.id)} />
                       <span>{w.label}</span>
                     </label>
@@ -1632,7 +1635,7 @@ function CsmCapacityPanel({api,csm}) {
                             <div onClick={()=>setEditingProj({projectId:proj.id,ws})}
                               style={{cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",color:hrs>0?G.teal:G.faint,fontWeight:hrs>0?700:400,padding:"4px 2px",borderRadius:4,transition:"background .15s"}}
                               onMouseEnter={e=>e.currentTarget.style.background=G.surface2}
-                              onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                              onMouseLeave={e=>e.currentTarget.style.background=G.surface}>
                               {hrs>0?hrs+"h":"·"}
                             </div>
                           )}
@@ -1646,8 +1649,8 @@ function CsmCapacityPanel({api,csm}) {
                 );
               })}
               {/* Total Row */}
-              <tr style={{borderTop:"2px solid "+G.border,background:"#080e18"}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:"#080e18",zIndex:1}}>TOTAL</td>
+              <tr style={{borderTop:"2px solid "+G.border,background:G.surface2}}>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TOTAL</td>
                 {weeks.map((ws,wi)=>{
                   const weekTotal=projects.reduce((sum,proj)=>{
                     const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
@@ -1813,7 +1816,7 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
       <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0}}>
         {[["accounts","My Accounts"],["capacity","My Capacity"]].filter(([k])=>k==="accounts"||csm).map(([k,l])=>(
           <button key={k} onClick={()=>setCTab(k)}
-            style={{background:cTab===k?"#0f2036":"none",border:"1px solid "+(cTab===k?G.blue+"44":"transparent"),borderBottom:cTab===k?"2px solid "+G.blue:"2px solid transparent",color:cTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
+            style={{background:cTab===k?G.blueBg:"none",border:"1px solid "+(cTab===k?G.blue+"44":"transparent"),borderBottom:cTab===k?"2px solid "+G.blue:"2px solid transparent",color:cTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
         ))}
       </div>
       {cTab==="capacity"&&csm ? (
@@ -2060,14 +2063,14 @@ function LoginScreen({onConnect}) {
                   <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>USERNAME</label>
                   <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Username"
                     autoComplete="username"
-                    style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
                 </div>
                 <div>
                   <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>PASSWORD</label>
                   <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Password"
                     autoComplete="current-password"
                     onKeyDown={e=>{if(e.key==="Enter")login();}}
-                    style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
                 </div>
                 {error&&<div style={{background:G.redBg,border:"1px solid "+G.red+"44",borderRadius:8,padding:"10px 14px",fontSize:13,color:G.red,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>{error}</div>}
                 <button onClick={login} disabled={loading}
@@ -2092,7 +2095,7 @@ function LoginScreen({onConnect}) {
                   <input value={forgotEmail} onChange={e=>setForgotEmail(e.target.value)} placeholder="you@company.com"
                     type="email" autoComplete="email"
                     onKeyDown={e=>{if(e.key==="Enter")submitForgot();}}
-                    style={{width:"100%",background:"#080e18",border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
                 </div>
                 {forgotMsg && (
                   <div style={{background:G.surface2,border:"1px solid "+G.border2,borderRadius:8,padding:"10px 14px",fontSize:13,color:G.text,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>
@@ -2179,7 +2182,7 @@ export default function App() {
   const safeView = role === "admin" ? view : "consultant";
 
   return (
-    <div style={{height:"100vh",background:G.bg,color:G.text,fontFamily:"Syne,sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    <div style={{height:"100vh",background:G.bg,color:G.text,fontFamily:"Inter,system-ui,sans-serif",display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <style>{GLOBAL_CSS}</style>
       <NavBar view={safeView} setView={(v)=>{setActiveAccount(null); setActiveProject(null); setView(v);}} csm={activeCsm} setCsm={setActiveCsm} csms={csms}
         lastSync={lastSync} onRefresh={handleRefresh} refreshing={refreshing} onLogout={handleLogout}
@@ -2190,7 +2193,8 @@ export default function App() {
       ) : activeAccount ? (
         <AccountDetail api={api} account={activeAccount}
           onClose={()=>setActiveAccount(null)}
-          onUpdated={(c)=>setActiveAccount(c)}/>
+          onUpdated={(c)=>setActiveAccount(c)}
+          onProjectSelect={(p)=>{setActiveAccount(null); setActiveProject(p.id);}}/>
       ) : safeView==="exec" ? (
         <ExecDashboard api={api} key={refreshKey}/>
       ) : safeView==="config" ? (

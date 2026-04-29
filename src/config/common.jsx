@@ -28,7 +28,7 @@ export const Input = ({ value, onChange, placeholder, type = "text", style = {},
     disabled={disabled}
     {...rest}
     style={{
-      width: "100%", background: "#080e18", border: "1px solid " + G.border, color: G.text,
+      width: "100%", background: G.surface2, border: "1px solid " + G.border, color: G.text,
       padding: "9px 12px", borderRadius: 8, fontFamily: "DM Mono,monospace", fontSize: 12,
       opacity: disabled ? 0.55 : 1, ...style,
     }}
@@ -42,7 +42,7 @@ export const TextArea = ({ value, onChange, placeholder, rows = 3, style = {} })
     placeholder={placeholder}
     rows={rows}
     style={{
-      width: "100%", background: "#080e18", border: "1px solid " + G.border, color: G.text,
+      width: "100%", background: G.surface2, border: "1px solid " + G.border, color: G.text,
       padding: "9px 12px", borderRadius: 8, fontFamily: "DM Mono,monospace", fontSize: 12, resize: "vertical", ...style,
     }}
   />
@@ -54,7 +54,7 @@ export const Select = ({ value, onChange, options, disabled = false, style = {} 
     onChange={(e) => onChange && onChange(e.target.value)}
     disabled={disabled}
     style={{
-      width: "100%", background: "#080e18", border: "1px solid " + G.border, color: G.text,
+      width: "100%", background: G.surface2, border: "1px solid " + G.border, color: G.text,
       padding: "9px 12px", borderRadius: 8, fontFamily: "DM Mono,monospace", fontSize: 12,
       opacity: disabled ? 0.55 : 1, cursor: disabled ? "not-allowed" : "pointer", ...style,
     }}
@@ -114,7 +114,7 @@ export const Toast = ({ tone = "success", children, onClose }) => {
 
 export const Modal = ({ title, onClose, children, width = 560 }) => (
   <div
-    style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.78)", zIndex: 900, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+    style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(4px)", zIndex: 900, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
   >
     <div style={{ background: G.surface, border: "1px solid " + G.border, borderRadius: 14, width: "100%", maxWidth: width, maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ padding: "14px 18px", borderBottom: "1px solid " + G.border, display: "flex", alignItems: "center" }}>
