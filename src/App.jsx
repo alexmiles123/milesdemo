@@ -913,7 +913,7 @@ function ExecDashboard({api}) {
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Sub-tab bar */}
-      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#ffffff",flexShrink:0,alignItems:"center",position:"relative"}}>
+      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:G.surface,flexShrink:0,alignItems:"center",position:"relative"}}>
         {[["dashboard","Dashboard"],["capacity","Capacity"]].map(([k,l])=>(
           <button key={k} onClick={()=>setExecTab(k)}
             style={{background:execTab===k?G.blueBg:"none",border:"1px solid "+(execTab===k?G.blue+"44":"transparent"),borderBottom:execTab===k?"2px solid "+G.blue:"2px solid transparent",color:execTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
@@ -1818,7 +1818,7 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Sub-tab bar */}
-      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#ffffff",flexShrink:0}}>
+      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:G.surface,flexShrink:0}}>
         {[["accounts","My Accounts"],["capacity","My Capacity"]].filter(([k])=>k==="accounts"||csm).map(([k,l])=>(
           <button key={k} onClick={()=>setCTab(k)}
             style={{background:cTab===k?G.blueBg:"none",border:"1px solid "+(cTab===k?G.blue+"44":"transparent"),borderBottom:cTab===k?"2px solid "+G.blue:"2px solid transparent",color:cTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
@@ -1846,7 +1846,7 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
         ))}
       </div>
       {/* Filters */}
-      <div style={{background:"#ffffff",border:"1px solid "+G.border,borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
+      <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
         <div style={{flex:"1 1 160px"}}>
           <label style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>SEARCH</label>
           <div style={{position:"relative"}}>
