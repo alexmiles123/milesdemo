@@ -832,7 +832,19 @@ function ExecDashboard({api}) {
   const totalComplete= visibleTasks.filter(t=>t.status==="complete").length;
   const totalUpcoming= visibleTasks.filter(t=>t.status==="upcoming").length;
   const criticalLate = visibleTasks.filter(t=>t.status==="late"&&t.priority==="critical").length;
-  const goLivesSoon  = visiblePortfolio.filter(p=>p.stage==="Go-Live Prep"||p.stage==="Go-Live");
+  // "Go-Live This Month" — filter by target_date falling in the current
+  // calendar month, regardless of stage. The previous version filtered by
+  // stage ("Go-Live Prep"/"Go-Live"), which silently hid any project whose
+  // owner hadn't manually advanced the dropdown — even if the date was
+  // two days away.
+  const _now = new Date();
+  const _monthStart = new Date(_now.getFullYear(), _now.getMonth(), 1);
+  const _monthEnd   = new Date(_now.getFullYear(), _now.getMonth()+1, 0, 23,59,59,999);
+  const goLivesSoon  = visiblePortfolio.filter(p=>{
+    if (!p.target_date) return false;
+    const td = new Date(p.target_date);
+    return td >= _monthStart && td <= _monthEnd;
+  });
 
   // ── Chart data ──
   const healthData = [
@@ -877,9 +889,17 @@ function ExecDashboard({api}) {
     .sort((a,b)=>new Date(a.proj_date)-new Date(b.proj_date))
     .slice(0,12);
 
-  // Upcoming go-lives
+  // Upcoming go-lives — anything with a target_date in the next 60 days,
+  // regardless of stage. Stage-only filtering used to hide projects that
+  // were two days from launch but still tagged "Implementation" because
+  // a CSM hadn't bumped the dropdown.
+  const _horizon = new Date(_now.getTime() + 60*24*60*60*1000);
   const upcomingGoLives = visiblePortfolio
-    .filter(p=>["Go-Live Prep","Go-Live"].includes(p.stage))
+    .filter(p=>{
+      if (!p.target_date) return false;
+      const td = new Date(p.target_date);
+      return td >= _now && td <= _horizon;
+    })
     .sort((a,b)=>new Date(a.target_date)-new Date(b.target_date));
 
   return (
@@ -938,7 +958,7 @@ function ExecDashboard({api}) {
           {label:"Total ARR",          value:fmtMill(totalArr),         sub:totalCustomers+" customer"+(totalCustomers===1?"":"s"), color:G.green},
           {label:"Avg Completion",     value:avgCompl+"%",              sub:"across portfolio",                color:G.blue},
           {label:"Late Tasks",         value:String(totalLate),         sub:criticalLate+" critical priority", color:G.red},
-          {label:"Go-Live This Month", value:String(goLivesSoon.length),sub:"in prep or live now",             color:G.teal},
+          {label:"Go-Live This Month", value:String(goLivesSoon.length),sub:"by target date",                   color:G.teal},
         ].map((k,i)=>(
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 12px",position:"relative",overflow:"hidden",minWidth:0,animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
