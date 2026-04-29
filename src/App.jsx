@@ -141,7 +141,7 @@ const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body,#root{width:100%;max-width:100% !important;overflow-x:hidden;}
-  body{background:${G.bg};color:${G.text};font-family:Inter,system-ui,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  body{background:${G.bg};color:${G.text};font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.005em;}
   ::-webkit-scrollbar{width:8px;height:8px;}
   ::-webkit-scrollbar-track{background:${G.surface2};}
   ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}
@@ -151,8 +151,12 @@ const GLOBAL_CSS = `
   @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
   @keyframes slideup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
   .rh:hover{background:${G.surface2} !important;cursor:pointer;}
-  select,input,textarea{outline:none;font-size:13px;font-family:Inter,system-ui,sans-serif;}
-  button{font-family:Inter,system-ui,sans-serif;font-size:13px;}
+  select,input,textarea{outline:none;font-size:14px;font-family:Inter,system-ui,sans-serif;}
+  button{font-family:Inter,system-ui,sans-serif;font-size:14px;font-weight:500;}
+  table{font-size:14px;}
+  th{font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${G.muted};}
+  td{font-size:14px;color:${G.text};}
+  label{font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${G.muted};}
   /* Prevent KPI/value overflow inside narrow card columns */
   .num-fit{font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 `;
