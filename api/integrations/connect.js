@@ -10,7 +10,7 @@ import { rateLimit, hardenResponse, requestId, fail, json, redactSecrets } from 
 import { sbGet, sbPatch, writeAudit } from "../_lib/supabase.js";
 import { requireAuth } from "../_lib/auth.js";
 
-const ALLOWED_PROVIDERS = new Set(["microsoft_teams", "salesforce"]);
+const ALLOWED_PROVIDERS = new Set(["microsoft_teams", "salesforce", "outlook"]);
 
 export default async function handler(req, res) {
   hardenResponse(req, res);
@@ -86,6 +86,7 @@ function sanitizeConfig(provider, config) {
   const allowedByProvider = {
     microsoft_teams: ["tenant_id", "client_id"],
     salesforce:      ["instance_url", "client_id"],
+    outlook:         ["tenant_id", "client_id"],
   };
   for (const key of allowedByProvider[provider] || []) {
     const v = config[key];

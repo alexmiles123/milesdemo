@@ -75,6 +75,7 @@ export const ASSIGNMENT_ROLES = ["primary","secondary","observer"];
 export const PROVIDERS = [
   { id:"microsoft_teams", label:"Microsoft Teams", blurb:"Sync calls, meetings, and chat as customer interactions." },
   { id:"salesforce",      label:"Salesforce",      blurb:"Sync accounts, opportunities, and activity history." },
+  { id:"outlook",         label:"Outlook / Exchange", blurb:"Sync emails between CSMs and customer contacts into the activity timeline." },
 ];
 
 export const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}) : "—";

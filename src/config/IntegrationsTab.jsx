@@ -116,9 +116,10 @@ export default function IntegrationsTab({ api }) {
 }
 
 function ConfigureModal({ integration, onClose, onSaved }) {
-  const [form, setForm] = useState(() => integration.provider === "microsoft_teams"
-    ? { tenant_id: integration.config?.tenant_id || "", client_id: integration.config?.client_id || "", credential_ref: "", webhook_secret_preview: "" }
-    : { instance_url: integration.config?.instance_url || "", client_id: integration.config?.client_id || "", credential_ref: "", webhook_secret_preview: "" }
+  const isMicrosoft = integration.provider === "microsoft_teams" || integration.provider === "outlook";
+  const [form, setForm] = useState(() => isMicrosoft
+    ? { tenant_id: integration.config?.tenant_id || "", client_id: integration.config?.client_id || "", credential_ref: "" }
+    : { instance_url: integration.config?.instance_url || "", client_id: integration.config?.client_id || "", credential_ref: "" }
   );
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -132,7 +133,7 @@ function ConfigureModal({ integration, onClose, onSaved }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider: integration.provider,
-          config: integration.provider === "microsoft_teams"
+          config: isMicrosoft
             ? { tenant_id: form.tenant_id.trim(), client_id: form.client_id.trim() }
             : { instance_url: form.instance_url.trim(), client_id: form.client_id.trim() },
           credential_ref: form.credential_ref.trim() || null,
@@ -146,14 +147,64 @@ function ConfigureModal({ integration, onClose, onSaved }) {
     setSaving(false);
   };
 
+  const secretPlaceholder = {
+    microsoft_teams: "TEAMS_CLIENT_SECRET",
+    outlook:         "OUTLOOK_CLIENT_SECRET",
+    salesforce:      "SALESFORCE_CLIENT_SECRET",
+  }[integration.provider] || "CLIENT_SECRET";
+
   return (
-    <Modal title={`Configure ${integration.display_name}`} onClose={onClose} width={600}>
+    <Modal title={`Configure ${integration.display_name}`} onClose={onClose} width={640}>
       <div style={{ marginBottom: 14, padding: 12, background: G.blueBg, border: "1px solid " + G.blueBd, borderRadius: 8, color: G.blue, fontSize: 12, fontFamily: "Inter,system-ui,sans-serif", lineHeight: 1.6 }}>
-        <b>Security note.</b> Secrets are stored by <i>reference</i> — the app reads the actual value from a server-side secret store (Vercel env var or Supabase Vault) using the name you provide below. The secret itself never travels through the browser.
+        <b>Security note.</b> Secrets are stored by <i>reference</i> — the app reads the actual value from a server-side env var using the name you provide below. The secret itself never travels through the browser.
       </div>
-      {integration.provider === "microsoft_teams" ? (
+
+      {/* ── OUTLOOK SETUP INSTRUCTIONS ──────────────────────────────── */}
+      {integration.provider === "outlook" && (
+        <div style={{ marginBottom: 16, padding: 14, background: G.surface2, border: "1px solid " + G.border, borderRadius: 8, fontSize: 12, fontFamily: "Inter,system-ui,sans-serif", lineHeight: 1.75, color: G.text }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: G.text }}>How to connect Outlook / Exchange</div>
+
+          <div style={{ fontWeight: 600, color: G.muted, letterSpacing: "0.08em", fontSize: 11, marginBottom: 4 }}>STEP 1 — REGISTER AN AZURE AD APP</div>
+          <ol style={{ margin: "0 0 12px 16px", padding: 0 }}>
+            <li>Go to <b>portal.azure.com</b> and sign in as a Global Administrator.</li>
+            <li>Navigate to <b>Azure Active Directory → App registrations → + New registration</b>.</li>
+            <li>Name it (e.g. "Monument Outlook Sync"), leave Redirect URI blank, click <b>Register</b>.</li>
+            <li>On the app overview page, copy the <b>Application (client) ID</b> and <b>Directory (tenant) ID</b> — you'll paste them below.</li>
+          </ol>
+
+          <div style={{ fontWeight: 600, color: G.muted, letterSpacing: "0.08em", fontSize: 11, marginBottom: 4 }}>STEP 2 — GRANT API PERMISSIONS</div>
+          <ol style={{ margin: "0 0 12px 16px", padding: 0 }}>
+            <li>In the app, go to <b>API permissions → + Add a permission → Microsoft Graph → Application permissions</b>.</li>
+            <li>Search for and add each of these permissions:
+              <ul style={{ margin: "6px 0 6px 16px", padding: 0 }}>
+                <li><b>Mail.Read</b> — read all users' email</li>
+                <li><b>User.Read.All</b> — look up CSM mailboxes by email address</li>
+                <li><b>Calendars.Read</b> — (optional) sync calendar meetings</li>
+              </ul>
+            </li>
+            <li>Click <b>Grant admin consent for [your org]</b> and confirm. The status indicators must turn green before the integration will work.</li>
+          </ol>
+
+          <div style={{ fontWeight: 600, color: G.muted, letterSpacing: "0.08em", fontSize: 11, marginBottom: 4 }}>STEP 3 — CREATE A CLIENT SECRET</div>
+          <ol style={{ margin: "0 0 12px 16px", padding: 0 }}>
+            <li>Go to <b>Certificates &amp; secrets → + New client secret</b>.</li>
+            <li>Set a description and expiry (24 months max), click <b>Add</b>.</li>
+            <li>Copy the <b>Value</b> immediately — it is only shown once.</li>
+            <li>Add it to Vercel: <code style={{ background: G.bg, padding: "1px 5px", borderRadius: 3 }}>vercel env add OUTLOOK_CLIENT_SECRET</code></li>
+          </ol>
+
+          <div style={{ fontWeight: 600, color: G.muted, letterSpacing: "0.08em", fontSize: 11, marginBottom: 4 }}>STEP 4 — ENSURE CSM EMAILS ARE SET</div>
+          <p style={{ margin: "0 0 0 0" }}>
+            The sync reads each CSM's mailbox using their <b>email address</b> stored in Configuration → CSMs.
+            Make sure every CSM row has a valid <b>work email</b> (their Microsoft 365 UPN — typically <code style={{ background: G.bg, padding: "1px 5px", borderRadius: 3 }}>firstname.lastname@yourcompany.com</code>).
+          </p>
+        </div>
+      )}
+
+      {/* ── FORM FIELDS ─────────────────────────────────────────────── */}
+      {isMicrosoft ? (
         <>
-          <Label>AZURE AD TENANT ID</Label>
+          <Label>AZURE AD TENANT ID (DIRECTORY ID)</Label>
           <Input value={form.tenant_id} onChange={v => set("tenant_id", v)} placeholder="00000000-0000-0000-0000-000000000000" />
           <div style={{ height: 12 }} />
           <Label>APPLICATION (CLIENT) ID</Label>
@@ -170,10 +221,11 @@ function ConfigureModal({ integration, onClose, onSaved }) {
       )}
       <div style={{ height: 12 }} />
       <Label>CLIENT SECRET — ENV VAR NAME</Label>
-      <Input value={form.credential_ref} onChange={v => set("credential_ref", v)} placeholder={integration.provider === "microsoft_teams" ? "TEAMS_CLIENT_SECRET" : "SALESFORCE_CLIENT_SECRET"} />
+      <Input value={form.credential_ref} onChange={v => set("credential_ref", v)} placeholder={secretPlaceholder} />
       <div style={{ fontSize: 11, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>
-        Set the actual value with <code>vercel env add {form.credential_ref || "&lt;NAME&gt;"}</code>. Only the name is stored in the database.
+        Set the actual value with <code>vercel env add {form.credential_ref || secretPlaceholder}</code>. Only the name is stored in the database.
       </div>
+
       {err && <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{err}</div>}
       <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop: 20 }}>
         <Button onClick={onClose} variant="ghost">Cancel</Button>
