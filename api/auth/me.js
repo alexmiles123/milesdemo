@@ -19,6 +19,7 @@ export default async function handler(req, res) {
     user: session.user,
     role: session.role,
     user_id: session.user_id || null,
+    csm_id: session.csm_id || null,
     must_reset: !!session.must_reset,
   });
 }

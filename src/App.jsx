@@ -1469,7 +1469,13 @@ function CsmCapacityPanel({api,csm}) {
     setEditingProj(null);
   };
 
-  if(!csm) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13,padding:40}}>Select a CSM from the dropdown above to view capacity</div>;
+  if(!csm) return (
+    <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13,padding:40,gap:10,textAlign:"center"}}>
+      <div style={{fontSize:32}}>📋</div>
+      <div style={{fontWeight:700,fontSize:15,color:G.text}}>No CSM profile linked</div>
+      <div>Ask an admin to link your user account to a CSM title in Configuration → Users.</div>
+    </div>
+  );
   if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>Loading capacity…</div>;
 
   const projNames={};projects.forEach(p=>{projNames[p.id]=p.name;});
@@ -1811,7 +1817,7 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Sub-tab bar */}
       <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:G.surface,flexShrink:0}}>
-        {[["accounts","My Accounts"],["capacity","My Capacity"]].filter(([k])=>k==="accounts"||csm).map(([k,l])=>(
+        {[["accounts","My Accounts"],["capacity","My Capacity"]].map(([k,l])=>(
           <button key={k} onClick={()=>setCTab(k)}
             style={{background:cTab===k?G.blueBg:"none",border:"1px solid "+(cTab===k?G.blue+"44":"transparent"),borderBottom:cTab===k?"2px solid "+G.blue:"2px solid transparent",color:cTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
         ))}
@@ -2159,11 +2165,6 @@ export default function App() {
   };
 
   useEffect(()=>{
-    // Rehydrate. The access JWT now lives in an HttpOnly cookie that JS can't
-    // read, so we ask the server who we are via /api/auth/me. If that 401s
-    // we try a one-shot refresh; if that also fails, fall through to the
-    // login screen. Legacy bearer tokens still work because authedFetch
-    // forwards them when no cookie session is present.
     let cancelled = false;
     (async () => {
       let me = await fetchMe();
@@ -2175,7 +2176,15 @@ export default function App() {
       const api = makeApi();
       try {
         const data = await api.get("csms", { is_active: "eq.true", select: "*" });
-        if (Array.isArray(data) && !cancelled) handleConnect(api, data);
+        if (Array.isArray(data) && !cancelled) {
+          handleConnect(api, data);
+          // Auto-select the logged-in user's own CSM so the Capacity tab is
+          // immediately visible without requiring a dropdown selection.
+          if (me.csm_id) {
+            const myCsm = data.find(c => c.id === me.csm_id);
+            if (myCsm) setActiveCsm(myCsm);
+          }
+        }
       } catch { /* fall through to login */ }
     })();
     return () => { cancelled = true; };
