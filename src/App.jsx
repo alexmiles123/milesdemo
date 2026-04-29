@@ -1324,15 +1324,72 @@ function ExecDashboard({api}) {
 }
 
 // ─── CONSULTANT PORTAL ───────────────────────────────────────────────────────
-function TaskModal({project,api,onClose,onUpdated,allCsms}) {
-  const [tasks,     setTasks]   = useState([]);
-  const [loading,   setLoading] = useState(true);
-  const [saving,    setSaving]  = useState(null);
-  const [editing,   setEditing] = useState(null);
-  const [phase,     setPhase]   = useState("all");
-  const [toast,     setToast]   = useState(null);
-  const [capData,   setCapData] = useState(null);
-  const [capWarning,setCapWarning]=useState(null);
+
+// Inline form for adding a new task to a project. Rendered above the task
+// list so users can fill it in without leaving the project context — the way
+// Rocketlane / Mavenlink / Asana put "+ Add task" right in the row stream.
+function AddTaskRow({defaultPhase, onSave, onCancel}) {
+  const [name,setName]=useState("");
+  const [phase,setPhase]=useState(defaultPhase||"Kickoff");
+  const [projDate,setProjDate]=useState("");
+  const [priority,setPriority]=useState("medium");
+  const [assignee,setAssignee]=useState("");
+  const [busy,setBusy]=useState(false);
+
+  const submit=async()=>{
+    if(!name.trim()) return;
+    setBusy(true);
+    try{ await onSave({name:name.trim(),phase,proj_date:projDate||null,priority,assignee_name:assignee.trim()||null}); }
+    finally{ setBusy(false); }
+  };
+
+  return (
+    <div style={{padding:"10px 22px",borderBottom:"1px solid "+G.border,background:"#08111c",display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+      <input value={name} onChange={e=>setName(e.target.value)} placeholder="Task name…" autoFocus
+        onKeyDown={e=>{if(e.key==="Enter")submit(); if(e.key==="Escape")onCancel();}}
+        style={{flex:"2 1 200px",background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"6px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+      <select value={phase} onChange={e=>setPhase(e.target.value)}
+        style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"6px 8px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11,cursor:"pointer"}}>
+        {PHASE_ORDER.map(p=><option key={p} value={p}>{p}</option>)}
+      </select>
+      <input type="date" value={projDate} onChange={e=>setProjDate(e.target.value)}
+        style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"6px 8px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11}}/>
+      <select value={priority} onChange={e=>setPriority(e.target.value)}
+        style={{background:G.bg,border:"1px solid "+G.border,color:PRIORITY_COLOR[priority],padding:"6px 8px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11,cursor:"pointer",fontWeight:700}}>
+        {["critical","high","medium","low"].map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}
+      </select>
+      <input value={assignee} onChange={e=>setAssignee(e.target.value)} placeholder="Assignee (optional)"
+        style={{flex:"1 1 130px",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"6px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+      <button onClick={submit} disabled={busy||!name.trim()}
+        style={{background:name.trim()?G.green:G.surface2,border:"1px solid "+(name.trim()?G.green:G.border),color:name.trim()?"#fff":G.muted,padding:"6px 14px",borderRadius:6,cursor:busy?"wait":(name.trim()?"pointer":"not-allowed"),fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,opacity:busy?0.6:1}}>
+        {busy?"…":"+ ADD"}
+      </button>
+      <button onClick={onCancel}
+        style={{background:"transparent",border:"1px solid "+G.border,color:G.muted,padding:"6px 10px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11}}>
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+function TaskModal({project:initialProject,api,onClose,onUpdated,allCsms}) {
+  // Mirror the project locally so stage/health/target_date edits show
+  // immediately without waiting for the parent to refetch. onUpdated() still
+  // bubbles up so the portal table can refresh in the background.
+  const [project,    setProject] = useState(initialProject);
+  const [tasks,      setTasks]   = useState([]);
+  const [loading,    setLoading] = useState(true);
+  const [saving,     setSaving]  = useState(null);
+  const [editing,    setEditing] = useState(null);   // {id, field} for task fields
+  const [phase,      setPhase]   = useState(initialProject.stage || "all");
+  const [toast,      setToast]   = useState(null);
+  const [capData,    setCapData] = useState(null);
+  const [capWarning, setCapWarning] = useState(null);
+  const [savingProject, setSavingProject] = useState(null);  // 'stage'|'health'|'target_date'|null
+  const [editingProj,   setEditingProj]   = useState(null);  // 'target_date'|null
+  const [showAddTask,   setShowAddTask]   = useState(false);
+
+  const showToast = (msg,type="success") => { setToast({msg,type}); setTimeout(()=>setToast(null),2500); };
 
   const load = useCallback(async()=>{
     setLoading(true);
@@ -1343,7 +1400,8 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
 
   useEffect(()=>{ load(); },[load]);
 
-  // Load capacity data for date intelligence
+  // Capacity intelligence — same as before, drives the "X% utilized that
+  // week" warning when a CSM picks a date that's already overbooked.
   useEffect(()=>{
     if(!allCsms) return;
     const csmObj=allCsms.find(c=>c.name===project.csm);
@@ -1378,50 +1436,149 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
     return {committed,available,utilization,csmName:capData.csmName};
   };
 
-  const showToast=(msg,type="success")=>{ setToast({msg,type}); setTimeout(()=>setToast(null),2500); };
+  // ── PROJECT-LEVEL EDITS ──────────────────────────────────────────────────
+  const saveProjectField=async(field,value)=>{
+    setSavingProject(field);
+    try{
+      await api.patch("projects",project.id,{[field]:value});
+      setProject(p=>({...p,[field]:value}));
+      onUpdated();
+      showToast("✓ "+field.replace("_"," ")+" updated");
+    }catch(e){ showToast("Failed: "+e.message,"error"); }
+    setSavingProject(null);
+    setEditingProj(null);
+  };
 
+  const cycleHealth=()=>{
+    if(savingProject) return;
+    const order=["green","yellow","red"];
+    const next=order[(order.indexOf(project.health)+1)%order.length];
+    saveProjectField("health",next);
+  };
+
+  const setStage=(newStage)=>{
+    if(savingProject||newStage===project.stage) return;
+    saveProjectField("stage",newStage);
+    setPhase(newStage);
+  };
+
+  const advanceStage=()=>{
+    const idx=PHASE_ORDER.indexOf(project.stage);
+    if(idx<0||idx>=PHASE_ORDER.length-1) return;
+    setStage(PHASE_ORDER[idx+1]);
+  };
+
+  // ── TASK-LEVEL EDITS ─────────────────────────────────────────────────────
   const markComplete=async(task)=>{
     if(task.status==="complete") return;
     setSaving(task.id);
     try{
-      await api.patch("tasks", task.id, { actual_date: todayISO(), status: "complete" });
+      await api.patch("tasks",task.id,{actual_date:todayISO(),status:"complete"});
       setTasks(p=>p.map(t=>t.id===task.id?{...t,actual_date:todayISO(),status:"complete"}:t));
       showToast("✓ Task marked complete!"); onUpdated();
     } catch(e){ showToast("Failed: "+e.message,"error"); }
     setSaving(null);
   };
 
+  const reopenTask=async(task)=>{
+    setSaving(task.id);
+    try{
+      await api.patch("tasks",task.id,{actual_date:null,status:"upcoming"});
+      setTasks(p=>p.map(t=>t.id===task.id?{...t,actual_date:null,status:"upcoming"}:t));
+      showToast("Reopened"); onUpdated();
+    }catch(e){ showToast("Failed: "+e.message,"error"); }
+    setSaving(null);
+  };
+
   const saveEdit=async(task,field,value)=>{
     setSaving(task.id);
     try{
-      await api.patch("tasks",task.id,{[field]:value||null});
-      setTasks(p=>p.map(t=>t.id===task.id?{...t,[field]:value||null}:t));
+      const v=value===""?null:value;
+      await api.patch("tasks",task.id,{[field]:v});
+      setTasks(p=>p.map(t=>t.id===task.id?{...t,[field]:v}:t));
       showToast("✓ Updated!"); onUpdated();
     } catch(e){ showToast("Failed: "+e.message,"error"); }
     setEditing(null); setSaving(null);
   };
 
-  const shown=phase==="all"?tasks:tasks.filter(t=>t.phase===phase);
-  // Always render the canonical phase tabs so users can navigate the
-  // project lifecycle even before any tasks exist (e.g. brand-new
-  // accounts). Per-phase counts still come from the live task list.
-  const phases=PHASE_ORDER;
-  const stats={ complete:tasks.filter(t=>t.status==="complete").length, upcoming:tasks.filter(t=>t.status==="upcoming").length, late:tasks.filter(t=>t.status==="late").length };
+  const deleteTask=async(task)=>{
+    if(!window.confirm(`Delete task "${task.name}"? This cannot be undone.`)) return;
+    setSaving(task.id);
+    try{
+      await api.del("tasks",task.id);
+      setTasks(p=>p.filter(t=>t.id!==task.id));
+      showToast("✓ Task deleted"); onUpdated();
+    }catch(e){ showToast("Failed: "+e.message,"error"); }
+    setSaving(null);
+  };
+
+  const addTask=async(data)=>{
+    const result=await api.post("tasks",[{
+      project_id:project.id,
+      name:data.name,
+      phase:data.phase||project.stage||"Kickoff",
+      proj_date:data.proj_date,
+      priority:data.priority||"medium",
+      assignee_name:data.assignee_name,
+      status:"upcoming",
+    }]);
+    const created=Array.isArray(result)?result[0]:result;
+    if(created) setTasks(p=>[...p,created].sort((a,b)=>(a.proj_date||"~").localeCompare(b.proj_date||"~")));
+    onUpdated();
+    showToast("✓ Task added");
+    setShowAddTask(false);
+  };
+
+  // ── DERIVED ──────────────────────────────────────────────────────────────
+  const shown = phase==="all" ? tasks : tasks.filter(t=>t.phase===phase);
+  const stats = {
+    complete: tasks.filter(t=>t.status==="complete").length,
+    upcoming: tasks.filter(t=>t.status==="upcoming").length,
+    late:     tasks.filter(t=>t.status==="late").length,
+  };
+  const stageIdx = PHASE_ORDER.indexOf(project.stage);
+  const stagePctByPhase = (ph) => {
+    const items = tasks.filter(t=>t.phase===ph);
+    if(!items.length) return null;
+    return items.filter(t=>t.status==="complete").length / items.length * 100;
+  };
+  const currentStageTasks = tasks.filter(t=>t.phase===project.stage);
+  const currentStageReady = currentStageTasks.length>0 && currentStageTasks.every(t=>t.status==="complete");
+  const nextStage = stageIdx>=0 && stageIdx<PHASE_ORDER.length-1 ? PHASE_ORDER[stageIdx+1] : null;
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:1001,background:toast.type==="error"?G.redBg:G.greenBg,border:"1px solid "+(toast.type==="error"?G.red:G.green)+"55",borderRadius:8,padding:"10px 18px",fontFamily:"DM Mono,monospace",fontSize:12,color:toast.type==="error"?G.red:G.green}}>{toast.msg}</div>}
-      <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:1020,maxHeight:"92vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
-        {/* Header */}
-        <div style={{padding:"15px 22px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
-          <div style={{width:11,height:11,borderRadius:"50%",background:HEALTH_COLOR[project.health]||G.green,boxShadow:"0 0 8px "+(HEALTH_COLOR[project.health]||G.green)+"88"}}/>
-          <div style={{flex:1}}>
-            <div style={{fontSize:19,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif"}}>{project.customer}</div>
-            <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:2}}>{project.csm} · {project.stage} · {fmtArr(project.arr)} ARR · Target {fmtDate(project.target_date)}</div>
+      <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:16,width:"100%",maxWidth:1080,maxHeight:"94vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        {/* ── HEADER: customer + editable health, csm, ARR, target date ─── */}
+        <div style={{padding:"14px 22px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
+          <div onClick={cycleHealth} title={"Health: "+project.health.toUpperCase()+" · click to change"}
+            style={{width:14,height:14,borderRadius:"50%",background:HEALTH_COLOR[project.health]||G.green,boxShadow:"0 0 8px "+(HEALTH_COLOR[project.health]||G.green)+"88",cursor:savingProject==="health"?"wait":"pointer",border:"2px solid "+G.surface,outline:"1px solid "+(HEALTH_COLOR[project.health]||G.green)+"77",flexShrink:0,opacity:savingProject==="health"?0.5:1}}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:19,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{project.customer}</div>
+            <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:3,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <span>{project.csm||"—"}</span>
+              <span style={{color:G.faint}}>·</span>
+              <span style={{color:G.green,fontWeight:700}}>{fmtArr(project.arr)} ARR</span>
+              <span style={{color:G.faint}}>·</span>
+              <span>Target:&nbsp;
+                {editingProj==="target_date" ? (
+                  <input type="date" defaultValue={project.target_date||""} autoFocus
+                    onBlur={e=>saveProjectField("target_date",e.target.value||null)}
+                    onKeyDown={e=>{if(e.key==="Enter")saveProjectField("target_date",e.target.value||null); if(e.key==="Escape")setEditingProj(null);}}
+                    style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px 6px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+                ) : (
+                  <span onClick={()=>setEditingProj("target_date")} title="Click to change"
+                    style={{cursor:"pointer",borderBottom:"1px dashed "+G.border2,padding:"1px 3px",color:G.text,fontWeight:700}}>
+                    {fmtDate(project.target_date)} ✎
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
           <div style={{display:"flex",gap:8}}>
             {[["complete","Complete"],["upcoming","Upcoming"],["late","Late"]].map(([s,l])=>(
-              <div key={s} style={{background:STATUS_CFG[s].bg,border:"1px solid "+STATUS_CFG[s].bd,borderRadius:8,padding:"5px 14px",textAlign:"center"}}>
+              <div key={s} style={{background:STATUS_CFG[s].bg,border:"1px solid "+STATUS_CFG[s].bd,borderRadius:8,padding:"5px 14px",textAlign:"center",minWidth:74}}>
                 <div style={{fontSize:20,fontWeight:800,color:STATUS_CFG[s].color,lineHeight:1,fontFamily:"Syne,sans-serif"}}>{stats[s]}</div>
                 <div style={{fontSize:13,fontFamily:"DM Mono,monospace",color:STATUS_CFG[s].color,opacity:0.8,marginTop:2}}>{l.toUpperCase()}</div>
               </div>
@@ -1429,16 +1586,67 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
           </div>
           <button onClick={onClose} style={{background:"none",border:"1px solid "+G.border,color:G.muted,width:30,height:30,borderRadius:8,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
         </div>
-        {/* Progress */}
+
+        {/* ── STAGE STEPPER: visual milestone tracker w/ click-to-set ────── */}
+        <div style={{padding:"14px 22px 10px",borderBottom:"1px solid "+G.border,background:"#08111c",flexShrink:0}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,gap:12}}>
+            <span style={{fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.08em",fontWeight:600}}>PROJECT STAGE</span>
+            {nextStage && (
+              <button onClick={advanceStage} disabled={!!savingProject}
+                title={currentStageReady?"All current-stage tasks are complete":"Tasks remain in this stage — you can still advance"}
+                style={{background:currentStageReady?G.green:G.blueBg,color:currentStageReady?"#fff":G.blue,border:"1px solid "+(currentStageReady?G.green:G.blue),padding:"6px 14px",borderRadius:6,cursor:savingProject?"wait":"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:"0.05em",opacity:savingProject?0.5:1}}>
+                {currentStageReady?"✓ ADVANCE":"ADVANCE"} TO {nextStage.toUpperCase()} →
+              </button>
+            )}
+          </div>
+          <div style={{display:"flex",alignItems:"flex-start",gap:0}}>
+            {PHASE_ORDER.map((ph,i)=>{
+              const isCurrent = ph===project.stage;
+              const isPast = i<stageIdx;
+              const phPct = stagePctByPhase(ph);
+              const phColor = PHASE_COLOR[ph];
+              const dotBg   = isCurrent ? phColor : isPast ? G.green : G.surface2;
+              const dotBorder = isCurrent ? phColor : isPast ? G.green : G.border2;
+              const labelColor = isCurrent ? phColor : isPast ? G.green : G.muted;
+              return (
+                <div key={ph} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"stretch",position:"relative",minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center"}}>
+                    <div style={{flex:1,height:2,background:i===0?"transparent":(i<=stageIdx?G.green:G.border2)}}/>
+                    <button onClick={()=>setStage(ph)} disabled={!!savingProject}
+                      title={"Set stage to "+ph}
+                      style={{background:dotBg,border:"2px solid "+dotBorder,width:32,height:32,borderRadius:"50%",cursor:savingProject?"wait":"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,color:isCurrent||isPast?"#fff":G.muted,fontFamily:"DM Mono,monospace",boxShadow:isCurrent?"0 0 12px "+phColor+"88":"none",flexShrink:0,padding:0,transition:"all .2s"}}>
+                      {isPast?"✓":i+1}
+                    </button>
+                    <div style={{flex:1,height:2,background:i===PHASE_ORDER.length-1?"transparent":(i<stageIdx?G.green:G.border2)}}/>
+                  </div>
+                  <div style={{marginTop:6,textAlign:"center",fontSize:10,fontFamily:"DM Mono,monospace",color:labelColor,fontWeight:isCurrent?700:500,letterSpacing:"0.04em",lineHeight:1.3,padding:"0 4px"}}>
+                    {ph.toUpperCase()}
+                  </div>
+                  <div style={{textAlign:"center",fontSize:9,fontFamily:"DM Mono,monospace",color:G.faint,marginTop:2}}>
+                    {phPct==null?"—":Math.round(phPct)+"%"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {currentStageReady && nextStage && (
+            <div style={{marginTop:10,padding:"7px 12px",background:G.greenBg,border:"1px solid "+G.green+"55",borderRadius:6,fontSize:11,color:G.green,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>
+              ✓ All {currentStageTasks.length} {project.stage} task{currentStageTasks.length===1?"":"s"} complete — ready to advance to <strong>{nextStage}</strong>.
+            </div>
+          )}
+        </div>
+
+        {/* Overall progress */}
         <div style={{padding:"8px 22px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
           <div style={{flex:1,height:7,background:G.border,borderRadius:4,overflow:"hidden"}}>
             <div style={{width:tasks.length?(stats.complete/tasks.length*100)+"%":"0%",height:"100%",background:"linear-gradient(90deg,"+G.green+","+G.green+"88)",borderRadius:4,transition:"width .6s"}}/>
           </div>
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.green,fontWeight:700}}>{tasks.length?Math.round(stats.complete/tasks.length*100):0}% done</span>
+          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.green,fontWeight:700}}>{tasks.length?Math.round(stats.complete/tasks.length*100):0}% done overall</span>
         </div>
-        {/* Phase tabs */}
-        <div style={{padding:"8px 22px 0",borderBottom:"1px solid "+G.border,display:"flex",gap:3,flexWrap:"wrap",flexShrink:0}}>
-          {["all",...phases].map(ph=>{
+
+        {/* Phase tabs + Add Task */}
+        <div style={{padding:"8px 22px 0",borderBottom:"1px solid "+G.border,display:"flex",gap:3,flexWrap:"wrap",flexShrink:0,alignItems:"center"}}>
+          {["all",...PHASE_ORDER].map(ph=>{
             const n=ph==="all"?tasks.length:tasks.filter(t=>t.phase===ph).length;
             const late=ph==="all"?stats.late:tasks.filter(t=>t.phase===ph&&t.status==="late").length;
             return (
@@ -1449,15 +1657,34 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
               </button>
             );
           })}
+          <div style={{flex:1}}/>
+          {!showAddTask && (
+            <button onClick={()=>setShowAddTask(true)}
+              style={{background:G.blueBg,border:"1px solid "+G.blue,color:G.blue,padding:"5px 14px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,marginBottom:4,letterSpacing:"0.05em"}}>
+              + ADD TASK
+            </button>
+          )}
         </div>
+
+        {showAddTask && (
+          <AddTaskRow
+            defaultPhase={phase==="all"?(project.stage||"Kickoff"):phase}
+            onSave={addTask}
+            onCancel={()=>setShowAddTask(false)}/>
+        )}
+
         {/* Tasks */}
         <div style={{overflowY:"auto",flex:1}}>
-          {loading?<div style={{padding:60,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace"}}>Loading tasks…</div>:(
+          {loading?<div style={{padding:60,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace"}}>Loading tasks…</div>:shown.length===0?(
+            <div style={{padding:60,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>
+              No tasks {phase==="all"?"yet":"in "+phase} — click <strong style={{color:G.blue}}>+ ADD TASK</strong> above to create one.
+            </div>
+          ):(
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead style={{position:"sticky",top:0,background:G.surface,zIndex:1}}>
                 <tr style={{borderBottom:"1px solid "+G.border}}>
                   <th style={{width:44,padding:"9px 8px 9px 18px"}}></th>
-                  {["Task","Phase","Assignee","Projected Date","Actual Date","Variance","Priority","Status"].map(h=>(
+                  {["Task","Phase","Assignee","Projected","Actual","Variance","Priority","Status",""].map(h=>(
                     <th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                   ))}
                 </tr>
@@ -1467,25 +1694,69 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
                   const sc=STATUS_CFG[task.status]||STATUS_CFG.upcoming;
                   const variance=task.actual_date?Math.round((new Date(task.actual_date)-new Date(task.proj_date))/86400000):task.status==="late"?Math.round((new Date()-new Date(task.proj_date))/86400000):null;
                   const isProjEdit=editing?.id===task.id&&editing?.field==="proj_date";
-                  const isActEdit=editing?.id===task.id&&editing?.field==="actual_date";
-                  const isSaving=saving===task.id;
+                  const isActEdit =editing?.id===task.id&&editing?.field==="actual_date";
+                  const isNameEdit=editing?.id===task.id&&editing?.field==="name";
+                  const isAsgnEdit=editing?.id===task.id&&editing?.field==="assignee_name";
+                  const isPhaseEdit=editing?.id===task.id&&editing?.field==="phase";
+                  const isPriEdit =editing?.id===task.id&&editing?.field==="priority";
+                  const isSaving  =saving===task.id;
                   return (
                     <tr key={task.id} style={{borderBottom:i<shown.length-1?"1px solid #0c1828":"none",background:task.status==="late"?"#120400":i%2===1?G.surface2:"transparent",opacity:isSaving?0.6:1,transition:"opacity .2s"}}>
                       <td style={{padding:"10px 8px 10px 18px",textAlign:"center"}}>
-                        <div onClick={()=>!isSaving&&markComplete(task)}
-                          style={{width:20,height:20,borderRadius:5,border:"2px solid "+(task.status==="complete"?G.green:G.border2),background:task.status==="complete"?G.green:"transparent",cursor:task.status==="complete"?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
+                        <div onClick={()=>!isSaving&&(task.status==="complete"?reopenTask(task):markComplete(task))}
+                          title={task.status==="complete"?"Click to reopen":"Click to mark complete"}
+                          style={{width:20,height:20,borderRadius:5,border:"2px solid "+(task.status==="complete"?G.green:G.border2),background:task.status==="complete"?G.green:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
                           {task.status==="complete"&&<span style={{color:"#fff",fontSize:11,fontWeight:800}}>✓</span>}
                         </div>
                       </td>
-                      <td style={{padding:"10px 12px",maxWidth:220}}>
-                        <div style={{display:"flex",alignItems:"flex-start",gap:7}}>
-                          <span style={{width:8,height:8,borderRadius:"50%",background:sc.color,flexShrink:0,marginTop:3,boxShadow:task.status!=="upcoming"?"0 0 5px "+sc.color+"88":"none"}}/>
-                          <span style={{fontSize:13,fontWeight:600,color:task.status==="complete"?G.muted:G.text,textDecoration:task.status==="complete"?"line-through":"none",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.name}</span>
-                        </div>
-                        {task.notes&&<div style={{fontSize:9,color:"#5a7a94",fontFamily:"DM Mono,monospace",marginTop:2,marginLeft:15,lineHeight:1.4}}>{task.notes.slice(0,70)}{task.notes.length>70?"…":""}</div>}
+                      <td style={{padding:"10px 12px",maxWidth:240}}>
+                        {isNameEdit?(
+                          <input defaultValue={task.name} autoFocus
+                            onBlur={e=>saveEdit(task,"name",e.target.value)}
+                            onKeyDown={e=>{if(e.key==="Enter")saveEdit(task,"name",e.target.value);if(e.key==="Escape")setEditing(null);}}
+                            style={{width:"100%",background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"5px 8px",borderRadius:5,fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:600}}/>
+                        ):(
+                          <div style={{display:"flex",alignItems:"flex-start",gap:7}}>
+                            <span style={{width:8,height:8,borderRadius:"50%",background:sc.color,flexShrink:0,marginTop:5,boxShadow:task.status!=="upcoming"?"0 0 5px "+sc.color+"88":"none"}}/>
+                            <span onClick={()=>setEditing({id:task.id,field:"name"})}
+                              title="Click to rename"
+                              style={{fontSize:13,fontWeight:600,color:task.status==="complete"?G.muted:G.text,textDecoration:task.status==="complete"?"line-through":"none",lineHeight:1.4,cursor:"pointer",borderBottom:"1px dashed transparent"}}>
+                              {task.name}
+                            </span>
+                          </div>
+                        )}
+                        {task.notes&&!isNameEdit&&<div style={{fontSize:9,color:"#5a7a94",fontFamily:"DM Mono,monospace",marginTop:2,marginLeft:15,lineHeight:1.4}}>{task.notes.slice(0,70)}{task.notes.length>70?"…":""}</div>}
                       </td>
-                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",whiteSpace:"nowrap"}}>{task.phase}</td>
-                      <td style={{padding:"10px 12px",fontSize:13,color:G.muted,whiteSpace:"nowrap"}}>{task.assignee_name||task.assignee_type||"—"}</td>
+                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"DM Mono,monospace",whiteSpace:"nowrap"}}>
+                        {isPhaseEdit?(
+                          <select defaultValue={task.phase} autoFocus
+                            onBlur={e=>saveEdit(task,"phase",e.target.value)}
+                            onChange={e=>saveEdit(task,"phase",e.target.value)}
+                            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px 6px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:11}}>
+                            {PHASE_ORDER.map(p=><option key={p} value={p}>{p}</option>)}
+                          </select>
+                        ):(
+                          <span onClick={()=>setEditing({id:task.id,field:"phase"})}
+                            title="Click to move to a different phase"
+                            style={{color:PHASE_COLOR[task.phase]||"#5a7a94",cursor:"pointer",borderBottom:"1px dashed "+G.border}}>
+                            {task.phase} ✎
+                          </span>
+                        )}
+                      </td>
+                      <td style={{padding:"10px 12px",fontSize:13,color:G.muted,whiteSpace:"nowrap"}}>
+                        {isAsgnEdit?(
+                          <input defaultValue={task.assignee_name||""} autoFocus placeholder="Assignee"
+                            onBlur={e=>saveEdit(task,"assignee_name",e.target.value)}
+                            onKeyDown={e=>{if(e.key==="Enter")saveEdit(task,"assignee_name",e.target.value);if(e.key==="Escape")setEditing(null);}}
+                            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:12,width:140}}/>
+                        ):(
+                          <span onClick={()=>setEditing({id:task.id,field:"assignee_name"})}
+                            title="Click to set assignee"
+                            style={{cursor:"pointer",borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
+                            {task.assignee_name||task.assignee_type||"—"} ✎
+                          </span>
+                        )}
+                      </td>
                       <td style={{padding:"10px 12px",whiteSpace:"nowrap"}}>
                         {isProjEdit?(
                           <div>
@@ -1527,9 +1798,31 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
                         {variance!=null?<span style={{color:variance>2?G.red:variance<0?G.green:G.muted,fontWeight:700}}>{variance>0?"+"+variance+"d":variance<0?variance+"d":"On time"}</span>:"—"}
                       </td>
                       <td style={{padding:"10px 12px"}}>
-                        <span style={{color:PRIORITY_COLOR[task.priority]||G.muted,fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:700,letterSpacing:"0.08em"}}>{(task.priority||"").toUpperCase()}</span>
+                        {isPriEdit?(
+                          <select defaultValue={task.priority} autoFocus
+                            onBlur={e=>saveEdit(task,"priority",e.target.value)}
+                            onChange={e=>saveEdit(task,"priority",e.target.value)}
+                            style={{background:G.bg,border:"1px solid "+G.blue,color:PRIORITY_COLOR[task.priority]||G.text,padding:"3px 6px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:700}}>
+                            {["critical","high","medium","low"].map(p=><option key={p} value={p}>{p.toUpperCase()}</option>)}
+                          </select>
+                        ):(
+                          <span onClick={()=>setEditing({id:task.id,field:"priority"})}
+                            title="Click to change priority"
+                            style={{color:PRIORITY_COLOR[task.priority]||G.muted,fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:700,letterSpacing:"0.08em",cursor:"pointer",borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
+                            {(task.priority||"").toUpperCase()} ✎
+                          </span>
+                        )}
                       </td>
                       <td style={{padding:"10px 12px"}}><Badge status={task.status}/></td>
+                      <td style={{padding:"10px 12px",textAlign:"right"}}>
+                        <button onClick={()=>!isSaving&&deleteTask(task)} disabled={isSaving}
+                          title="Delete task"
+                          style={{background:"transparent",border:"1px solid "+G.border,color:G.faint,width:24,height:24,borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12,display:"inline-flex",alignItems:"center",justifyContent:"center"}}
+                          onMouseEnter={e=>{e.currentTarget.style.color=G.red;e.currentTarget.style.borderColor=G.red;}}
+                          onMouseLeave={e=>{e.currentTarget.style.color=G.faint;e.currentTarget.style.borderColor=G.border;}}>
+                          ✕
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -1537,10 +1830,13 @@ function TaskModal({project,api,onClose,onUpdated,allCsms}) {
             </table>
           )}
         </div>
+
         {/* Footer */}
-        <div style={{padding:"9px 22px",borderTop:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{shown.length} tasks · Click checkbox to complete · Click date to edit</span>
-          <div style={{display:"flex",gap:12,fontSize:14,fontFamily:"DM Mono,monospace"}}>
+        <div style={{padding:"9px 22px",borderTop:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,gap:12,flexWrap:"wrap"}}>
+          <span style={{fontSize:12,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>
+            {shown.length} task{shown.length===1?"":"s"} · Click any field to edit · Stage stepper above changes the project's current phase
+          </span>
+          <div style={{display:"flex",gap:12,fontSize:12,fontFamily:"DM Mono,monospace"}}>
             <span style={{color:G.green}}>● Complete</span><span style={{color:G.yellow}}>● Upcoming</span><span style={{color:G.red}}>● Late</span>
           </div>
         </div>
@@ -2004,6 +2300,21 @@ function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
 
   useEffect(()=>{load();},[load]);
 
+  // Inline stage edit from the project list. Lets a CSM advance a project
+  // without opening the task modal, matching how Asana/Rocketlane let you
+  // change a status field straight from the row. Optimistically updates
+  // local state so the UI reflects the new stage immediately.
+  const [stageSaving,setStageSaving]=useState(null);
+  const updateProjectStage=async(p,newStage)=>{
+    if(newStage===p.stage) return;
+    setStageSaving(p.id);
+    try{
+      await api.patch("projects",p.id,{stage:newStage});
+      setProjects(prev=>prev.map(r=>r.id===p.id?{...r,stage:newStage}:r));
+    }catch(e){ alert("Failed to update stage: "+e.message); }
+    setStageSaving(null);
+  };
+
   const handleSort=(k)=>{ if(sortKey===k)setSortDir(d=>d==="asc"?"desc":"asc"); else{setSortKey(k);setSortDir("asc");} };
 
   const filtered=projects
@@ -2111,7 +2422,15 @@ function ConsultantPortal({api,csm,allCsms,onAccountSelect}) {
                           {p.customer}
                         </button>
                       </td>
-                      <td style={{padding:"10px 12px",fontSize:11,color:PHASE_COLOR[p.stage]||G.muted,fontFamily:"DM Mono,monospace"}}>{p.stage}</td>
+                      <td style={{padding:"10px 12px"}} onDoubleClick={e=>e.stopPropagation()}>
+                        <select value={p.stage||"Kickoff"} disabled={stageSaving===p.id}
+                          onClick={e=>e.stopPropagation()}
+                          onChange={e=>updateProjectStage(p,e.target.value)}
+                          title="Click to change stage"
+                          style={{background:"transparent",border:"1px dashed "+G.border,color:PHASE_COLOR[p.stage]||G.muted,fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,padding:"4px 6px",borderRadius:5,cursor:stageSaving===p.id?"wait":"pointer",opacity:stageSaving===p.id?0.5:1,minWidth:130}}>
+                          {PHASE_ORDER.map(s=><option key={s} value={s} style={{background:G.surface,color:G.text}}>{s}</option>)}
+                        </select>
+                      </td>
                       <td style={{padding:"10px 12px"}}>
                         <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
                           <span style={{width:8,height:8,borderRadius:"50%",background:hc,boxShadow:"0 0 5px "+hc+"66"}}/>
