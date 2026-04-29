@@ -77,7 +77,7 @@ export default function TaskTemplatesTab({ api }) {
           <Empty>Loading templates…</Empty>
         ) : templates.length === 0 ? (
           <Empty>
-            No templates yet. <button onClick={() => setEditing("new")} style={{ background: "none", border: "none", color: G.purple, cursor: "pointer", textDecoration: "underline", fontFamily: "DM Mono,monospace" }}>Create your first template</button> so new projects get a head start.
+            No templates yet. <button onClick={() => setEditing("new")} style={{ background: "none", border: "none", color: G.purple, cursor: "pointer", textDecoration: "underline", fontFamily: "Inter,system-ui,sans-serif" }}>Create your first template</button> so new projects get a head start.
           </Empty>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -117,7 +117,7 @@ export default function TaskTemplatesTab({ api }) {
 
       <Card>
         <CardHeader>HOW TEMPLATES ARE APPLIED</CardHeader>
-        <div style={{ padding: 18, fontFamily: "DM Mono,monospace", fontSize: 12, color: G.muted, lineHeight: 1.7 }}>
+        <div style={{ padding: 18, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, color: G.muted, lineHeight: 1.7 }}>
           When you create a project, choose a template (the one marked DEFAULT is selected automatically) and a start date.
           Every item in the template is added to that project as a task, with its <code style={{ color: G.text }}>proj_date</code> set
           to the start date plus the item's <code style={{ color: G.text }}>day offset</code>. Existing projects can also have a
@@ -212,7 +212,7 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
             <Input value={name} onChange={setName} placeholder="Standard Onboarding" />
           </div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, paddingBottom: 11 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, paddingBottom: 11 }}>
               <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
               Set as default for new projects
             </label>
@@ -225,7 +225,7 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
 
         <div>
           <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.12em" }}>TASK ITEMS · {items.length}</div>
+            <div style={{ fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, letterSpacing: "0.12em" }}>TASK ITEMS · {items.length}</div>
             <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
               <Button variant="default" onClick={() => setShowImport(true)}>↓ Import from Excel</Button>
               <Button variant="default" onClick={addItem}>+ Add task</Button>
@@ -265,7 +265,7 @@ function TemplateEditor({ api, template, onClose, onSaved, setToast }) {
               </tbody>
             </table>
           </div>
-          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 8 }}>
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 8 }}>
             DAY+ = number of days after project start_date the task should be due.
           </div>
         </div>

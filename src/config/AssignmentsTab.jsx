@@ -69,7 +69,7 @@ export default function AssignmentsTab({ api, csms, onChanged }) {
         <div style={{ padding: "10px 18px", display: "flex", gap: 12, alignItems: "center", borderBottom: "1px solid " + G.border }}>
           <Select value={csmFilter} onChange={setCsmFilter}
             options={[{ value:"all", label:"All CSMs" }, ...csms.map(c => ({ value:c.id, label:c.name }))]} style={{ width: 220 }} />
-          <label style={{ display:"flex", alignItems:"center", gap:6, fontFamily:"DM Mono,monospace", fontSize:11, color: G.muted, cursor:"pointer" }}>
+          <label style={{ display:"flex", alignItems:"center", gap:6, fontFamily:"Inter,system-ui,sans-serif", fontSize:11, color: G.muted, cursor:"pointer" }}>
             <input type="checkbox" checked={activeOnly} onChange={e => setActiveOnly(e.target.checked)} /> Active only
           </label>
         </div>
@@ -242,7 +242,7 @@ function AssignmentModal({ api, csms, projects, initial, mode, onClose, onSaved 
         </div>
       </div>
       {errors._root && (
-        <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{errors._root}</div>
+        <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{errors._root}</div>
       )}
       <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop: 20 }}>
         <Button onClick={onClose} variant="ghost">Cancel</Button>

@@ -134,7 +134,7 @@ export default function SecurityTab({ api }) {
                 <StateGlyph state={c.state} />
                 <div>
                   <div style={{ color: G.text, fontSize: 13, fontWeight: 600, fontFamily: "Syne,sans-serif" }}>{c.label}</div>
-                  <div style={{ color: G.muted, fontSize: 11, fontFamily: "DM Mono,monospace", marginTop: 3, lineHeight: 1.6 }}>{c.detail}</div>
+                  <div style={{ color: G.muted, fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", marginTop: 3, lineHeight: 1.6 }}>{c.detail}</div>
                 </div>
                 <Pill tone={c.state === "ok" ? "green" : c.state === "warn" ? "yellow" : "red"}>{c.state.toUpperCase()}</Pill>
               </div>
@@ -152,7 +152,7 @@ function Kpi({ label, value, tone }) {
   };
   return (
     <div style={{ padding: 14, background: G.surface2, border: "1px solid " + G.border2, borderRadius: 10 }}>
-      <div style={{ fontSize: 10, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.12em" }}>{label}</div>
+      <div style={{ fontSize: 10, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, letterSpacing: "0.12em" }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 800, color: tones[tone] || G.text, fontFamily: "Syne,sans-serif", marginTop: 6 }}>{value}</div>
     </div>
   );
@@ -165,7 +165,7 @@ function FrameworkCard({ title, blurb, items }) {
         <div style={{ width: 28, height: 28, borderRadius: 8, background: G.green + "22", border: "1px solid " + G.green + "55", color: G.green, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>✓</div>
         <div style={{ fontSize: 14, fontWeight: 800, color: G.text, fontFamily: "Syne,sans-serif" }}>{title}</div>
       </div>
-      <div style={{ fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace", lineHeight: 1.6, marginBottom: 10 }}>{blurb}</div>
+      <div style={{ fontSize: 11, color: G.muted, fontFamily: "Inter,system-ui,sans-serif", lineHeight: 1.6, marginBottom: 10 }}>{blurb}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {items.map(it => (
           <Pill key={it} tone="muted">{it}</Pill>
@@ -224,7 +224,7 @@ function PasswordPolicyCard({ api }) {
   const reset = () => { setDraft(policy); setError(""); };
 
   const checkRow = (label, key) => (
-    <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "DM Mono,monospace", fontSize: 12, color: G.text, cursor: "pointer" }}>
+    <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, color: G.text, cursor: "pointer" }}>
       <input type="checkbox" checked={!!draft[key]} onChange={(e) => setDraft({ ...draft, [key]: e.target.checked })} />
       {label}
     </label>
@@ -242,12 +242,12 @@ function PasswordPolicyCard({ api }) {
             onChange={(v) => setDraft({ ...draft, min_length: v === "" ? "" : Number(v) })}
             disabled={!loaded}
           />
-          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 6 }}>
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 6 }}>
             8–128 characters. NIST SP 800-63B recommends 8 minimum; 12+ is industry baseline.
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
-          <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.1em", marginBottom: 2 }}>CHARACTER REQUIREMENTS</div>
+          <div style={{ fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, letterSpacing: "0.1em", marginBottom: 2 }}>CHARACTER REQUIREMENTS</div>
           {checkRow("Require an uppercase letter (A–Z)", "require_upper")}
           {checkRow("Require a lowercase letter (a–z)", "require_lower")}
           {checkRow("Require a number (0–9)", "require_number")}
@@ -255,7 +255,7 @@ function PasswordPolicyCard({ api }) {
         </div>
       </div>
       <div style={{ padding: "0 18px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace" }}>
+        <div style={{ fontSize: 11, color: G.muted, fontFamily: "Inter,system-ui,sans-serif" }}>
           Currently enforced: <span style={{ color: G.text }}>{describePolicy(policy)}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -264,7 +264,7 @@ function PasswordPolicyCard({ api }) {
         </div>
       </div>
       {error && (
-        <div style={{ margin: "0 18px 16px", padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{error}</div>
+        <div style={{ margin: "0 18px 16px", padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{error}</div>
       )}
       {toast && <Toast tone={toast.tone} onClose={() => setToast(null)}>{toast.msg}</Toast>}
     </Card>
@@ -275,7 +275,7 @@ function StateGlyph({ state }) {
   const c = state === "ok" ? G.green : state === "warn" ? G.yellow : G.red;
   const ch = state === "ok" ? "✓" : state === "warn" ? "!" : "✕";
   return (
-    <div style={{ width: 22, height: 22, borderRadius: 11, background: c + "22", border: "1px solid " + c + "66", color: c, fontSize: 12, fontWeight: 800, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"DM Mono,monospace" }}>
+    <div style={{ width: 22, height: 22, borderRadius: 11, background: c + "22", border: "1px solid " + c + "66", color: c, fontSize: 12, fontWeight: 800, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Inter,system-ui,sans-serif" }}>
       {ch}
     </div>
   );

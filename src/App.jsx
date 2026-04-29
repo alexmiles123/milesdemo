@@ -175,7 +175,7 @@ const Card = ({children, style={}}) => (
   <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,...style}}>{children}</div>
 );
 const CardHeader = ({children}) => (
-  <div style={{padding:"12px 18px",borderBottom:"1px solid "+G.border,fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>
+  <div style={{padding:"12px 18px",borderBottom:"1px solid "+G.border,fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"Inter,system-ui,sans-serif"}}>
     {children}
   </div>
 );
@@ -183,7 +183,7 @@ const CardHeader = ({children}) => (
 const Tip = ({active,payload,label}) => {
   if(!active||!payload?.length) return null;
   return (
-    <div style={{background:G.surface,border:"1px solid "+G.border2,borderRadius:8,padding:"8px 14px",fontFamily:"DM Mono,monospace",fontSize:12,boxShadow:"0 4px 12px rgba(0,0,0,0.08)"}}>
+    <div style={{background:G.surface,border:"1px solid "+G.border2,borderRadius:8,padding:"8px 14px",fontFamily:"Inter,system-ui,sans-serif",fontSize:12,boxShadow:"0 4px 12px rgba(0,0,0,0.08)"}}>
       {label && <div style={{color:G.muted,marginBottom:5}}>{label}</div>}
       {payload.map((p,i)=><div key={i} style={{color:p.color||G.text}}>{p.name}: <b>{p.value}</b></div>)}
     </div>
@@ -193,7 +193,7 @@ const Tip = ({active,payload,label}) => {
 const Badge = ({status}) => {
   const s = STATUS_CFG[status]||STATUS_CFG.upcoming;
   return (
-    <span style={{background:s.bg,border:"1px solid "+s.bd,color:s.color,padding:"2px 8px",borderRadius:4,fontSize:14,fontFamily:"DM Mono,monospace",fontWeight:700,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>
+    <span style={{background:s.bg,border:"1px solid "+s.bd,color:s.color,padding:"2px 8px",borderRadius:4,fontSize:14,fontFamily:"Inter,system-ui,sans-serif",fontWeight:700,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>
       {s.label.toUpperCase()}
     </span>
   );
@@ -215,7 +215,7 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
         <Logo size={28}/>
         <div>
           <div style={{fontSize:16,fontWeight:700,letterSpacing:"-0.01em",color:G.text}}>Monument</div>
-          <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.12em",marginTop:1}}>CUSTOMER SUCCESS</div>
+          <div style={{fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.12em",marginTop:1}}>CUSTOMER SUCCESS</div>
         </div>
       </div>
       <div style={{width:1,height:26,background:G.border,marginLeft:8}}/>
@@ -244,25 +244,25 @@ function NavBar({view,setView,csm,setCsm,csms,lastSync,onRefresh,refreshing,onLo
         {/* CSM selector for consultant view */}
         {view==="consultant" && (
           <select value={csm?.id||"all"} onChange={e=> setCsm(e.target.value==="all" ? null : csms.find(c=>c.id===e.target.value)||null)}
-            style={{background:G.surface,border:"1px solid "+G.border2,color:G.text,padding:"5px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11,cursor:"pointer"}}>
+            style={{background:G.surface,border:"1px solid "+G.border2,color:G.text,padding:"5px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,cursor:"pointer"}}>
             <option value="all">All CSMs</option>
             {csms.map(c=><option key={c.id} value={c.id}>{c.name} ({c.role})</option>)}
           </select>
         )}
         <button onClick={onRefresh}
-          style={{background:G.blueBg,border:"1px solid "+G.blueBd,color:G.blue,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,display:"flex",alignItems:"center",gap:6}}>
+          style={{background:G.blueBg,border:"1px solid "+G.blueBd,color:G.blue,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,display:"flex",alignItems:"center",gap:6}}>
           <span style={{display:"inline-block",animation:refreshing?"spin .8s linear infinite":"none"}}>⟳</span>
           Refresh
         </button>
         {lastSync && (
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted}}>
+          <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>
             <span style={{color:G.green,marginRight:5,animation:"pulse 2s infinite",display:"inline-block"}}>●</span>{lastSync}
           </span>
         )}
         {onLogout && <>
           <div style={{width:1,height:20,background:G.border}}/>
           <button onClick={onLogout}
-            style={{background:"none",border:"1px solid "+G.border,color:G.muted,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11}}>
+            style={{background:"none",border:"1px solid "+G.border,color:G.muted,padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>
             Logout
           </button>
         </>}
@@ -303,7 +303,7 @@ function AiPanel({ portfolio, tasks, csms }) {
       {open && <>
         <div style={{padding:'12px 14px 12px 48px',borderBottom:'1px solid '+G.border,flexShrink:0}}>
           <div style={{fontSize:14,fontWeight:700,color:G.text}}>AI Analyst</div>
-          <div style={{fontSize:11,color:G.muted,fontFamily:'DM Mono,monospace',marginTop:2}}>Claude · Live portfolio data</div>
+          <div style={{fontSize:11,color:G.muted,fontFamily:'Inter,system-ui,sans-serif',marginTop:2}}>Claude · Live portfolio data</div>
         </div>
         <div style={{flex:1,overflowY:'auto',padding:'12px 14px',display:'flex',flexDirection:'column',gap:10}}>
           {messages.length===0 && <div style={{display:'flex',flexDirection:'column',gap:6}}>
@@ -319,9 +319,9 @@ function AiPanel({ portfolio, tasks, csms }) {
           ))}
           {loading && <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 0'}}><div style={{width:7,height:7,borderRadius:'50%',background:'#7c3aed',animation:'pulse 1s infinite'}}/><span style={{fontSize:11,color:G.muted}}>Analyzing...</span></div>}
         </div>
-        {messages.length>0 && <div style={{padding:'4px 14px',flexShrink:0}}><button onClick={()=>setMessages([])} style={{background:'none',border:'none',color:G.muted,cursor:'pointer',fontFamily:'DM Mono,monospace',fontSize:10,textDecoration:'underline'}}>Clear</button></div>}
+        {messages.length>0 && <div style={{padding:'4px 14px',flexShrink:0}}><button onClick={()=>setMessages([])} style={{background:'none',border:'none',color:G.muted,cursor:'pointer',fontFamily:'Inter,system-ui,sans-serif',fontSize:10,textDecoration:'underline'}}>Clear</button></div>}
         <div style={{padding:'10px 14px',borderTop:'1px solid '+G.border,flexShrink:0,display:'flex',gap:8}}>
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} placeholder='Ask about your portfolio...' style={{flex:1,background:G.surface2,border:'1px solid '+G.border,color:G.text,padding:'8px 12px',borderRadius:8,fontFamily:'DM Mono,monospace',fontSize:12}}/>
+          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}} placeholder='Ask about your portfolio...' style={{flex:1,background:G.surface2,border:'1px solid '+G.border,color:G.text,padding:'8px 12px',borderRadius:8,fontFamily:'Inter,system-ui,sans-serif',fontSize:12}}/>
           <button onClick={()=>send()} disabled={!input.trim()||loading} style={{background:'linear-gradient(135deg,#7c3aed,#a855f7)',border:'none',borderRadius:8,width:36,height:36,cursor:'pointer',color:'#fff',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,opacity:(!input.trim()||loading)?0.5:1}}>↑</button>
         </div>
       </>}
@@ -439,16 +439,16 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
         <div style={{padding:"16px 22px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <div>
             <div style={{fontSize:17,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif"}}>{csm.name} — Project Hours</div>
-            <div style={{fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:2}}>{projects.length} project{projects.length!==1?"s":""} · 12-week view</div>
+            <div style={{fontSize:12,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",marginTop:2}}>{projects.length} project{projects.length!==1?"s":""} · 12-week view</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{background:utilBg(avgUtil),border:"1px solid "+utilBd(avgUtil),borderRadius:8,padding:"6px 14px",textAlign:"center"}}>
               <div style={{fontSize:22,fontWeight:800,color:utilColor(avgUtil),fontFamily:"Syne,sans-serif"}}>{avgUtil}%</div>
-              <div style={{fontSize:10,color:utilColor(avgUtil),fontFamily:"DM Mono,monospace",opacity:0.8}}>AVG UTIL</div>
+              <div style={{fontSize:10,color:utilColor(avgUtil),fontFamily:"Inter,system-ui,sans-serif",opacity:0.8}}>AVG UTIL</div>
             </div>
             <div style={{background:G.surface2,border:"1px solid "+G.border,borderRadius:8,padding:"6px 14px",textAlign:"center"}}>
               <div style={{fontSize:22,fontWeight:800,color:G.teal,fontFamily:"Syne,sans-serif"}}>{totalCommitted}h</div>
-              <div style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",opacity:0.8}}>COMMITTED</div>
+              <div style={{fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",opacity:0.8}}>COMMITTED</div>
             </div>
             <button onClick={saveAll} style={{background:"none",border:"1px solid "+G.border,color:G.muted,width:30,height:30,borderRadius:8,cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
           </div>
@@ -457,16 +457,16 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
         {/* Content */}
         <div style={{overflowX:"auto",overflowY:"auto",flex:1,padding:"0"}}>
           {loading?(
-            <div style={{padding:40,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>Loading projects…</div>
+            <div style={{padding:40,textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>Loading projects…</div>
           ):(
             <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
               <thead>
                 <tr style={{borderBottom:"1px solid "+G.border}}>
-                  <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:170,position:"sticky",left:0,background:G.surface,zIndex:1}}>PROJECT</th>
+                  <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,minWidth:170,position:"sticky",left:0,background:G.surface,zIndex:1}}>PROJECT</th>
                   {weeks.map((ws,i)=>(
-                    <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
+                    <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
                   ))}
-                  <th style={{padding:"8px 8px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:60}}>TOTAL</th>
+                  <th style={{padding:"8px 8px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,minWidth:60}}>TOTAL</th>
                 </tr>
               </thead>
               <tbody>
@@ -493,11 +493,11 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
                           <td key={wi} style={{padding:"3px 2px",textAlign:"center"}}>
                             <input type="number" value={hrs||""} min="0" max="60" step="0.5" placeholder="·"
                               onChange={e=>setPendingHours(proj.id,ws,e.target.value)}
-                              style={{width:48,background:isPending?G.bg:G.surface2,border:"1px solid "+(isPending?G.teal:G.border),color:hrs>0?(isPending?G.teal:G.text):G.faint,padding:"4px 2px",borderRadius:4,fontFamily:"DM Mono,monospace",fontSize:11,textAlign:"center",fontWeight:hrs>0?700:400}}/>
+                              style={{width:48,background:isPending?G.bg:G.surface2,border:"1px solid "+(isPending?G.teal:G.border),color:hrs>0?(isPending?G.teal:G.text):G.faint,padding:"4px 2px",borderRadius:4,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,textAlign:"center",fontWeight:hrs>0?700:400}}/>
                           </td>
                         );
                       })}
-                      <td style={{padding:"4px 8px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:projTotal>0?G.teal:G.faint,fontWeight:700}}>
+                      <td style={{padding:"4px 8px",textAlign:"center",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:projTotal>0?G.teal:G.faint,fontWeight:700}}>
                         {projTotal>0?projTotal+"h":"—"}
                       </td>
                     </tr>,
@@ -505,13 +505,13 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
                     ...(isExpanded?Object.entries(phaseGroups).map(([phase,phaseTasks])=>
                       phaseTasks.map((t)=>(
                         <tr key={"task-"+t.id} style={{background:G.surface2}}>
-                          <td style={{padding:"4px 12px 4px 42px",fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:G.surface2,zIndex:1,whiteSpace:"nowrap"}}>
+                          <td style={{padding:"4px 12px 4px 42px",fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",position:"sticky",left:0,background:G.surface2,zIndex:1,whiteSpace:"nowrap"}}>
                             <span style={{color:PHASE_COLOR[phase]||G.faint,marginRight:6,fontSize:9,fontWeight:700}}>{phase}</span>
                             <span style={{color:G.muted}}>{t.name}</span>
                             <span style={{color:PRIORITY_COLOR[t.priority]||G.faint,marginLeft:6,fontSize:9,fontWeight:700}}>{(t.priority||"").toUpperCase()}</span>
                           </td>
                           {weeks.map((_,wi)=><td key={wi} style={{padding:"2px",textAlign:"center"}}/>)}
-                          <td style={{padding:"4px 8px",textAlign:"center",fontSize:10,fontFamily:"DM Mono,monospace",color:G.faint}}>{getTaskHours(t)}h</td>
+                          <td style={{padding:"4px 8px",textAlign:"center",fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:G.faint}}>{getTaskHours(t)}h</td>
                         </tr>
                       ))
                     ).flat():[])
@@ -519,16 +519,16 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
                 }).flat()}
                 {/* Total Row */}
                 <tr style={{borderTop:"2px solid "+G.border,background:G.surface2}}>
-                  <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TOTAL</td>
+                  <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"Inter,system-ui,sans-serif",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TOTAL</td>
                   {weeks.map((ws,wi)=>{
                     const weekTotal=projects.reduce((sum,proj)=>sum+getCellHours(proj.id,ws),0);
-                    return <td key={wi} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:weekTotal>0?G.teal:G.faint,fontWeight:800}}>{weekTotal>0?weekTotal+"h":"—"}</td>;
+                    return <td key={wi} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:weekTotal>0?G.teal:G.faint,fontWeight:800}}>{weekTotal>0?weekTotal+"h":"—"}</td>;
                   })}
-                  <td style={{padding:"4px 8px",textAlign:"center",fontSize:13,fontFamily:"DM Mono,monospace",color:G.teal,fontWeight:800}}>
+                  <td style={{padding:"4px 8px",textAlign:"center",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.teal,fontWeight:800}}>
                     {(()=>{const gt=projects.reduce((grand,proj)=>grand+weeks.reduce((sum,ws)=>sum+getCellHours(proj.id,ws),0),0);return gt?gt+"h":"—";})()}
                   </td>
                 </tr>
-                {projects.length===0&&<tr><td colSpan={weeks.length+2} style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No projects assigned</td></tr>}
+                {projects.length===0&&<tr><td colSpan={weeks.length+2} style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>No projects assigned</td></tr>}
               </tbody>
             </table>
           )}
@@ -536,7 +536,7 @@ function CsmDrilldownModal({api,csm,weeks,onClose,onSaved}) {
 
         {/* Footer */}
         <div style={{padding:"10px 22px",borderTop:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-          <span style={{fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>
+          <span style={{fontSize:11,color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif"}}>
             {hasPendingChanges?Object.keys(pendingChanges).length+" unsaved change"+(Object.keys(pendingChanges).length>1?"s":""):"Click any cell to enter hours · expand rows to see tasks"}
           </span>
           <button onClick={saveAll} disabled={saving}
@@ -579,8 +579,8 @@ function ExecCapacityDashboard({api}) {
 
   useEffect(()=>{load();},[load]);
 
-  if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>Loading capacity data…</div>;
-  if(error) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.red,fontFamily:"DM Mono,monospace",fontSize:13}}>Error: {error}. Run migration.sql first.</div>;
+  if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>Loading capacity data…</div>;
+  if(error) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.red,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>Error: {error}. Run migration.sql first.</div>;
 
   // Build project → CSM lookup
   const projCsm={};
@@ -652,8 +652,8 @@ function ExecCapacityDashboard({api}) {
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
             <div style={{fontSize:26,fontWeight:800,color:k.color,lineHeight:1,marginTop:4,fontFamily:"Syne,sans-serif"}}>{k.value}</div>
-            <div style={{fontSize:13,color:G.muted,marginTop:5,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em"}}>{k.label}</div>
-            <div style={{fontSize:9,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace"}}>{k.sub}</div>
+            <div style={{fontSize:13,color:G.muted,marginTop:5,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em"}}>{k.label}</div>
+            <div style={{fontSize:9,color:"#5a7a94",marginTop:2,fontFamily:"Inter,system-ui,sans-serif"}}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -665,10 +665,10 @@ function ExecCapacityDashboard({api}) {
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={G.border}/>
-              <XAxis dataKey="name" tick={{fill:G.muted,fontSize:10,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fill:G.muted,fontSize:10,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} label={{value:"Hours",angle:-90,position:"insideLeft",fill:G.muted,fontSize:10}}/>
+              <XAxis dataKey="name" tick={{fill:G.muted,fontSize:10,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fill:G.muted,fontSize:10,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false} label={{value:"Hours",angle:-90,position:"insideLeft",fill:G.muted,fontSize:10}}/>
               <Tooltip content={<Tip/>}/>
-              <Legend wrapperStyle={{fontSize:11,fontFamily:"DM Mono,monospace"}}/>
+              <Legend wrapperStyle={{fontSize:11,fontFamily:"Inter,system-ui,sans-serif"}}/>
               <Area type="monotone" dataKey="Available" stroke={G.green} fill={G.green} fillOpacity={0.15} strokeWidth={2}/>
               <Area type="monotone" dataKey="Committed" stroke={G.purple} fill={G.purple} fillOpacity={0.25} strokeWidth={2}/>
             </AreaChart>
@@ -683,9 +683,9 @@ function ExecCapacityDashboard({api}) {
           <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border}}>
-                <th style={{padding:"8px 12px",textAlign:"left",fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,position:"sticky",left:0,background:G.surface,zIndex:1,minWidth:120}}>CSM</th>
+                <th style={{padding:"8px 12px",textAlign:"left",fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,position:"sticky",left:0,background:G.surface,zIndex:1,minWidth:120}}>CSM</th>
                 {weeks.map((ws,i)=>(
-                  <th key={i} style={{padding:"8px 6px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:72}}>
+                  <th key={i} style={{padding:"8px 6px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,minWidth:72}}>
                     {fmtWeek(ws)}
                   </th>
                 ))}
@@ -694,11 +694,11 @@ function ExecCapacityDashboard({api}) {
             <tbody>
               {/* Summary Row */}
               <tr style={{borderBottom:"2px solid "+G.border,background:G.surface2}}>
-                <td style={{padding:"8px 12px",fontSize:12,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TEAM TOTAL</td>
+                <td style={{padding:"8px 12px",fontSize:12,fontWeight:800,color:G.text,fontFamily:"Inter,system-ui,sans-serif",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TEAM TOTAL</td>
                 {summaryWeeks.map((sw,i)=>(
                   <td key={i} style={{padding:"6px 4px",textAlign:"center"}}>
                     <div style={{background:utilBg(sw.utilization),border:"1px solid "+utilBd(sw.utilization),borderRadius:6,padding:"4px 2px"}}>
-                      <div style={{fontSize:11,fontWeight:800,color:utilColor(sw.utilization),fontFamily:"DM Mono,monospace"}}>{Math.round(sw.committed)}/{sw.available}</div>
+                      <div style={{fontSize:11,fontWeight:800,color:utilColor(sw.utilization),fontFamily:"Inter,system-ui,sans-serif"}}>{Math.round(sw.committed)}/{sw.available}</div>
                       <div style={{fontSize:9,color:utilColor(sw.utilization),opacity:0.7}}>{Math.round(sw.utilization)}%</div>
                     </div>
                   </td>
@@ -722,7 +722,7 @@ function ExecCapacityDashboard({api}) {
                         style={{background:utilBg(wd.utilization),border:"1px solid "+utilBd(wd.utilization),borderRadius:6,padding:"5px 2px",cursor:"pointer",transition:"transform .1s"}}
                         onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"}
                         onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
-                        <div style={{fontSize:11,fontWeight:700,color:utilColor(wd.utilization),fontFamily:"DM Mono,monospace"}}>{Math.round(wd.committed)}/{wd.available}</div>
+                        <div style={{fontSize:11,fontWeight:700,color:utilColor(wd.utilization),fontFamily:"Inter,system-ui,sans-serif"}}>{Math.round(wd.committed)}/{wd.available}</div>
                         <div style={{fontSize:9,color:utilColor(wd.utilization),opacity:0.7}}>{Math.round(wd.utilization)}%</div>
                       </div>
                     </td>
@@ -735,7 +735,7 @@ function ExecCapacityDashboard({api}) {
       </Card>
 
       {/* Legend */}
-      <div style={{display:"flex",gap:16,justifyContent:"center",padding:"8px 0",fontSize:11,fontFamily:"DM Mono,monospace"}}>
+      <div style={{display:"flex",gap:16,justifyContent:"center",padding:"8px 0",fontSize:11,fontFamily:"Inter,system-ui,sans-serif"}}>
         <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.green}}/>Under 80%</span>
         <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.yellow}}/>80–100%</span>
         <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.red}}/>Over 100%</span>
@@ -810,7 +810,7 @@ function ExecDashboard({api}) {
   useEffect(()=>{ load(); },[load]);
 
   if(loading) return (
-    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>
       Loading executive data…
     </div>
   );
@@ -908,17 +908,17 @@ function ExecDashboard({api}) {
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Sub-tab bar */}
-      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0,alignItems:"center",position:"relative"}}>
+      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#ffffff",flexShrink:0,alignItems:"center",position:"relative"}}>
         {[["dashboard","Dashboard"],["capacity","Capacity"]].map(([k,l])=>(
           <button key={k} onClick={()=>setExecTab(k)}
-            style={{background:execTab===k?G.blueBg:"none",border:"1px solid "+(execTab===k?G.blue+"44":"transparent"),borderBottom:execTab===k?"2px solid "+G.blue:"2px solid transparent",color:execTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
+            style={{background:execTab===k?G.blueBg:"none",border:"1px solid "+(execTab===k?G.blue+"44":"transparent"),borderBottom:execTab===k?"2px solid "+G.blue:"2px solid transparent",color:execTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
         ))}
         {execTab === "dashboard" && (
           <>
             <button
               onClick={()=>setShowCustomize(s=>!s)}
               title="Show/hide dashboard widgets"
-              style={{marginLeft:"auto",background:showCustomize?G.blueBg:"none",border:"1px solid "+(showCustomize?G.purple+"66":G.border),color:showCustomize?G.purple:G.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",borderRadius:6,display:"inline-flex",alignItems:"center",gap:6,marginRight:0,marginTop:6,marginBottom:6}}>
+              style={{marginLeft:"auto",background:showCustomize?G.blueBg:"none",border:"1px solid "+(showCustomize?G.purple+"66":G.border),color:showCustomize?G.purple:G.muted,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:700,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",borderRadius:6,display:"inline-flex",alignItems:"center",gap:6,marginRight:0,marginTop:6,marginBottom:6}}>
               <span style={{fontSize:13,lineHeight:1}}>⚙</span> Customize
               {hiddenWidgets.size > 0 && <span style={{background:G.purple,color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:9,fontWeight:800}}>{hiddenWidgets.size}</span>}
             </button>
@@ -928,10 +928,10 @@ function ExecDashboard({api}) {
                 <div style={{position:"absolute",top:"100%",right:24,marginTop:4,background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:12,zIndex:50,minWidth:320,boxShadow:"0 10px 30px rgba(0,0,0,0.5)"}}>
                   <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
                     <div style={{fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:800,color:G.text,letterSpacing:"0.02em"}}>DASHBOARD WIDGETS</div>
-                    <button onClick={resetWidgets} style={{marginLeft:"auto",background:"none",border:"none",color:G.faint,fontSize:10,fontFamily:"DM Mono,monospace",cursor:"pointer",textDecoration:"underline"}}>Show all</button>
+                    <button onClick={resetWidgets} style={{marginLeft:"auto",background:"none",border:"none",color:G.faint,fontSize:10,fontFamily:"Inter,system-ui,sans-serif",cursor:"pointer",textDecoration:"underline"}}>Show all</button>
                   </div>
                   {EXEC_WIDGETS.map(w=>(
-                    <label key={w.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 4px",fontFamily:"DM Mono,monospace",fontSize:12,color:G.text,cursor:"pointer",borderRadius:4}}
+                    <label key={w.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 4px",fontFamily:"Inter,system-ui,sans-serif",fontSize:12,color:G.text,cursor:"pointer",borderRadius:4}}
                       onMouseEnter={e=>e.currentTarget.style.background=G.blueBg} onMouseLeave={e=>e.currentTarget.style.background=G.surface}>
                       <input type="checkbox" checked={shown(w.id)} onChange={()=>toggleWidget(w.id)} />
                       <span>{w.label}</span>
@@ -965,9 +965,9 @@ function ExecDashboard({api}) {
         ].map((k,i)=>(
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 12px",position:"relative",overflow:"hidden",minWidth:0,animation:"slideup .3s ease "+(i*0.05)+"s both"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
-            <div style={{fontSize:18,fontWeight:700,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"DM Mono,monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.02em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.value}>{k.value}</div>
-            <div style={{fontSize:12,color:G.muted,marginTop:8,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.label}>{k.label}</div>
-            <div style={{fontSize:11,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.sub}>{k.sub}</div>
+            <div style={{fontSize:18,fontWeight:700,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"Inter,system-ui,sans-serif",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.02em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.value}>{k.value}</div>
+            <div style={{fontSize:12,color:G.muted,marginTop:8,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.label}>{k.label}</div>
+            <div style={{fontSize:11,color:"#5a7a94",marginTop:2,fontFamily:"Inter,system-ui,sans-serif",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.sub}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -984,8 +984,8 @@ function ExecDashboard({api}) {
             <ResponsiveContainer width="100%" height={150}>
               <BarChart data={stageData} barSize={22}>
                 <CartesianGrid strokeDasharray="3 3" stroke={G.border}/>
-                <XAxis dataKey="name" tick={{fill:G.muted,fontSize:9,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
-                <YAxis tick={{fill:G.muted,fontSize:9,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
+                <XAxis dataKey="name" tick={{fill:G.muted,fontSize:9,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
+                <YAxis tick={{fill:G.muted,fontSize:9,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<Tip/>}/>
                 <Bar dataKey="count" radius={[4,4,0,0]} name="Customers">
                   {stageData.map((d,i)=><Cell key={i} fill={d.fill}/>)}
@@ -994,7 +994,7 @@ function ExecDashboard({api}) {
             </ResponsiveContainer>
             <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
               {stageData.map(d=>(
-                <span key={d.fullName} style={{display:"flex",alignItems:"center",gap:4,fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted}}>
+                <span key={d.fullName} style={{display:"flex",alignItems:"center",gap:4,fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>
                   <span style={{width:7,height:7,borderRadius:2,background:d.fill,display:"inline-block"}}/>
                   {d.fullName}: {d.count}
                 </span>
@@ -1021,9 +1021,9 @@ function ExecDashboard({api}) {
               {healthData.map((h,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:7}}>
                   <span style={{width:8,height:8,borderRadius:2,background:h.color}}/>
-                  <span style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",flex:1}}>{h.name}</span>
+                  <span style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",flex:1}}>{h.name}</span>
                   <span style={{fontSize:15,fontWeight:800,color:h.color,fontFamily:"Syne,sans-serif"}}>{h.value}</span>
-                  <span style={{fontSize:10,color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>{pct(h.value,portfolio.length)}%</span>
+                  <span style={{fontSize:10,color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif"}}>{pct(h.value,portfolio.length)}%</span>
                 </div>
               ))}
             </div>
@@ -1048,7 +1048,7 @@ function ExecDashboard({api}) {
               {taskStatusData.map((h,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:7}}>
                   <span style={{width:8,height:8,borderRadius:2,background:h.color}}/>
-                  <span style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",flex:1}}>{h.name}</span>
+                  <span style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",flex:1}}>{h.name}</span>
                   <span style={{fontSize:15,fontWeight:800,color:h.color,fontFamily:"Syne,sans-serif"}}>{h.value}</span>
                 </div>
               ))}
@@ -1065,8 +1065,8 @@ function ExecDashboard({api}) {
             <ResponsiveContainer width="100%" height={150}>
               <BarChart data={arrBuckets} barSize={22}>
                 <CartesianGrid strokeDasharray="3 3" stroke={G.border}/>
-                <XAxis dataKey="range" tick={{fill:G.muted,fontSize:9,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
-                <YAxis tick={{fill:G.muted,fontSize:9,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
+                <XAxis dataKey="range" tick={{fill:G.muted,fontSize:9,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
+                <YAxis tick={{fill:G.muted,fontSize:9,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<Tip/>}/>
                 <Bar dataKey="value" radius={[4,4,0,0]} name="Customers">
                   {arrBuckets.map((d,i)=><Cell key={i} fill={d.color}/>)}
@@ -1089,8 +1089,8 @@ function ExecDashboard({api}) {
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={csmArrData} barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" stroke={G.border}/>
-                <XAxis dataKey="name" tick={{fill:G.muted,fontSize:10,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
-                <YAxis tick={{fill:G.muted,fontSize:10,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
+                <XAxis dataKey="name" tick={{fill:G.muted,fontSize:10,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
+                <YAxis tick={{fill:G.muted,fontSize:10,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
                 <Tooltip content={<Tip/>}/>
                 <Bar dataKey="arr" name="ARR $K" radius={[3,3,0,0]} barSize={12}>
                   {csmArrData.map((d,i)=><Cell key={i} fill={d.fill}/>)}
@@ -1110,7 +1110,7 @@ function ExecDashboard({api}) {
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border}}>
                 {["CSM","Accts","ARR","On Trk","At Risk","Crit","Late Tasks"].map(h=>(
-                  <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                  <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                 ))}
               </tr>
             </thead>
@@ -1123,13 +1123,13 @@ function ExecDashboard({api}) {
                       <span style={{fontSize:14,fontWeight:600,color:G.text}}>{c.csm.split(" ")[0]}</span>
                     </div>
                   </td>
-                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted}}>{c.total_accounts||0}</td>
-                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.green,fontWeight:700}}>{fmtArr(c.total_arr)}</td>
-                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.green}}>{c.on_track||0}</td>
-                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.yellow}}>{c.at_risk||0}</td>
-                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.red,fontWeight:700}}>{c.critical||0}</td>
+                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>{c.total_accounts||0}</td>
+                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.green,fontWeight:700}}>{fmtArr(c.total_arr)}</td>
+                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.green}}>{c.on_track||0}</td>
+                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.yellow}}>{c.at_risk||0}</td>
+                  <td style={{padding:"8px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.red,fontWeight:700}}>{c.critical||0}</td>
                   <td style={{padding:"8px 10px"}}>
-                    <span style={{color:(c.late_tasks||0)>0?G.red:G.muted,fontSize:14,fontFamily:"DM Mono,monospace",fontWeight:(c.late_tasks||0)>0?700:400}}>
+                    <span style={{color:(c.late_tasks||0)>0?G.red:G.muted,fontSize:14,fontFamily:"Inter,system-ui,sans-serif",fontWeight:(c.late_tasks||0)>0?700:400}}>
                       {c.late_tasks||0}{(c.late_tasks||0)>0?" ⚠":""}
                     </span>
                   </td>
@@ -1148,15 +1148,15 @@ function ExecDashboard({api}) {
         {shown('late-tasks') && (
         <Card>
           <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <span style={{fontSize:15,fontWeight:700,color:G.red,letterSpacing:"0.07em",fontFamily:"DM Mono,monospace"}}>LATE TASKS — REQUIRES EXEC ATTENTION</span>
-            <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted}}>{totalLate} total</span>
+            <span style={{fontSize:15,fontWeight:700,color:G.red,letterSpacing:"0.07em",fontFamily:"Inter,system-ui,sans-serif"}}>LATE TASKS — REQUIRES EXEC ATTENTION</span>
+            <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>{totalLate} total</span>
           </div>
           <div style={{overflowY:"auto",maxHeight:240}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead style={{position:"sticky",top:0,background:G.surface}}>
                 <tr style={{borderBottom:"1px solid "+G.border}}>
                   {["Task","Customer","CSM","Phase","Due","Days Late","Priority"].map(h=>(
-                    <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                    <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                   ))}
                 </tr>
               </thead>
@@ -1170,16 +1170,16 @@ function ExecDashboard({api}) {
                       </td>
                       <td style={{padding:"8px 10px",fontSize:13,color:G.muted,whiteSpace:"nowrap"}}>{t.project?.customer||"—"}</td>
                       <td style={{padding:"8px 10px",fontSize:13,color:G.muted,whiteSpace:"nowrap"}}>{t.project?.csm?.split(" ")[0]||"—"}</td>
-                      <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",whiteSpace:"nowrap"}}>{t.phase}</td>
-                      <td style={{padding:"8px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.red,whiteSpace:"nowrap"}}>{fmtDate(t.proj_date)}</td>
-                      <td style={{padding:"8px 10px",fontSize:14,fontFamily:"DM Mono,monospace",fontWeight:800,color:G.red}}>+{daysLate}d</td>
+                      <td style={{padding:"8px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:"#5a7a94",whiteSpace:"nowrap"}}>{t.phase}</td>
+                      <td style={{padding:"8px 10px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.red,whiteSpace:"nowrap"}}>{fmtDate(t.proj_date)}</td>
+                      <td style={{padding:"8px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",fontWeight:800,color:G.red}}>+{daysLate}d</td>
                       <td style={{padding:"8px 10px"}}>
-                        <span style={{color:PRIORITY_COLOR[t.priority]||G.muted,fontSize:14,fontFamily:"DM Mono,monospace",fontWeight:700}}>{(t.priority||"").toUpperCase()}</span>
+                        <span style={{color:PRIORITY_COLOR[t.priority]||G.muted,fontSize:14,fontFamily:"Inter,system-ui,sans-serif",fontWeight:700}}>{(t.priority||"").toUpperCase()}</span>
                       </td>
                     </tr>
                   );
                 })}
-                {lateTasks.length===0 && <tr><td colSpan={7} style={{padding:20,textAlign:"center",color:G.green,fontFamily:"DM Mono,monospace",fontSize:12}}>✓ No late tasks!</td></tr>}
+                {lateTasks.length===0 && <tr><td colSpan={7} style={{padding:20,textAlign:"center",color:G.green,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>✓ No late tasks!</td></tr>}
               </tbody>
             </table>
           </div>
@@ -1198,7 +1198,7 @@ function ExecDashboard({api}) {
                 <thead>
                   <tr style={{borderBottom:"1px solid "+G.border}}>
                     {["Customer","CSM","Stage","ARR","Target"].map(h=>(
-                      <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
+                      <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1208,13 +1208,13 @@ function ExecDashboard({api}) {
                       <td style={{padding:"7px 10px",fontSize:14,fontWeight:600}}>{p.customer}</td>
                       <td style={{padding:"7px 10px",fontSize:13,color:G.muted}}>{p.csm?.split(" ")[0]}</td>
                       <td style={{padding:"7px 10px"}}>
-                        <span style={{fontSize:13,fontFamily:"DM Mono,monospace",color:PHASE_COLOR[p.stage]||G.muted,fontWeight:700}}>{p.stage?.toUpperCase()}</span>
+                        <span style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:PHASE_COLOR[p.stage]||G.muted,fontWeight:700}}>{p.stage?.toUpperCase()}</span>
                       </td>
-                      <td style={{padding:"7px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.green,fontWeight:700}}>{fmtArr(p.arr)}</td>
-                      <td style={{padding:"7px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted}}>{fmtDate(p.target_date)}</td>
+                      <td style={{padding:"7px 10px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.green,fontWeight:700}}>{fmtArr(p.arr)}</td>
+                      <td style={{padding:"7px 10px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>{fmtDate(p.target_date)}</td>
                     </tr>
                   ))}
-                  {upcomingGoLives.length===0 && <tr><td colSpan={5} style={{padding:16,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:11}}>None scheduled</td></tr>}
+                  {upcomingGoLives.length===0 && <tr><td colSpan={5} style={{padding:16,textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>None scheduled</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1230,7 +1230,7 @@ function ExecDashboard({api}) {
                 <thead>
                   <tr style={{borderBottom:"1px solid "+G.border}}>
                     {["Customer","CSM","ARR","Stage","Late"].map(h=>(
-                      <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
+                      <th key={h} style={{padding:"6px 10px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1239,12 +1239,12 @@ function ExecDashboard({api}) {
                     <tr key={p.id} style={{borderBottom:i<arr.length-1?"1px solid "+G.faint:"none",background:G.redBg+"44"}}>
                       <td style={{padding:"7px 10px",fontSize:14,fontWeight:700,color:G.red}}>{p.customer}</td>
                       <td style={{padding:"7px 10px",fontSize:13,color:G.muted}}>{p.csm?.split(" ")[0]}</td>
-                      <td style={{padding:"7px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.red,fontWeight:700}}>{fmtArr(p.arr)}</td>
-                      <td style={{padding:"7px 10px",fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace"}}>{p.stage}</td>
-                      <td style={{padding:"7px 10px",fontSize:14,fontFamily:"DM Mono,monospace",fontWeight:800,color:G.red}}>{p.tasks_late||0}!</td>
+                      <td style={{padding:"7px 10px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.red,fontWeight:700}}>{fmtArr(p.arr)}</td>
+                      <td style={{padding:"7px 10px",fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif"}}>{p.stage}</td>
+                      <td style={{padding:"7px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",fontWeight:800,color:G.red}}>{p.tasks_late||0}!</td>
                     </tr>
                   ))}
-                  {portfolio.filter(p=>p.health==="red").length===0 && <tr><td colSpan={5} style={{padding:16,textAlign:"center",color:G.green,fontFamily:"DM Mono,monospace",fontSize:11}}>✓ No critical accounts</td></tr>}
+                  {portfolio.filter(p=>p.health==="red").length===0 && <tr><td colSpan={5} style={{padding:16,textAlign:"center",color:G.green,fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>✓ No critical accounts</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1258,15 +1258,15 @@ function ExecDashboard({api}) {
       {shown('full-portfolio') && (
       <Card style={{marginBottom:12}}>
         <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>FULL PORTFOLIO — ALL CUSTOMERS</span>
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{portfolio.length} customers · {fmtFull(totalArr)} total ARR</span>
+          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"Inter,system-ui,sans-serif"}}>FULL PORTFOLIO — ALL CUSTOMERS</span>
+          <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:"#5a7a94"}}>{portfolio.length} customers · {fmtFull(totalArr)} total ARR</span>
         </div>
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border}}>
                 {["Customer","CSM","Stage","Health","Completion","ARR","Start","Target","Total Tasks","Complete","Upcoming","Late","Days to Target"].map(h=>(
-                  <th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                  <th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:12,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                 ))}
               </tr>
             </thead>
@@ -1278,12 +1278,12 @@ function ExecDashboard({api}) {
                   <tr key={p.id} className="rh" style={{borderBottom:i<portfolio.length-1?"1px solid "+G.faint:"none",
                     background:p.health==="red"?G.redBg+"55":p.health==="yellow"?G.yellowBg+"33":"transparent"}}>
                     <td style={{padding:"9px 12px",fontSize:15,fontWeight:700}}>{p.customer}</td>
-                    <td style={{padding:"9px 12px",fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",whiteSpace:"nowrap"}}>{p.csm}</td>
-                    <td style={{padding:"9px 12px",fontSize:11,color:PHASE_COLOR[p.stage]||G.muted,fontFamily:"DM Mono,monospace",whiteSpace:"nowrap"}}>{p.stage}</td>
+                    <td style={{padding:"9px 12px",fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",whiteSpace:"nowrap"}}>{p.csm}</td>
+                    <td style={{padding:"9px 12px",fontSize:11,color:PHASE_COLOR[p.stage]||G.muted,fontFamily:"Inter,system-ui,sans-serif",whiteSpace:"nowrap"}}>{p.stage}</td>
                     <td style={{padding:"9px 12px"}}>
                       <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
                         <span style={{width:8,height:8,borderRadius:"50%",background:hc,boxShadow:"0 0 5px "+hc+"66"}}/>
-                        <span style={{color:hc,fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:700}}>{p.health_label}</span>
+                        <span style={{color:hc,fontFamily:"Inter,system-ui,sans-serif",fontSize:10,fontWeight:700}}>{p.health_label}</span>
                       </span>
                     </td>
                     <td style={{padding:"9px 12px",minWidth:120}}>
@@ -1292,19 +1292,19 @@ function ExecDashboard({api}) {
                           <div style={{width:(p.completion_pct||0)+"%",height:"100%",borderRadius:3,
                             background:p.completion_pct>75?G.green:p.completion_pct>40?G.blue:G.yellow}}/>
                         </div>
-                        <span style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,minWidth:28}}>{p.completion_pct||0}%</span>
+                        <span style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,minWidth:28}}>{p.completion_pct||0}%</span>
                       </div>
                     </td>
-                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.green,fontWeight:700,whiteSpace:"nowrap"}}>{fmtArr(p.arr)}</td>
-                    <td style={{padding:"9px 12px",fontSize:13,fontFamily:"DM Mono,monospace",color:"#5a7a94",whiteSpace:"nowrap"}}>{fmtDate(p.start_date)}</td>
-                    <td style={{padding:"9px 12px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,whiteSpace:"nowrap"}}>{fmtDate(p.target_date)}</td>
-                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,textAlign:"center"}}>{p.total_tasks||0}</td>
-                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.green,textAlign:"center",fontWeight:700}}>{p.tasks_complete||0}</td>
-                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.yellow,textAlign:"center"}}>{p.tasks_upcoming||0}</td>
-                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",textAlign:"center",fontWeight:700,color:(p.tasks_late||0)>0?G.red:G.faint}}>
+                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.green,fontWeight:700,whiteSpace:"nowrap"}}>{fmtArr(p.arr)}</td>
+                    <td style={{padding:"9px 12px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:"#5a7a94",whiteSpace:"nowrap"}}>{fmtDate(p.start_date)}</td>
+                    <td style={{padding:"9px 12px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,whiteSpace:"nowrap"}}>{fmtDate(p.target_date)}</td>
+                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,textAlign:"center"}}>{p.total_tasks||0}</td>
+                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.green,textAlign:"center",fontWeight:700}}>{p.tasks_complete||0}</td>
+                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.yellow,textAlign:"center"}}>{p.tasks_upcoming||0}</td>
+                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",textAlign:"center",fontWeight:700,color:(p.tasks_late||0)>0?G.red:G.faint}}>
                       {(p.tasks_late||0)>0?p.tasks_late+"!":"—"}
                     </td>
-                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"DM Mono,monospace",
+                    <td style={{padding:"9px 12px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",
                       color:daysToTarget!=null?(daysToTarget<0?G.red:daysToTarget<14?G.yellow:G.muted):G.faint,
                       fontWeight:daysToTarget!=null&&daysToTarget<0?700:400}}>
                       {daysToTarget!=null?(daysToTarget<0?Math.abs(daysToTarget)+"d overdue":daysToTarget+"d"):"—"}
@@ -1364,39 +1364,39 @@ function AddCommitmentModal({api,csm,onClose,onAdded}) {
         <div style={{fontSize:17,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif",marginBottom:18}}>Add Commitment Block</div>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           <div>
-            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>TYPE</label>
+            <label style={{fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>TYPE</label>
             <select value={type} onChange={e=>setType(e.target.value)}
-              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}>
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>
               {["Client Call","Travel","Onboarding Session","Internal Meeting","Training","Documentation","Other"].map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div>
-            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>WEEK</label>
+            <label style={{fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>WEEK</label>
             <select value={week} onChange={e=>setWeek(e.target.value)}
-              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}>
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>
               {weeks.map(w=><option key={w} value={w}>Week of {fmtWeek(w)}</option>)}
             </select>
           </div>
           <div>
-            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>HOURS</label>
+            <label style={{fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>HOURS</label>
             <input type="number" value={hours} onChange={e=>setHours(e.target.value)} min="0.5" max="40" step="0.5"
-              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
           </div>
           <div>
-            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>PROJECT (OPTIONAL)</label>
+            <label style={{fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>PROJECT (OPTIONAL)</label>
             <select value={projectId} onChange={e=>setProjectId(e.target.value)}
-              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}>
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>
               <option value="">No specific project</option>
               {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
-            <label style={{fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>NOTES</label>
+            <label style={{fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>NOTES</label>
             <input value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Optional notes…"
-              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+              style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"8px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
           </div>
           <div style={{display:"flex",gap:8,marginTop:4}}>
-            <button onClick={onClose} style={{flex:1,background:G.surface2,border:"1px solid "+G.border,color:G.muted,padding:"10px",borderRadius:8,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12}}>Cancel</button>
+            <button onClick={onClose} style={{flex:1,background:G.surface2,border:"1px solid "+G.border,color:G.muted,padding:"10px",borderRadius:8,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>Cancel</button>
             <button onClick={save} disabled={saving} style={{flex:1,background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"10px",borderRadius:8,cursor:"pointer",fontFamily:"Syne,sans-serif",fontSize:13,fontWeight:700,opacity:saving?0.6:1}}>{saving?"Saving…":"Add Commitment"}</button>
           </div>
         </div>
@@ -1472,8 +1472,8 @@ function CsmCapacityPanel({api,csm}) {
     setEditingProj(null);
   };
 
-  if(!csm) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13,padding:40}}>Select a CSM from the dropdown above to view capacity</div>;
-  if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>Loading capacity…</div>;
+  if(!csm) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13,padding:40}}>Select a CSM from the dropdown above to view capacity</div>;
+  if(loading) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>Loading capacity…</div>;
 
   const projNames={};projects.forEach(p=>{projNames[p.id]=p.name;});
 
@@ -1513,8 +1513,8 @@ function CsmCapacityPanel({api,csm}) {
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
             <div style={{fontSize:26,fontWeight:800,color:k.color,lineHeight:1,marginTop:4,fontFamily:"Syne,sans-serif"}}>{k.value}</div>
-            <div style={{fontSize:13,color:G.muted,marginTop:5,fontFamily:"DM Mono,monospace"}}>{k.label}</div>
-            <div style={{fontSize:9,color:"#5a7a94",marginTop:2,fontFamily:"DM Mono,monospace"}}>{k.sub}</div>
+            <div style={{fontSize:13,color:G.muted,marginTop:5,fontFamily:"Inter,system-ui,sans-serif"}}>{k.label}</div>
+            <div style={{fontSize:9,color:"#5a7a94",marginTop:2,fontFamily:"Inter,system-ui,sans-serif"}}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -1522,66 +1522,66 @@ function CsmCapacityPanel({api,csm}) {
       {/* 12-Week Grid */}
       <Card style={{marginBottom:12}}>
         <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>MY 12-WEEK CAPACITY</span>
+          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"Inter,system-ui,sans-serif"}}>MY 12-WEEK CAPACITY</span>
           <button onClick={()=>setShowAddModal(true)}
-            style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700}}>+ Add Commitment</button>
+            style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:700}}>+ Add Commitment</button>
         </div>
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border}}>
-                <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:110}}>METRIC</th>
+                <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,minWidth:110}}>METRIC</th>
                 {weeks.map((ws,i)=>(
-                  <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
+                  <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {/* Available Hours Row (editable) */}
               <tr style={{borderBottom:"1px solid "+G.faint}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.blue,fontFamily:"DM Mono,monospace"}}>AVAILABLE</td>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.blue,fontFamily:"Inter,system-ui,sans-serif"}}>AVAILABLE</td>
                 {weekData.map((wd,i)=>(
                   <td key={i} style={{padding:"4px 3px",textAlign:"center"}}>
                     {editingWeek===wd.ws?(
                       <input type="number" defaultValue={wd.available} autoFocus min="0" max="80" step="1"
                         onBlur={e=>updateAvailHours(wd.ws,e.target.value)}
                         onKeyDown={e=>{if(e.key==="Enter")updateAvailHours(wd.ws,e.target.value);if(e.key==="Escape")setEditingWeek(null);}}
-                        style={{width:44,background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px",borderRadius:4,fontFamily:"DM Mono,monospace",fontSize:11,textAlign:"center"}}/>
+                        style={{width:44,background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px",borderRadius:4,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,textAlign:"center"}}/>
                     ):(
                       <div onClick={()=>setEditingWeek(wd.ws)}
-                        style={{cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",color:G.blue,fontWeight:700,padding:"3px",borderBottom:"1px dashed "+G.border}}>{wd.available}h</div>
+                        style={{cursor:"pointer",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:G.blue,fontWeight:700,padding:"3px",borderBottom:"1px dashed "+G.border}}>{wd.available}h</div>
                     )}
                   </td>
                 ))}
               </tr>
               {/* Project Hours Row */}
               <tr style={{borderBottom:"1px solid "+G.faint}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.teal,fontFamily:"DM Mono,monospace"}}>PROJECT HRS</td>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.teal,fontFamily:"Inter,system-ui,sans-serif"}}>PROJECT HRS</td>
                 {weekData.map((wd,i)=>(
-                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:G.teal,fontWeight:wd.manualProjHours>0?700:400}}>{wd.manualProjHours>0?wd.manualProjHours+"h":"—"}</td>
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:G.teal,fontWeight:wd.manualProjHours>0?700:400}}>{wd.manualProjHours>0?wd.manualProjHours+"h":"—"}</td>
                 ))}
               </tr>
               {/* Other Commitments Row */}
               <tr style={{borderBottom:"1px solid "+G.faint}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.yellow,fontFamily:"DM Mono,monospace"}}>OTHER</td>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:G.yellow,fontFamily:"Inter,system-ui,sans-serif"}}>OTHER</td>
                 {weekData.map((wd,i)=>(
-                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:G.yellow}}>{wd.otherCommitHours>0?wd.otherCommitHours+"h":"—"}</td>
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:G.yellow}}>{wd.otherCommitHours>0?wd.otherCommitHours+"h":"—"}</td>
                 ))}
               </tr>
               {/* Task Estimate Row (reference only) */}
               <tr style={{borderBottom:"1px solid "+G.faint}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:500,color:G.faint,fontFamily:"DM Mono,monospace"}} title="Auto-estimated from task due dates — overridden by project hours above">TASK EST.</td>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:500,color:G.faint,fontFamily:"Inter,system-ui,sans-serif"}} title="Auto-estimated from task due dates — overridden by project hours above">TASK EST.</td>
                 {weekData.map((wd,i)=>(
-                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:11,fontFamily:"DM Mono,monospace",color:G.faint}}>{wd.autoTaskHours>0?wd.autoTaskHours+"h":"—"}</td>
+                  <td key={i} style={{padding:"4px 3px",textAlign:"center",fontSize:11,fontFamily:"Inter,system-ui,sans-serif",color:G.faint}}>{wd.autoTaskHours>0?wd.autoTaskHours+"h":"—"}</td>
                 ))}
               </tr>
               {/* Utilization Row */}
               <tr style={{borderBottom:"1px solid "+G.border}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace"}}>UTILIZATION</td>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"Inter,system-ui,sans-serif"}}>UTILIZATION</td>
                 {weekData.map((wd,i)=>(
                   <td key={i} style={{padding:"4px 3px",textAlign:"center"}}>
                     <div style={{background:utilBg(wd.utilization),border:"1px solid "+utilBd(wd.utilization),borderRadius:6,padding:"5px 2px"}}>
-                      <div style={{fontSize:13,fontWeight:800,color:utilColor(wd.utilization),fontFamily:"DM Mono,monospace"}}>{Math.round(wd.utilization)}%</div>
+                      <div style={{fontSize:13,fontWeight:800,color:utilColor(wd.utilization),fontFamily:"Inter,system-ui,sans-serif"}}>{Math.round(wd.utilization)}%</div>
                       <div style={{fontSize:9,color:utilColor(wd.utilization),opacity:0.7}}>{Math.round(wd.committed)}/{wd.available}h</div>
                     </div>
                   </td>
@@ -1595,18 +1595,18 @@ function CsmCapacityPanel({api,csm}) {
       {/* Project Breakdown Grid */}
       <Card style={{marginBottom:12}}>
         <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>PROJECT BREAKDOWN — ESTIMATED HOURS</span>
-          <span style={{fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>Click any cell to enter hours</span>
+          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"Inter,system-ui,sans-serif"}}>PROJECT BREAKDOWN — ESTIMATED HOURS</span>
+          <span style={{fontSize:11,color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif"}}>Click any cell to enter hours</span>
         </div>
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border}}>
-                <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:140,position:"sticky",left:0,background:G.surface,zIndex:1}}>PROJECT</th>
+                <th style={{padding:"8px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,minWidth:140,position:"sticky",left:0,background:G.surface,zIndex:1}}>PROJECT</th>
                 {weeks.map((ws,i)=>(
-                  <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
+                  <th key={i} style={{padding:"8px 4px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,minWidth:70}}>{fmtWeek(ws)}</th>
                 ))}
-                <th style={{padding:"8px 8px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,minWidth:60}}>TOTAL</th>
+                <th style={{padding:"8px 8px",textAlign:"center",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,minWidth:60}}>TOTAL</th>
               </tr>
             </thead>
             <tbody>
@@ -1630,10 +1630,10 @@ function CsmCapacityPanel({api,csm}) {
                             <input type="number" defaultValue={hrs||""} autoFocus min="0" max="40" step="0.5" placeholder="0"
                               onBlur={e=>saveProjectHours(proj.id,ws,e.target.value)}
                               onKeyDown={e=>{if(e.key==="Enter")saveProjectHours(proj.id,ws,e.target.value);if(e.key==="Escape")setEditingProj(null);}}
-                              style={{width:44,background:G.bg,border:"1px solid "+G.teal,color:G.text,padding:"4px",borderRadius:4,fontFamily:"DM Mono,monospace",fontSize:11,textAlign:"center"}}/>
+                              style={{width:44,background:G.bg,border:"1px solid "+G.teal,color:G.text,padding:"4px",borderRadius:4,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,textAlign:"center"}}/>
                           ):(
                             <div onClick={()=>setEditingProj({projectId:proj.id,ws})}
-                              style={{cursor:"pointer",fontSize:12,fontFamily:"DM Mono,monospace",color:hrs>0?G.teal:G.faint,fontWeight:hrs>0?700:400,padding:"4px 2px",borderRadius:4,transition:"background .15s"}}
+                              style={{cursor:"pointer",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:hrs>0?G.teal:G.faint,fontWeight:hrs>0?700:400,padding:"4px 2px",borderRadius:4,transition:"background .15s"}}
                               onMouseEnter={e=>e.currentTarget.style.background=G.surface2}
                               onMouseLeave={e=>e.currentTarget.style.background=G.surface}>
                               {hrs>0?hrs+"h":"·"}
@@ -1642,7 +1642,7 @@ function CsmCapacityPanel({api,csm}) {
                         </td>
                       );
                     })}
-                    <td style={{padding:"4px 8px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:projTotal>0?G.teal:G.faint,fontWeight:700}}>
+                    <td style={{padding:"4px 8px",textAlign:"center",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:projTotal>0?G.teal:G.faint,fontWeight:700}}>
                       {projTotal>0?projTotal+"h":"—"}
                     </td>
                   </tr>
@@ -1650,15 +1650,15 @@ function CsmCapacityPanel({api,csm}) {
               })}
               {/* Total Row */}
               <tr style={{borderTop:"2px solid "+G.border,background:G.surface2}}>
-                <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"DM Mono,monospace",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TOTAL</td>
+                <td style={{padding:"8px 12px",fontSize:11,fontWeight:800,color:G.text,fontFamily:"Inter,system-ui,sans-serif",position:"sticky",left:0,background:G.surface2,zIndex:1}}>TOTAL</td>
                 {weeks.map((ws,wi)=>{
                   const weekTotal=projects.reduce((sum,proj)=>{
                     const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
                     return sum+(entry?.estimated_hours||0);
                   },0);
-                  return <td key={wi} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"DM Mono,monospace",color:weekTotal>0?G.teal:G.faint,fontWeight:800}}>{weekTotal>0?weekTotal+"h":"—"}</td>;
+                  return <td key={wi} style={{padding:"4px 3px",textAlign:"center",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:weekTotal>0?G.teal:G.faint,fontWeight:800}}>{weekTotal>0?weekTotal+"h":"—"}</td>;
                 })}
-                <td style={{padding:"4px 8px",textAlign:"center",fontSize:13,fontFamily:"DM Mono,monospace",color:G.teal,fontWeight:800}}>
+                <td style={{padding:"4px 8px",textAlign:"center",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.teal,fontWeight:800}}>
                   {projects.reduce((grand,proj)=>grand+weeks.reduce((sum,ws)=>{
                     const entry=commitments.find(c=>c.project_id===proj.id&&c.week_start_date===ws&&c.commitment_type==="Project Work");
                     return sum+(entry?.estimated_hours||0);
@@ -1668,7 +1668,7 @@ function CsmCapacityPanel({api,csm}) {
                   },0),0)?"h":""}
                 </td>
               </tr>
-              {projects.length===0&&<tr><td colSpan={weeks.length+2} style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:12}}>No projects assigned</td></tr>}
+              {projects.length===0&&<tr><td colSpan={weeks.length+2} style={{padding:20,textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>No projects assigned</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1683,7 +1683,7 @@ function CsmCapacityPanel({api,csm}) {
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border}}>
                 {["Type","Week","Hours","Project","Notes",""].map(h=>(
-                  <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
+                  <th key={h} style={{padding:"7px 10px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:600,letterSpacing:"0.05em"}}>{h.toUpperCase()}</th>
                 ))}
               </tr>
             </thead>
@@ -1691,13 +1691,13 @@ function CsmCapacityPanel({api,csm}) {
               {other.sort((a,b)=>a.week_start_date.localeCompare(b.week_start_date)).map((c,i)=>(
                 <tr key={c.id} style={{borderBottom:i<other.length-1?"1px solid "+G.faint:"none"}}>
                   <td style={{padding:"8px 10px",fontSize:13,fontWeight:600,color:G.text}}>{c.commitment_type}</td>
-                  <td style={{padding:"8px 10px",fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted}}>{fmtWeek(c.week_start_date)}</td>
-                  <td style={{padding:"8px 10px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.yellow,fontWeight:700}}>{c.estimated_hours}h</td>
+                  <td style={{padding:"8px 10px",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>{fmtWeek(c.week_start_date)}</td>
+                  <td style={{padding:"8px 10px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.yellow,fontWeight:700}}>{c.estimated_hours}h</td>
                   <td style={{padding:"8px 10px",fontSize:12,color:G.muted}}>{projNames[c.project_id]||"—"}</td>
-                  <td style={{padding:"8px 10px",fontSize:11,color:"#5a7a94",fontFamily:"DM Mono,monospace",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.notes||"—"}</td>
+                  <td style={{padding:"8px 10px",fontSize:11,color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.notes||"—"}</td>
                   <td style={{padding:"8px 10px"}}>
                     <button onClick={()=>deleteCommitment(c.id)}
-                      style={{background:G.redBg,border:"1px solid "+G.redBd,color:G.red,padding:"3px 8px",borderRadius:4,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10}}>Delete</button>
+                      style={{background:G.redBg,border:"1px solid "+G.redBd,color:G.red,padding:"3px 8px",borderRadius:4,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:10}}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -1707,7 +1707,7 @@ function CsmCapacityPanel({api,csm}) {
       </Card>):null;})()}
 
       {/* Legend */}
-      <div style={{display:"flex",gap:16,justifyContent:"center",padding:"8px 0",fontSize:11,fontFamily:"DM Mono,monospace"}}>
+      <div style={{display:"flex",gap:16,justifyContent:"center",padding:"8px 0",fontSize:11,fontFamily:"Inter,system-ui,sans-serif"}}>
         <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.green}}/>Under 80%</span>
         <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.yellow}}/>80–100%</span>
         <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:G.red}}/>Over 100%</span>
@@ -1807,16 +1807,16 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
   const stages=[...new Set(projects.map(p=>p.stage))].filter(Boolean);
 
   if(!csm && projects.length === 0 && loading) return (
-    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>Loading…</div>
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>Loading…</div>
   );
 
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Sub-tab bar */}
-      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#0a1420",flexShrink:0}}>
+      <div style={{display:"flex",gap:2,padding:"0 24px",borderBottom:"1px solid "+G.border,background:"#ffffff",flexShrink:0}}>
         {[["accounts","My Accounts"],["capacity","My Capacity"]].filter(([k])=>k==="accounts"||csm).map(([k,l])=>(
           <button key={k} onClick={()=>setCTab(k)}
-            style={{background:cTab===k?G.blueBg:"none",border:"1px solid "+(cTab===k?G.blue+"44":"transparent"),borderBottom:cTab===k?"2px solid "+G.blue:"2px solid transparent",color:cTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
+            style={{background:cTab===k?G.blueBg:"none",border:"1px solid "+(cTab===k?G.blue+"44":"transparent"),borderBottom:cTab===k?"2px solid "+G.blue:"2px solid transparent",color:cTab===k?G.blue:G.muted,padding:"8px 16px",cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",marginBottom:-1}}>{l}</button>
         ))}
       </div>
       {cTab==="capacity"&&csm ? (
@@ -1835,56 +1835,56 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
         ].map((k,i)=>(
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 12px",position:"relative",overflow:"hidden",minWidth:0}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
-            <div style={{fontSize:18,fontWeight:700,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"DM Mono,monospace",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.02em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.value}>{k.value}</div>
-            <div style={{fontSize:12,color:G.muted,marginTop:8,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.label}</div>
+            <div style={{fontSize:18,fontWeight:700,color:k.color,lineHeight:1.1,marginTop:6,fontFamily:"Inter,system-ui,sans-serif",fontVariantNumeric:"tabular-nums",letterSpacing:"-0.02em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}} title={k.value}>{k.value}</div>
+            <div style={{fontSize:12,color:G.muted,marginTop:8,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.label}</div>
           </div>
         ))}
       </div>
       {/* Filters */}
-      <div style={{background:"#0a1420",border:"1px solid "+G.border,borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
+      <div style={{background:"#ffffff",border:"1px solid "+G.border,borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
         <div style={{flex:"1 1 160px"}}>
-          <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>SEARCH</label>
+          <label style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>SEARCH</label>
           <div style={{position:"relative"}}>
             <span style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",color:G.muted,fontSize:13}}>⌕</span>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search accounts…"
-              style={{width:"100%",background:G.surface,border:"1px solid "+G.border,color:G.text,padding:"6px 10px 6px 24px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+              style={{width:"100%",background:G.surface,border:"1px solid "+G.border,color:G.text,padding:"6px 10px 6px 24px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
           </div>
         </div>
         <div>
-          <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>HEALTH</label>
+          <label style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>HEALTH</label>
           <div style={{display:"flex",gap:3}}>
             {["all","green","yellow","red"].map(h=>(
               <button key={h} onClick={()=>setHealth(h)}
-                style={{background:health===h?(h==="all"?G.blueBg:HEALTH_COLOR[h]+"22"):"transparent",border:"1px solid "+(health===h?(h==="all"?G.blue:HEALTH_COLOR[h]):G.border),color:health===h?(h==="all"?G.blue:HEALTH_COLOR[h]):G.muted,padding:"5px 9px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10}}>
+                style={{background:health===h?(h==="all"?G.blueBg:HEALTH_COLOR[h]+"22"):"transparent",border:"1px solid "+(health===h?(h==="all"?G.blue:HEALTH_COLOR[h]):G.border),color:health===h?(h==="all"?G.blue:HEALTH_COLOR[h]):G.muted,padding:"5px 9px",borderRadius:5,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:10}}>
                 {h==="all"?"All":h==="green"?"On Track":h==="yellow"?"At Risk":"Critical"}
               </button>
             ))}
           </div>
         </div>
         <div>
-          <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>STAGE</label>
+          <label style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:4}}>STAGE</label>
           <select value={stage} onChange={e=>setStage(e.target.value)}
-            style={{background:G.surface,border:"1px solid "+G.border,color:G.text,padding:"6px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11,cursor:"pointer"}}>
+            style={{background:G.surface,border:"1px solid "+G.border,color:G.text,padding:"6px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,cursor:"pointer"}}>
             <option value="all">All Stages</option>
             {stages.map(s=><option key={s} value={s}>{s}</option>)}
           </select>
         </div>
       </div>
-      <div style={{textAlign:"right",fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94",marginBottom:6}}>Click a project name to open the project workspace · click an account to view its profile</div>
+      <div style={{textAlign:"right",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:"#5a7a94",marginBottom:6}}>Click a project name to open the project workspace · click an account to view its profile</div>
       {/* Active projects */}
       <Card style={{overflow:"hidden"}}>
         <div style={{padding:"10px 14px",borderBottom:"1px solid "+G.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>{csm ? "ACTIVE PROJECTS — "+csm.name.toUpperCase() : "ACTIVE PROJECTS"}</span>
-          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{filtered.length} project{filtered.length===1?"":"s"}</span>
+          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"Inter,system-ui,sans-serif"}}>{csm ? "ACTIVE PROJECTS — "+csm.name.toUpperCase() : "ACTIVE PROJECTS"}</span>
+          <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:"#5a7a94"}}>{filtered.length} project{filtered.length===1?"":"s"}</span>
         </div>
         <div style={{overflowX:"auto"}}>
-          {loading?<div style={{padding:40,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace"}}>Loading…</div>:(
+          {loading?<div style={{padding:40,textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif"}}>Loading…</div>:(
             <table style={{width:"100%",borderCollapse:"collapse",minWidth:820}}>
               <thead>
                 <tr style={{borderBottom:"1px solid "+G.border}}>
                   {[["name","Project"],["customer","Customer"],["stage","Stage"],["health","Health"],["completion_pct","Completion"],["arr","ARR"],["target_date","Target"],["tasks_late","Tasks"]].map(([k,l])=>(
                     <th key={k} onClick={()=>handleSort(k)}
-                      style={{padding:"8px 12px",textAlign:"left",fontSize:9,color:sortKey===k?G.text:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap",cursor:"pointer"}}>
+                      style={{padding:"8px 12px",textAlign:"left",fontSize:9,color:sortKey===k?G.text:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap",cursor:"pointer"}}>
                       {l.toUpperCase()}{sortKey===k?(sortDir==="asc"?" ↑":" ↓"):""}
                     </th>
                   ))}
@@ -1915,14 +1915,14 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
                           onClick={e=>e.stopPropagation()}
                           onChange={e=>updateProjectStage(p,e.target.value)}
                           title="Click to change stage"
-                          style={{background:"transparent",border:"1px dashed "+G.border,color:PHASE_COLOR[p.stage]||G.muted,fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,padding:"4px 6px",borderRadius:5,cursor:stageSaving===p.id?"wait":"pointer",opacity:stageSaving===p.id?0.5:1,minWidth:130}}>
+                          style={{background:"transparent",border:"1px dashed "+G.border,color:PHASE_COLOR[p.stage]||G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:700,padding:"4px 6px",borderRadius:5,cursor:stageSaving===p.id?"wait":"pointer",opacity:stageSaving===p.id?0.5:1,minWidth:130}}>
                           {PHASE_ORDER.map(s=><option key={s} value={s} style={{background:G.surface,color:G.text}}>{s}</option>)}
                         </select>
                       </td>
                       <td style={{padding:"10px 12px"}}>
                         <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
                           <span style={{width:8,height:8,borderRadius:"50%",background:hc,boxShadow:"0 0 5px "+hc+"66"}}/>
-                          <span style={{color:hc,fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:700}}>{p.health_label}</span>
+                          <span style={{color:hc,fontFamily:"Inter,system-ui,sans-serif",fontSize:10,fontWeight:700}}>{p.health_label}</span>
                         </span>
                       </td>
                       <td style={{padding:"10px 12px",minWidth:130}}>
@@ -1930,22 +1930,22 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
                           <div style={{flex:1,height:5,background:G.border,borderRadius:3,overflow:"hidden"}}>
                             <div style={{width:(p.completion_pct||0)+"%",height:"100%",borderRadius:3,background:p.completion_pct>75?G.green:p.completion_pct>40?G.blue:G.yellow}}/>
                           </div>
-                          <span style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,minWidth:28}}>{p.completion_pct||0}%</span>
+                          <span style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,minWidth:28}}>{p.completion_pct||0}%</span>
                         </div>
                       </td>
-                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.green,fontWeight:700}}>{fmtArr(p.arr)}</td>
-                      <td style={{padding:"10px 12px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted}}>{fmtDate(p.target_date)}</td>
+                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.green,fontWeight:700}}>{fmtArr(p.arr)}</td>
+                      <td style={{padding:"10px 12px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>{fmtDate(p.target_date)}</td>
                       <td style={{padding:"10px 12px"}}>
                         <div style={{display:"flex",gap:5}}>
-                          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.green}}>{p.tasks_complete||0}✓</span>
-                          <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.yellow}}>{p.tasks_upcoming||0}◌</span>
-                          {(p.tasks_late||0)>0&&<span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:G.red,fontWeight:800}}>{p.tasks_late}!</span>}
+                          <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.green}}>{p.tasks_complete||0}✓</span>
+                          <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.yellow}}>{p.tasks_upcoming||0}◌</span>
+                          {(p.tasks_late||0)>0&&<span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.red,fontWeight:800}}>{p.tasks_late}!</span>}
                         </div>
                       </td>
                     </tr>
                   );
                 })}
-                {filtered.length===0&&<tr><td colSpan={8} style={{padding:40,textAlign:"center",color:"#5a7a94",fontFamily:"DM Mono,monospace"}}>No projects match</td></tr>}
+                {filtered.length===0&&<tr><td colSpan={8} style={{padding:40,textAlign:"center",color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif"}}>No projects match</td></tr>}
               </tbody>
             </table>
           )}
@@ -1964,15 +1964,15 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
         return (
           <Card style={{overflow:"hidden",marginTop:14}}>
             <div style={{padding:"10px 14px",borderBottom:"1px solid "+G.border,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"DM Mono,monospace"}}>ALL ACCOUNTS</span>
-              <span style={{fontSize:14,fontFamily:"DM Mono,monospace",color:"#5a7a94"}}>{accounts.length} account{accounts.length===1?"":"s"}</span>
+              <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"Inter,system-ui,sans-serif"}}>ALL ACCOUNTS</span>
+              <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:"#5a7a94"}}>{accounts.length} account{accounts.length===1?"":"s"}</span>
             </div>
             <div style={{overflowX:"auto"}}>
               <table style={{width:"100%",borderCollapse:"collapse",minWidth:600}}>
                 <thead>
                   <tr style={{borderBottom:"1px solid "+G.border}}>
                     {["Customer","Contact","Email","Projects"].map(h=>(
-                      <th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                      <th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:9,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1982,12 +1982,12 @@ function ConsultantPortal({api,csm,onAccountSelect,onProjectSelect}) {
                       style={{borderBottom:i<accounts.length-1?"1px solid "+G.faint:"none",cursor:"pointer"}}
                       onClick={()=>onAccountSelect&&onAccountSelect(c)}>
                       <td style={{padding:"10px 12px",fontSize:15,fontWeight:700,color:G.blue,textDecoration:"underline",textDecorationColor:G.blue+"55",textUnderlineOffset:3}}>{c.name}</td>
-                      <td style={{padding:"10px 12px",fontSize:13,fontFamily:"DM Mono,monospace",color:G.text}}>{c.contact_name||<span style={{color:G.faint}}>—</span>}</td>
-                      <td style={{padding:"10px 12px",fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted}}>{c.contact_email||"—"}</td>
-                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"DM Mono,monospace",color:G.muted,fontVariantNumeric:"tabular-nums"}}>{projCount[c.id]||0}</td>
+                      <td style={{padding:"10px 12px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.text}}>{c.contact_name||<span style={{color:G.faint}}>—</span>}</td>
+                      <td style={{padding:"10px 12px",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>{c.contact_email||"—"}</td>
+                      <td style={{padding:"10px 12px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,fontVariantNumeric:"tabular-nums"}}>{projCount[c.id]||0}</td>
                     </tr>
                   ))}
-                  {accounts.length===0&&<tr><td colSpan={4} style={{padding:30,textAlign:"center",color:"#5a7a94",fontFamily:"DM Mono,monospace",fontSize:12}}>{customers.length===0?"No customers yet — add one from Configuration → Customers.":"No accounts match your search."}</td></tr>}
+                  {accounts.length===0&&<tr><td colSpan={4} style={{padding:30,textAlign:"center",color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>{customers.length===0?"No customers yet — add one from Configuration → Customers.":"No accounts match your search."}</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -2048,37 +2048,37 @@ function LoginScreen({onConnect}) {
           <Logo size={38}/>
           <div>
             <div style={{fontSize:22,fontWeight:800,color:G.text,letterSpacing:"0.03em"}}>Monument</div>
-            <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.12em"}}>CUSTOMER SUCCESS PLATFORM</div>
+            <div style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.12em"}}>CUSTOMER SUCCESS PLATFORM</div>
           </div>
         </div>
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:14,padding:32}}>
           {!forgotOpen ? (
             <>
               <div style={{fontSize:18,fontWeight:700,color:G.text,marginBottom:6}}>Sign In</div>
-              <div style={{fontSize:14,color:G.muted,fontFamily:"DM Mono,monospace",marginBottom:26,lineHeight:1.7}}>
+              <div style={{fontSize:14,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",marginBottom:26,lineHeight:1.7}}>
                 Enter your credentials to continue.
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:14}}>
                 <div>
-                  <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>USERNAME</label>
+                  <label style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>USERNAME</label>
                   <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Username"
                     autoComplete="username"
-                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"Inter,system-ui,sans-serif",fontSize:14}}/>
                 </div>
                 <div>
-                  <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>PASSWORD</label>
+                  <label style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>PASSWORD</label>
                   <input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Password"
                     autoComplete="current-password"
                     onKeyDown={e=>{if(e.key==="Enter")login();}}
-                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"Inter,system-ui,sans-serif",fontSize:14}}/>
                 </div>
-                {error&&<div style={{background:G.redBg,border:"1px solid "+G.red+"44",borderRadius:8,padding:"10px 14px",fontSize:13,color:G.red,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>{error}</div>}
+                {error&&<div style={{background:G.redBg,border:"1px solid "+G.red+"44",borderRadius:8,padding:"10px 14px",fontSize:13,color:G.red,fontFamily:"Inter,system-ui,sans-serif",lineHeight:1.5}}>{error}</div>}
                 <button onClick={login} disabled={loading}
                   style={{background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",padding:"14px",borderRadius:8,cursor:loading?"not-allowed":"pointer",fontSize:15,fontWeight:700,marginTop:4,opacity:loading?0.7:1}}>
                   {loading?"Signing in…":"Sign In →"}
                 </button>
                 <button type="button" onClick={()=>{setForgotOpen(true);setForgotMsg("");}}
-                  style={{background:"transparent",border:"none",color:G.muted,fontSize:13,fontFamily:"DM Mono,monospace",cursor:"pointer",padding:"6px",alignSelf:"center",letterSpacing:"0.06em"}}>
+                  style={{background:"transparent",border:"none",color:G.muted,fontSize:13,fontFamily:"Inter,system-ui,sans-serif",cursor:"pointer",padding:"6px",alignSelf:"center",letterSpacing:"0.06em"}}>
                   Forgot password?
                 </button>
               </div>
@@ -2086,19 +2086,19 @@ function LoginScreen({onConnect}) {
           ) : (
             <>
               <div style={{fontSize:18,fontWeight:700,color:G.text,marginBottom:6}}>Reset Password</div>
-              <div style={{fontSize:14,color:G.muted,fontFamily:"DM Mono,monospace",marginBottom:22,lineHeight:1.7}}>
+              <div style={{fontSize:14,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",marginBottom:22,lineHeight:1.7}}>
                 Enter the email tied to your account. An administrator will be notified to issue a new password.
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:14}}>
                 <div>
-                  <label style={{fontSize:13,fontFamily:"DM Mono,monospace",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>EMAIL</label>
+                  <label style={{fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,letterSpacing:"0.1em",display:"block",marginBottom:5}}>EMAIL</label>
                   <input value={forgotEmail} onChange={e=>setForgotEmail(e.target.value)} placeholder="you@company.com"
                     type="email" autoComplete="email"
                     onKeyDown={e=>{if(e.key==="Enter")submitForgot();}}
-                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:14}}/>
+                    style={{width:"100%",background:G.surface2,border:"1px solid "+G.border,color:G.text,padding:"12px 14px",borderRadius:8,fontFamily:"Inter,system-ui,sans-serif",fontSize:14}}/>
                 </div>
                 {forgotMsg && (
-                  <div style={{background:G.surface2,border:"1px solid "+G.border2,borderRadius:8,padding:"10px 14px",fontSize:13,color:G.text,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>
+                  <div style={{background:G.surface2,border:"1px solid "+G.border2,borderRadius:8,padding:"10px 14px",fontSize:13,color:G.text,fontFamily:"Inter,system-ui,sans-serif",lineHeight:1.5}}>
                     {forgotMsg}
                   </div>
                 )}
@@ -2107,7 +2107,7 @@ function LoginScreen({onConnect}) {
                   {forgotBusy?"Submitting…":"Request Reset"}
                 </button>
                 <button type="button" onClick={()=>{setForgotOpen(false);setForgotMsg("");}}
-                  style={{background:"transparent",border:"none",color:G.muted,fontSize:13,fontFamily:"DM Mono,monospace",cursor:"pointer",padding:"6px",alignSelf:"center",letterSpacing:"0.06em"}}>
+                  style={{background:"transparent",border:"none",color:G.muted,fontSize:13,fontFamily:"Inter,system-ui,sans-serif",cursor:"pointer",padding:"6px",alignSelf:"center",letterSpacing:"0.06em"}}>
                   ← Back to sign in
                 </button>
               </div>

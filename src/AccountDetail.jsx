@@ -174,11 +174,11 @@ export default function AccountDetail({ api, account, onClose, onUpdated, onProj
             {account.name}
           </h1>
           {account.is_active === false && (
-            <span style={{ fontSize: 10, color: G.red, fontFamily: "DM Mono,monospace",
+            <span style={{ fontSize: 10, color: G.red, fontFamily: "Inter,system-ui,sans-serif",
                             letterSpacing: "0.1em", border: "1px solid " + G.red + "55",
                             padding: "3px 8px", borderRadius: 4, background: G.redBg }}>INACTIVE</span>
           )}
-          <span style={{ marginLeft: "auto", fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace" }}>
+          <span style={{ marginLeft: "auto", fontSize: 11, color: G.muted, fontFamily: "Inter,system-ui,sans-serif" }}>
             {projects.length} {projects.length === 1 ? "project" : "projects"} · {interactions.length} activities
           </span>
         </div>
@@ -270,14 +270,14 @@ function SummaryTab({ account, projects, recent, summary, summarizing, summaryEr
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <SentimentBadge sentiment={summary.sentiment}/>
-                <span style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace",
+                <span style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif",
                                 letterSpacing: "0.08em", marginLeft: "auto" }}>
                   Generated {fmtDT(summary.generated_at)} · {summary.window_count} items analyzed
                 </span>
                 <button onClick={onSummarize} disabled={summarizing}
                   style={{ background: "transparent", border: "1px solid " + G.border,
                            color: G.muted, padding: "4px 10px", borderRadius: 6, cursor: "pointer",
-                           fontFamily: "DM Mono,monospace", fontSize: 10 }}>
+                           fontFamily: "Inter,system-ui,sans-serif", fontSize: 10 }}>
                   ↻ Refresh
                 </button>
               </div>
@@ -312,7 +312,7 @@ function SummaryTab({ account, projects, recent, summary, summarizing, summaryEr
               <ProjectRow key={p.id} project={p} onSelect={onProjectSelect}/>
             ))}
             {projects.length > 8 && (
-              <div style={{ padding: "10px 0 0", fontSize: 11, color: G.faint, fontFamily: "DM Mono,monospace" }}>
+              <div style={{ padding: "10px 0 0", fontSize: 11, color: G.faint, fontFamily: "Inter,system-ui,sans-serif" }}>
                 + {projects.length - 8} more — see Projects tab
               </div>
             )}
@@ -381,7 +381,7 @@ function TimelineTab({ api, account, interactions, loading, onRefresh, setError 
                         border: "1px solid " + (active ? G.blue : G.border),
                         color: active ? G.blue : G.muted,
                         padding: "4px 10px", borderRadius: 6, cursor: "pointer",
-                        fontFamily: "DM Mono,monospace", fontSize: 10, fontWeight: 600,
+                        fontFamily: "Inter,system-ui,sans-serif", fontSize: 10, fontWeight: 600,
                         letterSpacing: "0.05em",
                       }}>
                       {f.label}
@@ -417,7 +417,7 @@ function TimelineTab({ api, account, interactions, loading, onRefresh, setError 
                   background: active ? c.color + "1a" : G.surface2,
                   border: "1px solid " + (active ? c.color : G.border),
                   color: active ? c.color : G.muted,
-                  fontFamily: "DM Mono,monospace", fontSize: 11, fontWeight: 600,
+                  fontFamily: "Inter,system-ui,sans-serif", fontSize: 11, fontWeight: 600,
                   letterSpacing: "0.05em",
                 }}>
                 {INTERACTION_ICON[c.key]} {c.label}
@@ -499,7 +499,7 @@ function ActivityRow({ item }) {
           <div style={{ fontSize: 13, fontWeight: 600, color: G.text }}>
             {item.subject || "(no subject)"}
           </div>
-          <span style={{ fontSize: 10, fontFamily: "DM Mono,monospace",
+          <span style={{ fontSize: 10, fontFamily: "Inter,system-ui,sans-serif",
                           letterSpacing: "0.05em", fontWeight: 700,
                           padding: "2px 8px", borderRadius: 4,
                           background: badgeColor + "1a",
@@ -508,13 +508,13 @@ function ActivityRow({ item }) {
             {item.interaction_type.toUpperCase()}
           </span>
           {!isManual && (
-            <span style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace",
+            <span style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif",
                             letterSpacing: "0.05em" }}>
               · {item.source_system.toUpperCase()}
             </span>
           )}
           <span style={{ marginLeft: "auto", fontSize: 11, color: G.muted,
-                          fontFamily: "DM Mono,monospace" }}>
+                          fontFamily: "Inter,system-ui,sans-serif" }}>
             {fmtDT(item.occurred_at)}
           </span>
         </div>
@@ -529,7 +529,7 @@ function ActivityRow({ item }) {
         )}
         {item.url && (
           <a href={item.url} target="_blank" rel="noreferrer"
-             style={{ fontSize: 11, color: G.blue, fontFamily: "DM Mono,monospace",
+             style={{ fontSize: 11, color: G.blue, fontFamily: "Inter,system-ui,sans-serif",
                       textDecoration: "none", display: "inline-block", marginTop: 4 }}>
             View source →
           </a>
@@ -554,11 +554,11 @@ function ProjectRow({ project, onSelect }) {
                        overflow: "hidden", textOverflow: "ellipsis" }}>
           {project.name || "(unnamed project)"}
         </div>
-        <div style={{ fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace", marginTop: 2 }}>
+        <div style={{ fontSize: 11, color: G.muted, fontFamily: "Inter,system-ui,sans-serif", marginTop: 2 }}>
           {stage} · target {fmtDate(project.target_date)} · {project.completion_pct ?? 0}% complete
         </div>
       </div>
-      <span style={{ fontSize: 12, color: G.text, fontFamily: "DM Mono,monospace", fontVariantNumeric: "tabular-nums" }}>
+      <span style={{ fontSize: 12, color: G.text, fontFamily: "Inter,system-ui,sans-serif", fontVariantNumeric: "tabular-nums" }}>
         {fmtArr(project.arr)}
       </span>
       <span style={{ color: G.faint, fontSize: 14 }}>›</span>
@@ -575,7 +575,7 @@ const SENTIMENT = {
 function SentimentBadge({ sentiment }) {
   const s = SENTIMENT[sentiment] || SENTIMENT.neutral;
   return (
-    <span style={{ fontSize: 10, fontFamily: "DM Mono,monospace", letterSpacing: "0.1em",
+    <span style={{ fontSize: 10, fontFamily: "Inter,system-ui,sans-serif", letterSpacing: "0.1em",
                     fontWeight: 700, padding: "3px 10px", borderRadius: 4,
                     background: s.color + "1a", border: "1px solid " + s.color + "66",
                     color: s.color }}>
@@ -588,7 +588,7 @@ function SummaryList({ label, items, color }) {
   if (!Array.isArray(items) || items.length === 0) return null;
   return (
     <div>
-      <div style={{ fontSize: 10, fontFamily: "DM Mono,monospace", letterSpacing: "0.12em",
+      <div style={{ fontSize: 10, fontFamily: "Inter,system-ui,sans-serif", letterSpacing: "0.12em",
                      color: color, marginBottom: 6, fontWeight: 700 }}>
         {label.toUpperCase()}
       </div>
@@ -606,7 +606,7 @@ function Kpi({ label, value, accent }) {
     <div style={{ background: G.surface, border: "1px solid " + G.border, borderRadius: 12,
                   padding: "16px 18px", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: accent }}/>
-      <div style={{ fontSize: 10, fontFamily: "DM Mono,monospace", color: G.muted,
+      <div style={{ fontSize: 10, fontFamily: "Inter,system-ui,sans-serif", color: G.muted,
                      letterSpacing: "0.12em", marginBottom: 6 }}>
         {label.toUpperCase()}
       </div>
@@ -622,7 +622,7 @@ function Card({ title, right, children }) {
     <div style={{ background: G.surface, border: "1px solid " + G.border, borderRadius: 12,
                   padding: "16px 20px", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", letterSpacing: "0.12em",
+        <div style={{ fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", letterSpacing: "0.12em",
                        color: G.muted, fontWeight: 600 }}>
           {title}
         </div>
@@ -644,7 +644,7 @@ function Empty({ children }) {
 function Glance({ label, value }) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 10, fontFamily: "DM Mono,monospace", color: G.muted,
+      <div style={{ fontSize: 10, fontFamily: "Inter,system-ui,sans-serif", color: G.muted,
                      letterSpacing: "0.1em", marginBottom: 2 }}>
         {label.toUpperCase()}
       </div>
@@ -655,7 +655,7 @@ function Glance({ label, value }) {
 
 function Label({ children }) {
   return (
-    <div style={{ fontSize: 10, fontFamily: "DM Mono,monospace", letterSpacing: "0.1em",
+    <div style={{ fontSize: 10, fontFamily: "Inter,system-ui,sans-serif", letterSpacing: "0.1em",
                    color: G.muted, marginBottom: 5 }}>
       {children}
     </div>

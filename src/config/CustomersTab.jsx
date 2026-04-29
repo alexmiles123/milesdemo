@@ -147,7 +147,7 @@ export default function CustomersTab({ api, csms, onChanged }) {
         </CardHeader>
         <div style={{ padding: "12px 18px", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid " + G.border, flexWrap: "wrap" }}>
           <Input value={search} onChange={setSearch} placeholder="Search by name, contact, or email…" style={{ flex: 1, maxWidth: 360 }} />
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, cursor: "pointer", userSelect: "none" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, cursor: "pointer", userSelect: "none" }}>
             <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} />
             Show disabled
           </label>
@@ -202,7 +202,7 @@ export default function CustomersTab({ api, csms, onChanged }) {
         <div style={{ marginTop: 18 }}>
           <Card>
             <CardHeader>UNLINKED PROJECTS ({orphanProjects.length})</CardHeader>
-            <div style={{ padding: "8px 18px", fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted }}>
+            <div style={{ padding: "8px 18px", fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted }}>
               These projects don't have a customer record yet. Edit each to assign one.
             </div>
             <div style={{ overflowX: "auto" }}>
@@ -285,7 +285,7 @@ export default function CustomersTab({ api, csms, onChanged }) {
 
       {confirmDisable && (
         <Modal title={`Disable "${confirmDisable.customer.name}"?`} onClose={() => setConfirmDisable(null)} width={460}>
-          <div style={{ color: G.text, fontFamily: "DM Mono,monospace", fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>
+          <div style={{ color: G.text, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, lineHeight: 1.6, marginBottom: 14 }}>
             Disabling hides the customer from the consultant portal and search. Their existing projects stay in place; you can re-enable from the "Show disabled" filter.
             {confirmDisable.activeProjects > 0 && (
               <div style={{ marginTop: 10, color: G.yellow }}>
@@ -350,7 +350,7 @@ function CustomerRow({ customer, projects, csmById, isOpen, inactive, onToggle, 
         <tr>
           <td colSpan={6} style={{ padding: 0, background: G.surface2, borderBottom: "1px solid " + G.border }}>
             {projects.length === 0 ? (
-              <div style={{ padding: "16px 24px", color: G.muted, fontFamily: "DM Mono,monospace", fontSize: 11 }}>
+              <div style={{ padding: "16px 24px", color: G.muted, fontFamily: "Inter,system-ui,sans-serif", fontSize: 11 }}>
                 No projects under this customer yet.
               </div>
             ) : (
@@ -457,13 +457,13 @@ function CustomerModal({ api, initial, mode, onClose, onSaved }) {
         </div>
         <div style={{ gridColumn: "span 2", display: "flex", alignItems: "center", gap: 8 }}>
           <input id="cust-active" type="checkbox" checked={form.is_active !== false} onChange={e => set("is_active", e.target.checked)} />
-          <label htmlFor="cust-active" style={{ fontSize: 12, fontFamily: "DM Mono,monospace", color: G.text, cursor: "pointer" }}>
+          <label htmlFor="cust-active" style={{ fontSize: 12, fontFamily: "Inter,system-ui,sans-serif", color: G.text, cursor: "pointer" }}>
             Active — show on the consultant portal
           </label>
         </div>
       </div>
       {errors._root && (
-        <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{errors._root}</div>
+        <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{errors._root}</div>
       )}
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
         <Button onClick={onClose} variant="ghost">Cancel</Button>

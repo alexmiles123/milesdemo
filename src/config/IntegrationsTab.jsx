@@ -61,14 +61,14 @@ export default function IntegrationsTab({ api }) {
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: G.text, fontFamily: "Syne,sans-serif" }}>{row.display_name}</div>
-                    <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.faint }}>{row.provider}</div>
+                    <div style={{ fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.faint }}>{row.provider}</div>
                   </div>
                   <Pill tone={statusTone}>{row.status.toUpperCase()}</Pill>
                 </div>
-                <div style={{ fontSize: 12, color: G.muted, fontFamily: "DM Mono,monospace", lineHeight: 1.6 }}>{meta.blurb}</div>
-                <div style={{ fontSize: 11, color: G.faint, fontFamily: "DM Mono,monospace" }}>Last sync: {fmtDateTime(row.last_sync_at)}</div>
+                <div style={{ fontSize: 12, color: G.muted, fontFamily: "Inter,system-ui,sans-serif", lineHeight: 1.6 }}>{meta.blurb}</div>
+                <div style={{ fontSize: 11, color: G.faint, fontFamily: "Inter,system-ui,sans-serif" }}>Last sync: {fmtDateTime(row.last_sync_at)}</div>
                 {row.last_error && (
-                  <div style={{ fontSize: 11, color: G.red, fontFamily: "DM Mono,monospace", background: G.redBg, border: "1px solid " + G.redBd, borderRadius: 6, padding: "6px 8px" }}>
+                  <div style={{ fontSize: 11, color: G.red, fontFamily: "Inter,system-ui,sans-serif", background: G.redBg, border: "1px solid " + G.redBd, borderRadius: 6, padding: "6px 8px" }}>
                     {row.last_error}
                   </div>
                 )}
@@ -148,7 +148,7 @@ function ConfigureModal({ integration, onClose, onSaved }) {
 
   return (
     <Modal title={`Configure ${integration.display_name}`} onClose={onClose} width={600}>
-      <div style={{ marginBottom: 14, padding: 12, background: G.blueBg, border: "1px solid " + G.blueBd, borderRadius: 8, color: G.blue, fontSize: 12, fontFamily: "DM Mono,monospace", lineHeight: 1.6 }}>
+      <div style={{ marginBottom: 14, padding: 12, background: G.blueBg, border: "1px solid " + G.blueBd, borderRadius: 8, color: G.blue, fontSize: 12, fontFamily: "Inter,system-ui,sans-serif", lineHeight: 1.6 }}>
         <b>Security note.</b> Secrets are stored by <i>reference</i> — the app reads the actual value from a server-side secret store (Vercel env var or Supabase Vault) using the name you provide below. The secret itself never travels through the browser.
       </div>
       {integration.provider === "microsoft_teams" ? (
@@ -171,10 +171,10 @@ function ConfigureModal({ integration, onClose, onSaved }) {
       <div style={{ height: 12 }} />
       <Label>CLIENT SECRET — ENV VAR NAME</Label>
       <Input value={form.credential_ref} onChange={v => set("credential_ref", v)} placeholder={integration.provider === "microsoft_teams" ? "TEAMS_CLIENT_SECRET" : "SALESFORCE_CLIENT_SECRET"} />
-      <div style={{ fontSize: 11, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+      <div style={{ fontSize: 11, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>
         Set the actual value with <code>vercel env add {form.credential_ref || "&lt;NAME&gt;"}</code>. Only the name is stored in the database.
       </div>
-      {err && <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{err}</div>}
+      {err && <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{err}</div>}
       <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop: 20 }}>
         <Button onClick={onClose} variant="ghost">Cancel</Button>
         <Button onClick={save} variant="primary" disabled={saving}>{saving ? "Saving…" : "Save & Connect"}</Button>

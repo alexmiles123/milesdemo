@@ -99,14 +99,14 @@ export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
         <aside style={{ position: "sticky", top: 0, alignSelf: "start" }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: G.text, fontFamily: "Syne,sans-serif" }}>Configuration</div>
-            <div style={{ fontSize: 12, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.05em", marginTop: 4 }}>
+            <div style={{ fontSize: 12, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, letterSpacing: "0.05em", marginTop: 4 }}>
               Settings, people, integrations, and compliance.
             </div>
           </div>
           <nav style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {SECTIONS.map(sec => (
               <div key={sec.id}>
-                <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.faint, letterSpacing: "0.12em", textTransform: "uppercase", padding: "0 10px 6px" }}>
+                <div style={{ fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.faint, letterSpacing: "0.12em", textTransform: "uppercase", padding: "0 10px 6px" }}>
                   {sec.label}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -143,7 +143,7 @@ export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
         {/* Main panel */}
         <main style={{ minWidth: 0 }}>
           <div style={{ marginBottom: 18, paddingBottom: 14, borderBottom: "1px solid " + G.border }}>
-            <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.faint, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+            <div style={{ fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.faint, letterSpacing: "0.14em", textTransform: "uppercase" }}>
               {activeSection.label}
             </div>
             <div style={{ fontSize: 22, fontWeight: 800, color: G.text, fontFamily: "Syne,sans-serif", marginTop: 4 }}>

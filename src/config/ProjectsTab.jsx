@@ -248,7 +248,7 @@ export function ProjectModal({ api, csms, customers = [], initial, mode, onClose
           <Select value={form.customer_id} onChange={v => set("customer_id", v)} options={customerOptions} disabled={lockCustomer} />
           <FieldError error={errors.customer_id} />
           {customers.length === 0 && (
-            <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+            <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>
               No customers yet — add one from the Customers list first.
             </div>
           )}
@@ -290,14 +290,14 @@ export function ProjectModal({ api, csms, customers = [], initial, mode, onClose
               options={[{ value: "", label: templates.length ? "— No template —" : "— No templates configured —" },
                        ...templates.map(t => ({ value: t.id, label: t.name + (t.is_default ? "  (default)" : "") + "  ·  " + (t.items?.length || 0) + " tasks" }))]}
             />
-            <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+            <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>
               Tasks will be added with due dates relative to today. Manage templates under Configuration → Task Templates.
             </div>
           </div>
         )}
       </div>
       {errors._root && (
-        <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{errors._root}</div>
+        <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{errors._root}</div>
       )}
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
         <Button onClick={onClose} variant="ghost">Cancel</Button>

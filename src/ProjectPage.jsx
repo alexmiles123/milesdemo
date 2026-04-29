@@ -128,7 +128,7 @@ export default function ProjectPage({ api, projectId, onClose }) {
 
   if (loading || !project) {
     return (
-      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>
+      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>
         Loading project…
       </div>
     );
@@ -137,7 +137,7 @@ export default function ProjectPage({ api, projectId, onClose }) {
   return (
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",animation:"fadein .25s ease"}}>
       {toast && (
-        <div style={{position:"fixed",top:74,right:24,zIndex:60,background:toast.type==="error"?G.redBg:G.greenBg,border:"1px solid "+(toast.type==="error"?G.red:G.green)+"55",borderRadius:8,padding:"10px 18px",fontFamily:"DM Mono,monospace",fontSize:12,color:toast.type==="error"?G.red:G.green}}>
+        <div style={{position:"fixed",top:74,right:24,zIndex:60,background:toast.type==="error"?G.redBg:G.greenBg,border:"1px solid "+(toast.type==="error"?G.red:G.green)+"55",borderRadius:8,padding:"10px 18px",fontFamily:"Inter,system-ui,sans-serif",fontSize:12,color:toast.type==="error"?G.red:G.green}}>
           {toast.msg}
         </div>
       )}
@@ -175,7 +175,7 @@ export default function ProjectPage({ api, projectId, onClose }) {
                   background:active?G.purple+"1a":G.surface2,
                   color:active?G.purple:G.muted,
                   borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:600,
-                  fontFamily:"DM Mono,monospace",
+                  fontFamily:"Inter,system-ui,sans-serif",
                 }}>{count}</span>
               )}
             </button>
@@ -225,7 +225,7 @@ function ProjectHeader({ project, savingProject, editingProj, setEditingProj, cy
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14}}>
         <button onClick={onClose}
           title="Back to portfolio"
-          style={{background:"transparent",border:"1px solid "+G.border,color:G.muted,padding:"6px 12px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+          style={{background:"transparent",border:"1px solid "+G.border,color:G.muted,padding:"6px 12px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
           ← BACK
         </button>
         <div onClick={cycleHealth}
@@ -235,7 +235,7 @@ function ProjectHeader({ project, savingProject, editingProj, setEditingProj, cy
           <div style={{fontSize:22,fontWeight:800,color:G.text,fontFamily:"Syne,sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             {project.name || project.customer || "Untitled Project"}
           </div>
-          <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",marginTop:4,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+          <div style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",marginTop:4,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
             {project.customer && <span>{project.customer}</span>}
             {project.csm && <><span style={{color:G.faint}}>·</span><span>{project.csm}</span></>}
             <span style={{color:G.faint}}>·</span>
@@ -249,7 +249,7 @@ function ProjectHeader({ project, savingProject, editingProj, setEditingProj, cy
                     if (e.key === "Enter") saveProjectField("target_date", e.target.value || null);
                     if (e.key === "Escape") setEditingProj(null);
                   }}
-                  style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px 6px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+                  style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px 6px",borderRadius:5,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
               ) : (
                 <span onClick={() => setEditingProj("target_date")} title="Click to change"
                   style={{cursor:"pointer",borderBottom:"1px dashed "+G.border2,padding:"1px 3px",color:G.text,fontWeight:700}}>
@@ -265,7 +265,7 @@ function ProjectHeader({ project, savingProject, editingProj, setEditingProj, cy
           {[["complete","Complete"],["upcoming","Upcoming"],["late","Late"]].map(([s,l]) => (
             <div key={s} style={{background:STATUS_CFG[s].bg,border:"1px solid "+STATUS_CFG[s].bd,borderRadius:8,padding:"6px 14px",textAlign:"center",minWidth:74}}>
               <div style={{fontSize:20,fontWeight:800,color:STATUS_CFG[s].color,lineHeight:1,fontFamily:"Syne,sans-serif"}}>{stats[s]}</div>
-              <div style={{fontSize:11,fontFamily:"DM Mono,monospace",color:STATUS_CFG[s].color,opacity:0.8,marginTop:3,letterSpacing:"0.05em"}}>{l.toUpperCase()}</div>
+              <div style={{fontSize:11,fontFamily:"Inter,system-ui,sans-serif",color:STATUS_CFG[s].color,opacity:0.8,marginTop:3,letterSpacing:"0.05em"}}>{l.toUpperCase()}</div>
             </div>
           ))}
         </div>
@@ -274,7 +274,7 @@ function ProjectHeader({ project, savingProject, editingProj, setEditingProj, cy
         <div style={{flex:1,height:6,background:G.border,borderRadius:3,overflow:"hidden"}}>
           <div style={{width:completionPct+"%",height:"100%",background:"linear-gradient(90deg,"+G.green+","+G.green+"99)",borderRadius:3,transition:"width .6s"}}/>
         </div>
-        <span style={{fontSize:12,fontFamily:"DM Mono,monospace",color:G.green,fontWeight:700,whiteSpace:"nowrap"}}>{completionPct}% COMPLETE</span>
+        <span style={{fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:G.green,fontWeight:700,whiteSpace:"nowrap"}}>{completionPct}% COMPLETE</span>
       </div>
     </div>
   );
@@ -322,8 +322,8 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
         {kpis.map((k,i) => (
           <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"14px 14px",position:"relative",overflow:"hidden",minWidth:0}}>
             <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:k.color,borderRadius:"10px 10px 0 0"}}/>
-            <div style={{fontSize:22,fontWeight:700,color:k.color,marginTop:6,fontFamily:"DM Mono,monospace",letterSpacing:"-0.02em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.value}</div>
-            <div style={{fontSize:11,color:G.muted,marginTop:8,fontFamily:"DM Mono,monospace",letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{k.label}</div>
+            <div style={{fontSize:22,fontWeight:700,color:k.color,marginTop:6,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"-0.02em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.value}</div>
+            <div style={{fontSize:11,color:G.muted,marginTop:8,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.05em",whiteSpace:"nowrap"}}>{k.label}</div>
           </div>
         ))}
       </div>
@@ -331,11 +331,11 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
       {/* Stage stepper */}
       <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"16px 22px",marginBottom:18}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-          <span style={{fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.08em",fontWeight:700}}>PROJECT STAGE</span>
+          <span style={{fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.08em",fontWeight:700}}>PROJECT STAGE</span>
           {nextStage && (
             <button onClick={advanceStage} disabled={!!savingProject}
               title={currentStageReady ? "All current-stage tasks are complete" : "Tasks remain in this stage — you can still advance"}
-              style={{background:currentStageReady?G.green:G.blueBg,color:currentStageReady?"#fff":G.blue,border:"1px solid "+(currentStageReady?G.green:G.blue),padding:"7px 16px",borderRadius:6,cursor:savingProject?"wait":"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:"0.05em",opacity:savingProject?0.5:1}}>
+              style={{background:currentStageReady?G.green:G.blueBg,color:currentStageReady?"#fff":G.blue,border:"1px solid "+(currentStageReady?G.green:G.blue),padding:"7px 16px",borderRadius:6,cursor:savingProject?"wait":"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:700,letterSpacing:"0.05em",opacity:savingProject?0.5:1}}>
               {currentStageReady?"✓ ADVANCE":"ADVANCE"} TO {nextStage.toUpperCase()} →
             </button>
           )}
@@ -355,15 +355,15 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
                   <div style={{flex:1,height:2,background:i===0?"transparent":(i<=stageIdx?G.green:G.border2)}}/>
                   <button onClick={() => setStage(ph)} disabled={!!savingProject}
                     title={"Set stage to "+ph}
-                    style={{background:dotBg,border:"2px solid "+dotBorder,width:36,height:36,borderRadius:"50%",cursor:savingProject?"wait":"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:isCurrent||isPast?"#fff":G.muted,fontFamily:"DM Mono,monospace",boxShadow:isCurrent?"0 0 14px "+phColor+"99":"none",flexShrink:0,padding:0,transition:"all .2s"}}>
+                    style={{background:dotBg,border:"2px solid "+dotBorder,width:36,height:36,borderRadius:"50%",cursor:savingProject?"wait":"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:isCurrent||isPast?"#fff":G.muted,fontFamily:"Inter,system-ui,sans-serif",boxShadow:isCurrent?"0 0 14px "+phColor+"99":"none",flexShrink:0,padding:0,transition:"all .2s"}}>
                     {isPast?"✓":i+1}
                   </button>
                   <div style={{flex:1,height:2,background:i===PHASE_ORDER.length-1?"transparent":(i<stageIdx?G.green:G.border2)}}/>
                 </div>
-                <div style={{marginTop:8,textAlign:"center",fontSize:10,fontFamily:"DM Mono,monospace",color:labelColor,fontWeight:isCurrent?700:500,letterSpacing:"0.04em",lineHeight:1.3,padding:"0 4px"}}>
+                <div style={{marginTop:8,textAlign:"center",fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:labelColor,fontWeight:isCurrent?700:500,letterSpacing:"0.04em",lineHeight:1.3,padding:"0 4px"}}>
                   {ph.toUpperCase()}
                 </div>
-                <div style={{textAlign:"center",fontSize:10,fontFamily:"DM Mono,monospace",color:G.faint,marginTop:3}}>
+                <div style={{textAlign:"center",fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:G.faint,marginTop:3}}>
                   {phPct == null ? "—" : Math.round(phPct) + "%"}
                 </div>
               </div>
@@ -371,7 +371,7 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
           })}
         </div>
         {currentStageReady && nextStage && (
-          <div style={{marginTop:14,padding:"9px 14px",background:G.greenBg,border:"1px solid "+G.green+"55",borderRadius:6,fontSize:12,color:G.green,fontFamily:"DM Mono,monospace",lineHeight:1.5}}>
+          <div style={{marginTop:14,padding:"9px 14px",background:G.greenBg,border:"1px solid "+G.green+"55",borderRadius:6,fontSize:12,color:G.green,fontFamily:"Inter,system-ui,sans-serif",lineHeight:1.5}}>
             ✓ All {currentStageTasks.length} {project.stage} task{currentStageTasks.length===1?"":"s"} complete — ready to advance to <strong>{nextStage}</strong>.
           </div>
         )}
@@ -380,14 +380,14 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
       {/* Two-column: phase breakdown + recent notes */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"16px 22px"}}>
-          <div style={{fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.08em",fontWeight:700,marginBottom:14}}>TASKS BY PHASE</div>
+          <div style={{fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.08em",fontWeight:700,marginBottom:14}}>TASKS BY PHASE</div>
           {tasks.length === 0 ? (
-            <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",padding:"20px 0",textAlign:"center"}}>No tasks yet</div>
+            <div style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",padding:"20px 0",textAlign:"center"}}>No tasks yet</div>
           ) : (
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {phaseBreakdown.map(p => (
                 <div key={p.phase}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:11,fontFamily:"DM Mono,monospace"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:5,fontSize:11,fontFamily:"Inter,system-ui,sans-serif"}}>
                     <span style={{color:PHASE_COLOR[p.phase]||G.muted,fontWeight:600}}>{p.phase}</span>
                     <span style={{color:G.muted}}>
                       {p.complete}/{p.total} done
@@ -402,7 +402,7 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
                       </>
                     )}
                   </div>
-                  <div style={{fontSize:9,color:G.faint,fontFamily:"DM Mono,monospace",marginTop:3}}>
+                  <div style={{fontSize:9,color:G.faint,fontFamily:"Inter,system-ui,sans-serif",marginTop:3}}>
                     {p.total > 0 ? `${Math.round(p.total/maxPhase*100)}% of largest phase` : "no tasks"}
                   </div>
                 </div>
@@ -411,16 +411,16 @@ function OverviewTab({ project, tasks, stats, savingProject, setStage, advanceSt
           )}
         </div>
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"16px 22px"}}>
-          <div style={{fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.08em",fontWeight:700,marginBottom:14}}>RECENT NOTES</div>
+          <div style={{fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.08em",fontWeight:700,marginBottom:14}}>RECENT NOTES</div>
           {recentNotes.length === 0 ? (
-            <div style={{fontSize:13,color:G.muted,fontFamily:"DM Mono,monospace",padding:"20px 0",textAlign:"center"}}>
+            <div style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",padding:"20px 0",textAlign:"center"}}>
               No notes yet — head to the <strong style={{color:G.blue}}>Notes</strong> tab to add one.
             </div>
           ) : (
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {recentNotes.map(n => (
                 <div key={n.id} style={{padding:"10px 12px",background:G.surface2,border:"1px solid "+G.border,borderRadius:8}}>
-                  <div style={{fontSize:11,fontFamily:"DM Mono,monospace",color:G.muted,marginBottom:5,display:"flex",justifyContent:"space-between"}}>
+                  <div style={{fontSize:11,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,marginBottom:5,display:"flex",justifyContent:"space-between"}}>
                     <span style={{color:G.text,fontWeight:600}}>{n.author}</span>
                     <span>{fmtDate(n.created_at)}</span>
                   </div>
@@ -523,7 +523,7 @@ function TasksTab({ project, tasks, handlers }) {
           const late = ph === "all" ? stats.late : tasks.filter(t => t.phase === ph && t.status === "late").length;
           return (
             <button key={ph} onClick={() => setPhase(ph)}
-              style={{background:phase===ph?G.blueBg:"transparent",border:"1px solid "+(phase===ph?G.blue:G.border),color:phase===ph?G.blue:G.muted,padding:"6px 12px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+              style={{background:phase===ph?G.blueBg:"transparent",border:"1px solid "+(phase===ph?G.blue:G.border),color:phase===ph?G.blue:G.muted,padding:"6px 12px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
               {ph === "all" ? "All Phases" : ph}
               <span style={{background:late>0?G.redBg:G.border,color:late>0?G.red:G.muted,borderRadius:4,padding:"1px 5px",fontSize:9}}>{n}</span>
             </button>
@@ -532,7 +532,7 @@ function TasksTab({ project, tasks, handlers }) {
         <div style={{flex:1}}/>
         {!showAddTask && (
           <button onClick={() => setShowAddTask(true)}
-            style={{background:G.blueBg,border:"1px solid "+G.blue,color:G.blue,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:"0.05em"}}>
+            style={{background:G.blueBg,border:"1px solid "+G.blue,color:G.blue,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:700,letterSpacing:"0.05em"}}>
             + ADD TASK
           </button>
         )}
@@ -551,7 +551,7 @@ function TasksTab({ project, tasks, handlers }) {
 
       <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,overflow:"hidden"}}>
         {shown.length === 0 ? (
-          <div style={{padding:50,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>
+          <div style={{padding:50,textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>
             No tasks {phase === "all" ? "yet" : "in " + phase} — click <strong style={{color:G.blue}}>+ ADD TASK</strong> above to create one.
           </div>
         ) : (
@@ -560,7 +560,7 @@ function TasksTab({ project, tasks, handlers }) {
               <tr style={{borderBottom:"1px solid "+G.border,background:G.surface2}}>
                 <th style={{width:44,padding:"10px 8px 10px 18px"}}></th>
                 {["Task","Phase","Assignee","Projected","Actual","Variance","Priority","Status",""].map(h => (
-                  <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                  <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                 ))}
               </tr>
             </thead>
@@ -603,25 +603,25 @@ function AddTaskRow({ defaultPhase, onSave, onCancel }) {
     <div style={{padding:"12px 14px",background:G.surface2,border:"1px solid "+G.blue+"55",borderRadius:8,marginBottom:10,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Task name…" autoFocus
         onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onCancel(); }}
-        style={{flex:"2 1 200px",background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+        style={{flex:"2 1 200px",background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
       <select value={phase} onChange={e => setPhase(e.target.value)}
-        style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 8px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11,cursor:"pointer"}}>
+        style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 8px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,cursor:"pointer"}}>
         {PHASE_ORDER.map(p => <option key={p} value={p}>{p}</option>)}
       </select>
       <input type="date" value={projDate} onChange={e => setProjDate(e.target.value)}
-        style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 8px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11}}/>
+        style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 8px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}/>
       <select value={priority} onChange={e => setPriority(e.target.value)}
-        style={{background:G.bg,border:"1px solid "+G.border,color:PRIORITY_COLOR[priority],padding:"7px 8px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11,cursor:"pointer",fontWeight:700}}>
+        style={{background:G.bg,border:"1px solid "+G.border,color:PRIORITY_COLOR[priority],padding:"7px 8px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,cursor:"pointer",fontWeight:700}}>
         {["critical","high","medium","low"].map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
       </select>
       <input value={assignee} onChange={e => setAssignee(e.target.value)} placeholder="Assignee (optional)"
-        style={{flex:"1 1 130px",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+        style={{flex:"1 1 130px",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
       <button onClick={submit} disabled={busy || !name.trim()}
-        style={{background:name.trim()?G.green:G.surface2,border:"1px solid "+(name.trim()?G.green:G.border),color:name.trim()?"#fff":G.muted,padding:"7px 14px",borderRadius:6,cursor:busy?"wait":(name.trim()?"pointer":"not-allowed"),fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,opacity:busy?0.6:1}}>
+        style={{background:name.trim()?G.green:G.surface2,border:"1px solid "+(name.trim()?G.green:G.border),color:name.trim()?"#fff":G.muted,padding:"7px 14px",borderRadius:6,cursor:busy?"wait":(name.trim()?"pointer":"not-allowed"),fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:700,opacity:busy?0.6:1}}>
         {busy ? "…" : "+ ADD"}
       </button>
       <button onClick={onCancel}
-        style={{background:"transparent",border:"1px solid "+G.border,color:G.muted,padding:"7px 10px",borderRadius:6,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:11}}>
+        style={{background:"transparent",border:"1px solid "+G.border,color:G.muted,padding:"7px 10px",borderRadius:6,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>
         Cancel
       </button>
     </div>
@@ -674,17 +674,17 @@ function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers }) {
           </div>
         )}
         {task.notes && !isNameEdit && (
-          <div style={{fontSize:10,color:"#5a7a94",fontFamily:"DM Mono,monospace",marginTop:3,marginLeft:15,lineHeight:1.4}}>
+          <div style={{fontSize:10,color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif",marginTop:3,marginLeft:15,lineHeight:1.4}}>
             {task.notes.slice(0, 70)}{task.notes.length > 70 ? "…" : ""}
           </div>
         )}
       </td>
-      <td style={{padding:"11px 12px",fontSize:13,fontFamily:"DM Mono,monospace",whiteSpace:"nowrap"}}>
+      <td style={{padding:"11px 12px",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",whiteSpace:"nowrap"}}>
         {isPhaseEdit ? (
           <select defaultValue={task.phase} autoFocus
             onBlur={e => { handlers.saveEdit(task, "phase", e.target.value); setEditing(null); }}
             onChange={e => { handlers.saveEdit(task, "phase", e.target.value); setEditing(null); }}
-            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px 6px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:11}}>
+            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"3px 6px",borderRadius:5,fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>
             {PHASE_ORDER.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         ) : (
@@ -697,7 +697,7 @@ function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers }) {
       <td style={{padding:"11px 12px",fontSize:12,color:G.muted,whiteSpace:"nowrap"}}>
         {isAsgnEdit ? (
           <input defaultValue={task.assignee_name||""} autoFocus placeholder="Assignee" {...blurOrEnter("assignee_name")}
-            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:12,width:140}}/>
+            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"Inter,system-ui,sans-serif",fontSize:12,width:140}}/>
         ) : (
           <span onClick={() => setEditing({ id: task.id, field: "assignee_name" })} title="Click to set assignee"
             style={{cursor:"pointer",borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
@@ -708,10 +708,10 @@ function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers }) {
       <td style={{padding:"11px 12px",whiteSpace:"nowrap"}}>
         {isProjEdit ? (
           <input type="date" defaultValue={task.proj_date||""} autoFocus {...blurOrEnter("proj_date")}
-            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+            style={{background:G.bg,border:"1px solid "+G.blue,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
         ) : (
           <span onClick={() => setEditing({ id: task.id, field: "proj_date" })} title="Click to edit"
-            style={{cursor:"pointer",fontSize:13,fontFamily:"DM Mono,monospace",color:task.status==="late"?G.red:G.muted,borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
+            style={{cursor:"pointer",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:task.status==="late"?G.red:G.muted,borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
             {fmtDate(task.proj_date)} ✎
           </span>
         )}
@@ -719,15 +719,15 @@ function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers }) {
       <td style={{padding:"11px 12px",whiteSpace:"nowrap"}}>
         {isActEdit ? (
           <input type="date" defaultValue={task.actual_date||""} autoFocus {...blurOrEnter("actual_date")}
-            style={{background:G.bg,border:"1px solid "+G.green,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+            style={{background:G.bg,border:"1px solid "+G.green,color:G.text,padding:"4px 8px",borderRadius:5,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
         ) : (
           <span onClick={() => setEditing({ id: task.id, field: "actual_date" })} title="Click to set actual date"
-            style={{cursor:"pointer",fontSize:13,fontFamily:"DM Mono,monospace",color:task.actual_date?(variance>0?G.red:variance<0?G.green:G.muted):G.faint,borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
+            style={{cursor:"pointer",fontSize:13,fontFamily:"Inter,system-ui,sans-serif",color:task.actual_date?(variance>0?G.red:variance<0?G.green:G.muted):G.faint,borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
             {task.actual_date ? fmtDate(task.actual_date) + " ✎" : "+ Set"}
           </span>
         )}
       </td>
-      <td style={{padding:"11px 12px",fontFamily:"DM Mono,monospace",fontSize:11,whiteSpace:"nowrap"}}>
+      <td style={{padding:"11px 12px",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,whiteSpace:"nowrap"}}>
         {variance != null
           ? <span style={{color:variance>2?G.red:variance<0?G.green:G.muted,fontWeight:700}}>{variance>0?"+"+variance+"d":variance<0?variance+"d":"On time"}</span>
           : "—"}
@@ -737,24 +737,24 @@ function TaskRow({ task, isLast, rowIdx, editing, setEditing, handlers }) {
           <select defaultValue={task.priority} autoFocus
             onBlur={e => { handlers.saveEdit(task, "priority", e.target.value); setEditing(null); }}
             onChange={e => { handlers.saveEdit(task, "priority", e.target.value); setEditing(null); }}
-            style={{background:G.bg,border:"1px solid "+G.blue,color:PRIORITY_COLOR[task.priority]||G.text,padding:"3px 6px",borderRadius:5,fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:700}}>
+            style={{background:G.bg,border:"1px solid "+G.blue,color:PRIORITY_COLOR[task.priority]||G.text,padding:"3px 6px",borderRadius:5,fontFamily:"Inter,system-ui,sans-serif",fontSize:10,fontWeight:700}}>
             {["critical","high","medium","low"].map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
           </select>
         ) : (
           <span onClick={() => setEditing({ id: task.id, field: "priority" })} title="Click to change priority"
-            style={{color:PRIORITY_COLOR[task.priority]||G.muted,fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:700,letterSpacing:"0.08em",cursor:"pointer",borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
+            style={{color:PRIORITY_COLOR[task.priority]||G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:10,fontWeight:700,letterSpacing:"0.08em",cursor:"pointer",borderBottom:"1px dashed "+G.border,padding:"2px 4px"}}>
             {(task.priority || "").toUpperCase()} ✎
           </span>
         )}
       </td>
       <td style={{padding:"11px 12px"}}>
-        <span style={{display:"inline-block",padding:"3px 9px",background:sc.bg,border:"1px solid "+sc.bd,borderRadius:5,color:sc.color,fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:700,letterSpacing:"0.05em"}}>
+        <span style={{display:"inline-block",padding:"3px 9px",background:sc.bg,border:"1px solid "+sc.bd,borderRadius:5,color:sc.color,fontFamily:"Inter,system-ui,sans-serif",fontSize:10,fontWeight:700,letterSpacing:"0.05em"}}>
           {sc.label.toUpperCase()}
         </span>
       </td>
       <td style={{padding:"11px 12px",textAlign:"right"}}>
         <button onClick={() => !isSaving && handlers.deleteTask(task)} disabled={isSaving} title="Delete task"
-          style={{background:"transparent",border:"1px solid "+G.border,color:G.faint,width:24,height:24,borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:12,display:"inline-flex",alignItems:"center",justifyContent:"center"}}
+          style={{background:"transparent",border:"1px solid "+G.border,color:G.faint,width:24,height:24,borderRadius:5,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:12,display:"inline-flex",alignItems:"center",justifyContent:"center"}}
           onMouseEnter={e => { e.currentTarget.style.color = G.red; e.currentTarget.style.borderColor = G.red; }}
           onMouseLeave={e => { e.currentTarget.style.color = G.faint; e.currentTarget.style.borderColor = G.border; }}>
           ✕
@@ -821,8 +821,8 @@ function TimelineTab({ project, tasks }) {
     <div style={{padding:"16px 24px"}}>
       <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"16px 22px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <span style={{fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.08em",fontWeight:700}}>PROJECT TIMELINE</span>
-          <div style={{display:"flex",gap:14,fontSize:10,fontFamily:"DM Mono,monospace",color:G.muted}}>
+          <span style={{fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.08em",fontWeight:700}}>PROJECT TIMELINE</span>
+          <div style={{display:"flex",gap:14,fontSize:10,fontFamily:"Inter,system-ui,sans-serif",color:G.muted}}>
             <span><span style={{display:"inline-block",width:10,height:10,background:G.blue,borderRadius:2,marginRight:5,verticalAlign:"middle"}}/>Projected</span>
             <span><span style={{display:"inline-block",width:10,height:10,background:G.green,borderRadius:2,marginRight:5,verticalAlign:"middle"}}/>Actual</span>
             <span><span style={{display:"inline-block",width:10,height:10,background:G.red,borderRadius:2,marginRight:5,verticalAlign:"middle"}}/>Late</span>
@@ -832,12 +832,12 @@ function TimelineTab({ project, tasks }) {
         </div>
 
         {orderedTasks.length === 0 ? (
-          <div style={{padding:50,textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>
+          <div style={{padding:50,textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>
             No tasks have a projected date — add one in the <strong style={{color:G.blue}}>Tasks</strong> tab to plot a timeline.
           </div>
         ) : (
           <div style={{overflowX:"auto"}}>
-            <svg viewBox={`0 0 ${VIEWBOX_W} ${CHART_H}`} style={{width:"100%",minWidth:800,height:CHART_H,fontFamily:"DM Mono,monospace"}}>
+            <svg viewBox={`0 0 ${VIEWBOX_W} ${CHART_H}`} style={{width:"100%",minWidth:800,height:CHART_H,fontFamily:"Inter,system-ui,sans-serif"}}>
               {/* Date ticks */}
               {ticks.map((t, i) => {
                 const x = xFor(t);
@@ -924,8 +924,8 @@ function TimelineTab({ project, tasks }) {
             { label:"DURATION",   value:totalDays + " days",   color:G.muted },
           ].map((k,i) => (
             <div key={i} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:10,padding:"12px 14px"}}>
-              <div style={{fontSize:9,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.08em",fontWeight:600}}>{k.label}</div>
-              <div style={{fontSize:16,fontWeight:700,color:k.color,marginTop:5,fontFamily:"DM Mono,monospace"}}>{k.value}</div>
+              <div style={{fontSize:9,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.08em",fontWeight:600}}>{k.label}</div>
+              <div style={{fontSize:16,fontWeight:700,color:k.color,marginTop:5,fontFamily:"Inter,system-ui,sans-serif"}}>{k.value}</div>
             </div>
           ))}
         </div>
@@ -994,21 +994,21 @@ function NotesTab({ notes, tasks, handlers }) {
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {/* Composer */}
         <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"14px 18px"}}>
-          <div style={{fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.08em",fontWeight:700,marginBottom:10}}>NEW NOTE</div>
+          <div style={{fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.08em",fontWeight:700,marginBottom:10}}>NEW NOTE</div>
           <textarea value={body} onChange={e => setBody(e.target.value)}
             placeholder="What's the latest? Status updates, blockers, follow-ups…"
             rows={4}
-            style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"10px 12px",borderRadius:8,fontFamily:"DM Mono,monospace",fontSize:13,resize:"vertical",lineHeight:1.5}}/>
+            style={{width:"100%",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"10px 12px",borderRadius:8,fontFamily:"Inter,system-ui,sans-serif",fontSize:13,resize:"vertical",lineHeight:1.5}}/>
           <div style={{display:"flex",gap:10,marginTop:10,alignItems:"center",flexWrap:"wrap"}}>
             <input value={author} onChange={e => setAuthor(e.target.value)} placeholder="Your name"
-              style={{flex:"1 1 140px",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}/>
+              style={{flex:"1 1 140px",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}/>
             <select value={taskId} onChange={e => setTaskId(e.target.value)}
-              style={{flex:"2 1 180px",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:12}}>
+              style={{flex:"2 1 180px",background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:12}}>
               <option value="">Project-level note (no task)</option>
               {tasks.map(t => <option key={t.id} value={t.id}>{t.phase} · {t.name}</option>)}
             </select>
             <button onClick={submit} disabled={handlers.busy || !body.trim()}
-              style={{background:body.trim()?G.blue:G.surface2,border:"1px solid "+(body.trim()?G.blue:G.border),color:body.trim()?"#fff":G.muted,padding:"7px 18px",borderRadius:6,cursor:handlers.busy?"wait":(body.trim()?"pointer":"not-allowed"),fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:"0.05em"}}>
+              style={{background:body.trim()?G.blue:G.surface2,border:"1px solid "+(body.trim()?G.blue:G.border),color:body.trim()?"#fff":G.muted,padding:"7px 18px",borderRadius:6,cursor:handlers.busy?"wait":(body.trim()?"pointer":"not-allowed"),fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:700,letterSpacing:"0.05em"}}>
               {handlers.busy ? "POSTING…" : "POST NOTE"}
             </button>
           </div>
@@ -1016,13 +1016,13 @@ function NotesTab({ notes, tasks, handlers }) {
 
         {/* Note list */}
         {notes.length === 0 ? (
-          <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"36px 24px",textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>
+          <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"36px 24px",textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>
             No notes yet. Use this space to log status updates, customer feedback, or anything worth remembering for next week's standup.
           </div>
         ) : notes.map(n => (
           <div key={n.id} style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"12px 18px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7,gap:10,flexWrap:"wrap"}}>
-              <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",fontSize:11,fontFamily:"DM Mono,monospace"}}>
+              <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap",fontSize:11,fontFamily:"Inter,system-ui,sans-serif"}}>
                 <span style={{color:G.text,fontWeight:700}}>{n.author}</span>
                 <span style={{color:G.faint}}>·</span>
                 <span style={{color:G.muted}}>{fmtDate(n.created_at)}</span>
@@ -1037,7 +1037,7 @@ function NotesTab({ notes, tasks, handlers }) {
               </div>
               <button onClick={() => handlers.deleteNote(n)}
                 title="Delete note"
-                style={{background:"transparent",border:"1px solid "+G.border,color:G.faint,padding:"3px 8px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10}}
+                style={{background:"transparent",border:"1px solid "+G.border,color:G.faint,padding:"3px 8px",borderRadius:5,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:10}}
                 onMouseEnter={e => { e.currentTarget.style.color = G.red; e.currentTarget.style.borderColor = G.red; }}
                 onMouseLeave={e => { e.currentTarget.style.color = G.faint; e.currentTarget.style.borderColor = G.border; }}>
                 Delete
@@ -1050,8 +1050,8 @@ function NotesTab({ notes, tasks, handlers }) {
 
       {/* Right rail — quick stats */}
       <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"14px 18px",position:"sticky",top:8}}>
-        <div style={{fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.08em",fontWeight:700,marginBottom:10}}>NOTES SUMMARY</div>
-        <div style={{display:"flex",flexDirection:"column",gap:8,fontSize:12,fontFamily:"DM Mono,monospace"}}>
+        <div style={{fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.08em",fontWeight:700,marginBottom:10}}>NOTES SUMMARY</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8,fontSize:12,fontFamily:"Inter,system-ui,sans-serif"}}>
           <div style={{display:"flex",justifyContent:"space-between",color:G.muted}}>
             <span>Total notes</span>
             <span style={{color:G.text,fontWeight:700}}>{notes.length}</span>
@@ -1191,25 +1191,25 @@ function FilesTab({ files, tasks, handlers }) {
         <div style={{fontSize:14,fontWeight:700,color:G.text,marginBottom:5,fontFamily:"Syne,sans-serif"}}>
           Drop a file here or click to browse
         </div>
-        <div style={{fontSize:11,color:G.muted,fontFamily:"DM Mono,monospace",marginBottom:14}}>
+        <div style={{fontSize:11,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",marginBottom:14}}>
           Up to 5 MB · PDFs, images, spreadsheets, text
         </div>
         <input ref={inputRef} type="file" onChange={onPick} style={{display:"none"}}/>
         <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",alignItems:"center",marginBottom:8}}>
           <select value={phase} onChange={e => setPhase(e.target.value)}
             title="Tag this upload to a phase (optional)"
-            style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11}}>
+            style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>
             <option value="">No phase</option>
             {PHASE_ORDER.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
           <select value={taskId} onChange={e => setTaskId(e.target.value)}
             title="Tag this upload to a task (optional)"
-            style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"DM Mono,monospace",fontSize:11,maxWidth:260}}>
+            style={{background:G.bg,border:"1px solid "+G.border,color:G.text,padding:"7px 10px",borderRadius:6,fontFamily:"Inter,system-ui,sans-serif",fontSize:11,maxWidth:260}}>
             <option value="">No task</option>
             {tasks.map(t => <option key={t.id} value={t.id}>{t.phase} · {t.name}</option>)}
           </select>
           <button onClick={() => inputRef.current?.click()} disabled={handlers.uploading}
-            style={{background:G.blue,color:"#fff",border:"1px solid "+G.blue,padding:"7px 18px",borderRadius:6,cursor:handlers.uploading?"wait":"pointer",fontFamily:"DM Mono,monospace",fontSize:11,fontWeight:700,letterSpacing:"0.05em"}}>
+            style={{background:G.blue,color:"#fff",border:"1px solid "+G.blue,padding:"7px 18px",borderRadius:6,cursor:handlers.uploading?"wait":"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:11,fontWeight:700,letterSpacing:"0.05em"}}>
             {handlers.uploading ? "UPLOADING…" : "CHOOSE FILE"}
           </button>
         </div>
@@ -1223,9 +1223,9 @@ function FilesTab({ files, tasks, handlers }) {
       {/* Filter chips */}
       {files.length > 0 && (
         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",letterSpacing:"0.1em",marginRight:4}}>FILTER BY PHASE</span>
+          <span style={{fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",letterSpacing:"0.1em",marginRight:4}}>FILTER BY PHASE</span>
           <button onClick={() => setFilterPhase("all")}
-            style={{background:filterPhase==="all"?G.blueBg:"transparent",border:"1px solid "+(filterPhase==="all"?G.blue:G.border),color:filterPhase==="all"?G.blue:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:600}}>
+            style={{background:filterPhase==="all"?G.blueBg:"transparent",border:"1px solid "+(filterPhase==="all"?G.blue:G.border),color:filterPhase==="all"?G.blue:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:10,fontWeight:600}}>
             ALL ({files.length})
           </button>
           {PHASE_ORDER.map(p => {
@@ -1233,7 +1233,7 @@ function FilesTab({ files, tasks, handlers }) {
             if (!n) return null;
             return (
               <button key={p} onClick={() => setFilterPhase(p)}
-                style={{background:filterPhase===p?G.blueBg:"transparent",border:"1px solid "+(filterPhase===p?PHASE_COLOR[p]:G.border),color:filterPhase===p?PHASE_COLOR[p]:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,fontWeight:600}}>
+                style={{background:filterPhase===p?G.blueBg:"transparent",border:"1px solid "+(filterPhase===p?PHASE_COLOR[p]:G.border),color:filterPhase===p?PHASE_COLOR[p]:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:10,fontWeight:600}}>
                 {p.toUpperCase()} ({n})
               </button>
             );
@@ -1243,7 +1243,7 @@ function FilesTab({ files, tasks, handlers }) {
 
       {/* File list */}
       {shown.length === 0 ? (
-        <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"36px 24px",textAlign:"center",color:G.muted,fontFamily:"DM Mono,monospace",fontSize:13}}>
+        <div style={{background:G.surface,border:"1px solid "+G.border,borderRadius:12,padding:"36px 24px",textAlign:"center",color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontSize:13}}>
           {files.length === 0
             ? "No files yet. Drop docs, screenshots, or spreadsheets here so the team can find them later."
             : "No files in this phase."}
@@ -1254,7 +1254,7 @@ function FilesTab({ files, tasks, handlers }) {
             <thead>
               <tr style={{borderBottom:"1px solid "+G.border,background:G.surface2}}>
                 {["File","Phase","Task","Size","Uploaded","Uploaded By",""].map(h => (
-                  <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"DM Mono,monospace",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
+                  <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",fontWeight:500,letterSpacing:"0.07em",whiteSpace:"nowrap"}}>{h.toUpperCase()}</th>
                 ))}
               </tr>
             </thead>
@@ -1267,32 +1267,32 @@ function FilesTab({ files, tasks, handlers }) {
                       title={f.file_name}>
                       {f.file_name}
                     </button>
-                    {f.mime_type && <div style={{fontSize:10,color:G.faint,fontFamily:"DM Mono,monospace",marginTop:2}}>{f.mime_type}</div>}
+                    {f.mime_type && <div style={{fontSize:10,color:G.faint,fontFamily:"Inter,system-ui,sans-serif",marginTop:2}}>{f.mime_type}</div>}
                   </td>
-                  <td style={{padding:"11px 12px",fontSize:11,fontFamily:"DM Mono,monospace",color:f.phase?(PHASE_COLOR[f.phase]||G.muted):G.faint,whiteSpace:"nowrap"}}>
+                  <td style={{padding:"11px 12px",fontSize:11,fontFamily:"Inter,system-ui,sans-serif",color:f.phase?(PHASE_COLOR[f.phase]||G.muted):G.faint,whiteSpace:"nowrap"}}>
                     {f.phase || "—"}
                   </td>
-                  <td style={{padding:"11px 12px",fontSize:12,fontFamily:"DM Mono,monospace",color:G.muted,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  <td style={{padding:"11px 12px",fontSize:12,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                     {f.task_id && taskById[f.task_id] ? taskById[f.task_id].name : "—"}
                   </td>
-                  <td style={{padding:"11px 12px",fontSize:11,fontFamily:"DM Mono,monospace",color:G.muted,whiteSpace:"nowrap"}}>
+                  <td style={{padding:"11px 12px",fontSize:11,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,whiteSpace:"nowrap"}}>
                     {fmtBytes(f.size_bytes)}
                   </td>
-                  <td style={{padding:"11px 12px",fontSize:11,fontFamily:"DM Mono,monospace",color:G.muted,whiteSpace:"nowrap"}}>
+                  <td style={{padding:"11px 12px",fontSize:11,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,whiteSpace:"nowrap"}}>
                     {fmtDate(f.created_at)}
                   </td>
-                  <td style={{padding:"11px 12px",fontSize:11,fontFamily:"DM Mono,monospace",color:G.muted,whiteSpace:"nowrap"}}>
+                  <td style={{padding:"11px 12px",fontSize:11,fontFamily:"Inter,system-ui,sans-serif",color:G.muted,whiteSpace:"nowrap"}}>
                     {f.uploaded_by || "—"}
                   </td>
                   <td style={{padding:"11px 12px",textAlign:"right",whiteSpace:"nowrap"}}>
                     <button onClick={() => handlers.downloadFile(f)}
                       title="Download"
-                      style={{background:"transparent",border:"1px solid "+G.border,color:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10,marginRight:4}}>
+                      style={{background:"transparent",border:"1px solid "+G.border,color:G.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:10,marginRight:4}}>
                       ↓
                     </button>
                     <button onClick={() => handlers.deleteFile(f)}
                       title="Delete"
-                      style={{background:"transparent",border:"1px solid "+G.border,color:G.faint,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"DM Mono,monospace",fontSize:10}}
+                      style={{background:"transparent",border:"1px solid "+G.border,color:G.faint,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontFamily:"Inter,system-ui,sans-serif",fontSize:10}}
                       onMouseEnter={e => { e.currentTarget.style.color = G.red; e.currentTarget.style.borderColor = G.red; }}
                       onMouseLeave={e => { e.currentTarget.style.color = G.faint; e.currentTarget.style.borderColor = G.border; }}>
                       ✕

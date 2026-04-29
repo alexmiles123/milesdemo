@@ -72,7 +72,7 @@ export default function UsersTab({ api }) {
       <Card>
         <CardHeader right={
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, cursor: "pointer" }}>
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
               Show disabled
             </label>
@@ -84,7 +84,7 @@ export default function UsersTab({ api }) {
           <Empty>Loading users…</Empty>
         ) : visible.length === 0 ? (
           <Empty>
-            No users yet. <button onClick={() => setCreateOpen(true)} style={{ background: "none", border: "none", color: G.purple, cursor: "pointer", textDecoration: "underline", fontFamily: "DM Mono,monospace" }}>Add the first user</button> to get started.
+            No users yet. <button onClick={() => setCreateOpen(true)} style={{ background: "none", border: "none", color: G.purple, cursor: "pointer", textDecoration: "underline", fontFamily: "Inter,system-ui,sans-serif" }}>Add the first user</button> to get started.
           </Empty>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -139,7 +139,7 @@ export default function UsersTab({ api }) {
 
       <Card>
         <CardHeader>SECURITY POSTURE</CardHeader>
-        <div style={{ padding: 18, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12, fontFamily: "DM Mono,monospace", fontSize: 12, color: G.muted, lineHeight: 1.6 }}>
+        <div style={{ padding: 18, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, color: G.muted, lineHeight: 1.6 }}>
           <div><div style={{ color: G.text, fontWeight: 700, marginBottom: 4 }}>Password policy</div>{describePolicy(policy)}.</div>
           <div><div style={{ color: G.text, fontWeight: 700, marginBottom: 4 }}>Account lockout</div>15 minutes after 5 failed sign-in attempts.</div>
           <div><div style={{ color: G.text, fontWeight: 700, marginBottom: 4 }}>Session length</div>12-hour signed JWT, no server-side store.</div>
@@ -194,7 +194,7 @@ function CreateUserModal({ api, policy, roleOpts, onClose, onCreated, setToast }
         <div>
           <Label>ROLE</Label>
           <Select value={form.role} onChange={(v) => set("role", v)} options={roleOpts} />
-          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>
             Manage available roles in <strong style={{ color: G.muted }}>Configuration → People → Roles</strong>.
           </div>
         </div>
@@ -202,11 +202,11 @@ function CreateUserModal({ api, policy, roleOpts, onClose, onCreated, setToast }
           <Label>TEMPORARY PASSWORD</Label>
           <Input value={form.password} onChange={(v) => set("password", v)} type="text" placeholder="At least 12 characters" />
           <FieldError error={errors.password} />
-          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>
             {describePolicy(policy)}. Share this securely; the user will be required to reset it on first login.
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted }}>
           <input id="must-reset" type="checkbox" checked={form.must_reset} onChange={(e) => set("must_reset", e.target.checked)} />
           <label htmlFor="must-reset">Require password reset on first login</label>
         </div>
@@ -243,9 +243,9 @@ function ResetPasswordModal({ api, user, policy, onClose, onDone, setToast }) {
           <Label>NEW PASSWORD</Label>
           <Input value={pw} onChange={setPw} type="text" placeholder={`At least ${policy.min_length} characters`} />
           <FieldError error={error} />
-          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>{describePolicy(policy)}.</div>
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>{describePolicy(policy)}.</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted }}>
           <input id="reset-mustreset" type="checkbox" checked={mustReset} onChange={(e) => setMustReset(e.target.checked)} />
           <label htmlFor="reset-mustreset">Require user to choose a new password on next sign-in</label>
         </div>

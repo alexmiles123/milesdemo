@@ -211,12 +211,12 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
         <>
           <div style={{ border: "1px solid " + G.border, borderRadius: 10, background: G.surface2, marginBottom: 14, overflow: "hidden" }}>
             <div style={{ padding: "10px 14px", borderBottom: "1px solid " + G.border, display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: G.text, fontFamily: "DM Mono,monospace", letterSpacing: "0.05em" }}>TEMPLATE · COLUMN LAYOUT</div>
-              <div style={{ fontSize: 10, color: G.muted, fontFamily: "DM Mono,monospace" }}>.xlsx · .xls · .csv · headers case-insensitive</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: G.text, fontFamily: "Inter,system-ui,sans-serif", letterSpacing: "0.05em" }}>TEMPLATE · COLUMN LAYOUT</div>
+              <div style={{ fontSize: 10, color: G.muted, fontFamily: "Inter,system-ui,sans-serif" }}>.xlsx · .xls · .csv · headers case-insensitive</div>
               <Button variant="primary" onClick={downloadTemplate} style={{ marginLeft: "auto" }}>↓ Download .xlsx Template</Button>
             </div>
             <div style={{ maxHeight: 220, overflow: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "DM Mono,monospace" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "Inter,system-ui,sans-serif" }}>
                 <thead style={{ position: "sticky", top: 0, background: G.surface }}>
                   <tr style={{ borderBottom: "1px solid " + G.border }}>
                     <th style={{ padding: "6px 10px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>COLUMN</th>
@@ -249,31 +249,31 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
               marginBottom: 14,
             }}
           >
-            <div style={{ fontSize: 13, color: G.text, fontFamily: "DM Mono,monospace", marginBottom: 4 }}>
+            <div style={{ fontSize: 13, color: G.text, fontFamily: "Inter,system-ui,sans-serif", marginBottom: 4 }}>
               {fileName ? `Loaded: ${fileName}` : "Drop an Excel/CSV file, or click to browse"}
             </div>
-            <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace" }}>
+            <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif" }}>
               Required columns: {spec.columns.filter(c => c.required).map(c => c.aliases[0]).join(", ")}
             </div>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} style={{ display: "none" }} />
           </div>
 
           {parseError && (
-            <div style={{ padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12, marginBottom: 14 }}>
+            <div style={{ padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, marginBottom: 14 }}>
               {parseError}
             </div>
           )}
 
           {rows.length > 0 && (
             <>
-              <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 10, fontSize: 12, fontFamily: "DM Mono,monospace" }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 10, fontSize: 12, fontFamily: "Inter,system-ui,sans-serif" }}>
                 <span style={{ color: G.green }}>{validRows.length} valid</span>
                 {errorRows.length > 0 && <span style={{ color: G.red }}>{errorRows.length} with errors</span>}
                 <span style={{ color: G.muted }}>{rows.length} total rows</span>
               </div>
 
               <div style={{ maxHeight: 280, overflow: "auto", border: "1px solid " + G.border, borderRadius: 8, marginBottom: 14 }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "DM Mono,monospace" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "Inter,system-ui,sans-serif" }}>
                   <thead style={{ position: "sticky", top: 0, background: G.surface }}>
                     <tr style={{ borderBottom: "1px solid " + G.border }}>
                       <th style={{ padding: "6px 8px", textAlign: "left", color: G.muted }}>ROW</th>
@@ -316,7 +316,7 @@ export default function ImportModal({ title, spec, ctx, onClose, onDone, onCommi
       {summary && (
         <div style={{ padding: "16px 18px", border: "1px solid " + G.border, borderRadius: 10, background: G.surface2, marginBottom: 14 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: G.text, fontFamily: "Syne,sans-serif", marginBottom: 10 }}>Import complete</div>
-          <div style={{ fontFamily: "DM Mono,monospace", fontSize: 12, color: G.muted, lineHeight: 1.8 }}>
+          <div style={{ fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, color: G.muted, lineHeight: 1.8 }}>
             <div><span style={{ color: G.green }}>✓</span> Created: <strong style={{ color: G.text }}>{summary.created}</strong></div>
             {summary.failed > 0 && <div><span style={{ color: G.red }}>✗</span> Failed: <strong style={{ color: G.text }}>{summary.failed}</strong></div>}
             {summary.errors.length > 0 && (

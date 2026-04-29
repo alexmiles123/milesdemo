@@ -71,12 +71,12 @@ export default function AuditTab({ api }) {
                     {isOpen && (
                       <tr key={r.id + "-d"}>
                         <td colSpan={6} style={{ background: G.bg, padding: 16, borderBottom: "1px solid " + G.border }}>
-                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap: 14, fontFamily: "DM Mono,monospace", fontSize: 11 }}>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap: 14, fontFamily: "Inter,system-ui,sans-serif", fontSize: 11 }}>
                             <LogBlob title="Before" obj={r.before_state} />
                             <LogBlob title="After" obj={r.after_state} />
                           </div>
                           <LogBlob title="Metadata" obj={r.metadata} />
-                          <div style={{ marginTop: 8, display:"flex", gap: 18, color: G.faint, fontSize: 11, fontFamily:"DM Mono,monospace" }}>
+                          <div style={{ marginTop: 8, display:"flex", gap: 18, color: G.faint, fontSize: 11, fontFamily:"Inter,system-ui,sans-serif" }}>
                             <span>Request: {r.request_id || "—"}</span>
                             <span>User agent: {r.user_agent || "—"}</span>
                           </div>

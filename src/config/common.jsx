@@ -8,13 +8,13 @@ export const Card = ({ children, style = {} }) => (
 
 export const CardHeader = ({ children, right }) => (
   <div style={{ padding: "12px 18px", borderBottom: "1px solid " + G.border, display: "flex", alignItems: "center" }}>
-    <div style={{ fontSize: 15, fontWeight: 700, color: G.muted, letterSpacing: "0.05em", fontFamily: "DM Mono,monospace" }}>{children}</div>
+    <div style={{ fontSize: 15, fontWeight: 700, color: G.muted, letterSpacing: "0.05em", fontFamily: "Inter,system-ui,sans-serif" }}>{children}</div>
     {right ? <div style={{ marginLeft: "auto" }}>{right}</div> : null}
   </div>
 );
 
 export const Label = ({ children }) => (
-  <label style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.12em", display: "block", marginBottom: 5 }}>
+  <label style={{ fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, letterSpacing: "0.12em", display: "block", marginBottom: 5 }}>
     {children}
   </label>
 );
@@ -29,7 +29,7 @@ export const Input = ({ value, onChange, placeholder, type = "text", style = {},
     {...rest}
     style={{
       width: "100%", background: G.surface2, border: "1px solid " + G.border, color: G.text,
-      padding: "9px 12px", borderRadius: 8, fontFamily: "DM Mono,monospace", fontSize: 12,
+      padding: "9px 12px", borderRadius: 8, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12,
       opacity: disabled ? 0.55 : 1, ...style,
     }}
   />
@@ -43,7 +43,7 @@ export const TextArea = ({ value, onChange, placeholder, rows = 3, style = {} })
     rows={rows}
     style={{
       width: "100%", background: G.surface2, border: "1px solid " + G.border, color: G.text,
-      padding: "9px 12px", borderRadius: 8, fontFamily: "DM Mono,monospace", fontSize: 12, resize: "vertical", ...style,
+      padding: "9px 12px", borderRadius: 8, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, resize: "vertical", ...style,
     }}
   />
 );
@@ -55,7 +55,7 @@ export const Select = ({ value, onChange, options, disabled = false, style = {} 
     disabled={disabled}
     style={{
       width: "100%", background: G.surface2, border: "1px solid " + G.border, color: G.text,
-      padding: "9px 12px", borderRadius: 8, fontFamily: "DM Mono,monospace", fontSize: 12,
+      padding: "9px 12px", borderRadius: 8, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12,
       opacity: disabled ? 0.55 : 1, cursor: disabled ? "not-allowed" : "pointer", ...style,
     }}
   >
@@ -83,7 +83,7 @@ export const Button = ({ children, onClick, variant = "default", disabled = fals
       disabled={disabled}
       style={{
         background: s.bg, border: "1px solid " + s.bd, color: s.c, padding: "8px 14px", borderRadius: 8,
-        cursor: disabled ? "not-allowed" : "pointer", fontFamily: "DM Mono,monospace", fontSize: 11,
+        cursor: disabled ? "not-allowed" : "pointer", fontFamily: "Inter,system-ui,sans-serif", fontSize: 11,
         fontWeight: 600, letterSpacing: "0.05em", opacity: disabled ? 0.55 : 1, ...style,
       }}
     >
@@ -93,7 +93,7 @@ export const Button = ({ children, onClick, variant = "default", disabled = fals
 };
 
 export const FieldError = ({ error }) => error ? (
-  <div style={{ color: G.red, fontSize: 11, fontFamily: "DM Mono,monospace", marginTop: 4 }}>{error}</div>
+  <div style={{ color: G.red, fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>{error}</div>
 ) : null;
 
 export const Toast = ({ tone = "success", children, onClose }) => {
@@ -103,7 +103,7 @@ export const Toast = ({ tone = "success", children, onClose }) => {
   return (
     <div style={{
       position: "fixed", bottom: 18, right: 18, zIndex: 1000, background: c.bg, border: "1px solid " + c.bd,
-      color: c.fg, padding: "10px 14px", borderRadius: 10, fontFamily: "DM Mono,monospace", fontSize: 12,
+      color: c.fg, padding: "10px 14px", borderRadius: 10, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12,
       display: "flex", alignItems: "center", gap: 12, maxWidth: 480, animation: "fadein .2s ease",
     }}>
       <span>{children}</span>
@@ -130,17 +130,17 @@ export const Modal = ({ title, onClose, children, width = 560 }) => (
 );
 
 export const Empty = ({ children }) => (
-  <div style={{ padding: "40px 20px", textAlign: "center", color: G.muted, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{children}</div>
+  <div style={{ padding: "40px 20px", textAlign: "center", color: G.muted, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{children}</div>
 );
 
 export const Th = ({ children, style = {} }) => (
-  <th style={{ textAlign: "left", padding: "10px 14px", fontSize: 11, fontFamily: "DM Mono,monospace", color: G.muted, letterSpacing: "0.1em", fontWeight: 600, borderBottom: "1px solid " + G.border, ...style }}>
+  <th style={{ textAlign: "left", padding: "10px 14px", fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.muted, letterSpacing: "0.1em", fontWeight: 600, borderBottom: "1px solid " + G.border, ...style }}>
     {children}
   </th>
 );
 
 export const Td = ({ children, style = {}, ...rest }) => (
-  <td {...rest} style={{ padding: "12px 14px", fontSize: 12, color: G.text, fontFamily: "DM Mono,monospace", borderBottom: "1px solid " + G.border, ...style }}>{children}</td>
+  <td {...rest} style={{ padding: "12px 14px", fontSize: 12, color: G.text, fontFamily: "Inter,system-ui,sans-serif", borderBottom: "1px solid " + G.border, ...style }}>{children}</td>
 );
 
 export const Pill = ({ tone = "muted", children }) => {
@@ -154,7 +154,7 @@ export const Pill = ({ tone = "muted", children }) => {
   };
   const t = tones[tone] || tones.muted;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 4, background: t.bg, border: "1px solid " + t.bd, color: t.c, fontSize: 10, fontFamily: "DM Mono,monospace", fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 4, background: t.bg, border: "1px solid " + t.bd, color: t.c, fontSize: 10, fontFamily: "Inter,system-ui,sans-serif", fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
       {children}
     </span>
   );
@@ -162,7 +162,7 @@ export const Pill = ({ tone = "muted", children }) => {
 
 export const Confirm = ({ message, onConfirm, onCancel }) => (
   <Modal title="Are you sure?" onClose={onCancel} width={420}>
-    <div style={{ color: G.text, fontFamily: "DM Mono,monospace", fontSize: 13, lineHeight: 1.6, marginBottom: 18 }}>{message}</div>
+    <div style={{ color: G.text, fontFamily: "Inter,system-ui,sans-serif", fontSize: 13, lineHeight: 1.6, marginBottom: 18 }}>{message}</div>
     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
       <Button onClick={onCancel} variant="ghost">Cancel</Button>
       <Button onClick={onConfirm} variant="danger">Delete</Button>

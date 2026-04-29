@@ -98,7 +98,7 @@ export default function RolesTab({ api }) {
 
       <Card>
         <CardHeader>HOW ROLES MAP TO THE UI</CardHeader>
-        <div style={{ padding: 18, fontFamily: "DM Mono,monospace", fontSize: 12, color: G.muted, lineHeight: 1.7 }}>
+        <div style={{ padding: 18, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, color: G.muted, lineHeight: 1.7 }}>
           <div><strong style={{ color: G.text }}>Consultant Portal</strong> — visible to every authenticated user, regardless of role.</div>
           <div><strong style={{ color: G.text }}>Executive View</strong> — visible only to roles with <code style={{ color: G.purple }}>can_view_exec = true</code>.</div>
           <div><strong style={{ color: G.text }}>Configuration</strong> — visible only to roles with <code style={{ color: G.purple }}>can_view_config = true</code>.</div>
@@ -195,7 +195,7 @@ function RoleModal({ api, initial, onClose, onSaved }) {
             disabled={isEdit}
           />
           <FieldError error={errors.name} />
-          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>
             {isEdit ? "Cannot be renamed — referenced by JWTs and existing user records." : "Lowercase letters, digits, underscores. Used as the role identifier."}
           </div>
         </div>
@@ -209,29 +209,29 @@ function RoleModal({ api, initial, onClose, onSaved }) {
           <TextArea value={form.description || ""} onChange={(v) => set("description", v)} rows={2} placeholder="Briefly describe what this role can do." />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "DM Mono,monospace", fontSize: 12, color: adminLocked ? G.faint : G.text, cursor: adminLocked ? "not-allowed" : "pointer", padding: "10px 12px", border: "1px solid " + G.border, borderRadius: 8, background: G.surface2 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, color: adminLocked ? G.faint : G.text, cursor: adminLocked ? "not-allowed" : "pointer", padding: "10px 12px", border: "1px solid " + G.border, borderRadius: 8, background: G.surface2 }}>
             <input type="checkbox" checked={!!form.can_view_exec} disabled={adminLocked} onChange={(e) => set("can_view_exec", e.target.checked)} />
             Executive View
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "DM Mono,monospace", fontSize: 12, color: adminLocked ? G.faint : G.text, cursor: adminLocked ? "not-allowed" : "pointer", padding: "10px 12px", border: "1px solid " + G.border, borderRadius: 8, background: G.surface2 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, color: adminLocked ? G.faint : G.text, cursor: adminLocked ? "not-allowed" : "pointer", padding: "10px 12px", border: "1px solid " + G.border, borderRadius: 8, background: G.surface2 }}>
             <input type="checkbox" checked={!!form.can_view_config} disabled={adminLocked} onChange={(e) => set("can_view_config", e.target.checked)} />
             Configuration
           </label>
         </div>
         {adminLocked && (
-          <div style={{ fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace", padding: "8px 12px", background: G.surface2, border: "1px solid " + G.border, borderRadius: 8 }}>
+          <div style={{ fontSize: 11, color: G.muted, fontFamily: "Inter,system-ui,sans-serif", padding: "8px 12px", background: G.surface2, border: "1px solid " + G.border, borderRadius: 8 }}>
             Admin always retains access to both views.
           </div>
         )}
         <div>
           <Label>SORT ORDER</Label>
           <Input value={String(form.sort_order ?? 100)} onChange={(v) => set("sort_order", v.replace(/[^0-9]/g, ""))} />
-          <div style={{ fontSize: 10, color: G.faint, fontFamily: "DM Mono,monospace", marginTop: 4 }}>
+          <div style={{ fontSize: 10, color: G.faint, fontFamily: "Inter,system-ui,sans-serif", marginTop: 4 }}>
             Lower numbers appear first in dropdowns.
           </div>
         </div>
         {errors._root && (
-          <div style={{ padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{errors._root}</div>
+          <div style={{ padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{errors._root}</div>
         )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
           <Button variant="ghost" onClick={onClose} disabled={saving}>Cancel</Button>

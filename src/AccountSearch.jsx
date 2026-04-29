@@ -76,7 +76,7 @@ export default function AccountSearch({ api, onSelect }) {
         style={{
           width: "100%", background: G.surface, border: "1px solid " + G.border2,
           color: G.text, padding: "6px 12px 6px 30px", borderRadius: 6,
-          fontFamily: "DM Mono,monospace", fontSize: 11,
+          fontFamily: "Inter,system-ui,sans-serif", fontSize: 11,
         }}
       />
       <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)",
@@ -90,11 +90,11 @@ export default function AccountSearch({ api, onSelect }) {
         }}>
           {loading && (
             <div style={{ padding: "10px 14px", color: G.muted,
-                          fontFamily: "DM Mono,monospace", fontSize: 11 }}>Searching…</div>
+                          fontFamily: "Inter,system-ui,sans-serif", fontSize: 11 }}>Searching…</div>
           )}
           {!loading && results.length === 0 && (
             <div style={{ padding: "10px 14px", color: G.faint,
-                          fontFamily: "DM Mono,monospace", fontSize: 11 }}>No matches.</div>
+                          fontFamily: "Inter,system-ui,sans-serif", fontSize: 11 }}>No matches.</div>
           )}
           {!loading && results.map((c, i) => (
             <button
@@ -106,7 +106,7 @@ export default function AccountSearch({ api, onSelect }) {
                 background: i === hoverIdx ? G.surface2 : "transparent",
                 border: "none", borderBottom: "1px solid " + G.border,
                 color: G.text, cursor: "pointer",
-                fontFamily: "DM Mono,monospace", fontSize: 12,
+                fontFamily: "Inter,system-ui,sans-serif", fontSize: 12,
               }}
             >
               <div style={{ fontWeight: 700 }}>{c.name}</div>

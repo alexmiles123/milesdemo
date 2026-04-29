@@ -87,7 +87,7 @@ export default function NotificationsTab({ api }) {
         <CardHeader>
           NOTIFICATION RULES
         </CardHeader>
-        <div style={{ padding: 16, fontFamily: "DM Mono,monospace", fontSize: 12, color: G.muted, lineHeight: 1.7, borderBottom: "1px solid " + G.border }}>
+        <div style={{ padding: 16, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12, color: G.muted, lineHeight: 1.7, borderBottom: "1px solid " + G.border }}>
           Configure who receives each type of notification email. Each rule has its own
           <b style={{ color: G.text }}> TO</b> list (the primary recipients) and
           <b style={{ color: G.text }}> CC</b> list (additional people copied on every send).
@@ -107,7 +107,7 @@ export default function NotificationsTab({ api }) {
             <CardHeader right={
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <Pill tone={r.status === "wired" ? "green" : "yellow"}>{r.status.toUpperCase()}</Pill>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "DM Mono,monospace", fontSize: 11, color: G.muted, cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter,system-ui,sans-serif", fontSize: 11, color: G.muted, cursor: "pointer" }}>
                   <input type="checkbox" checked={!!e.enabled} onChange={ev => set(r.id, "enabled", ev.target.checked)} /> Enabled
                 </label>
                 <Button variant="primary" onClick={() => save(r)} disabled={!isDirty || savingId === r.id}>
@@ -118,7 +118,7 @@ export default function NotificationsTab({ api }) {
               {r.label.toUpperCase()}
             </CardHeader>
             <div style={{ padding: 16 }}>
-              <div style={{ fontSize: 11, fontFamily: "DM Mono,monospace", color: G.faint, marginBottom: 12, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 11, fontFamily: "Inter,system-ui,sans-serif", color: G.faint, marginBottom: 12, lineHeight: 1.6 }}>
                 <span style={{ color: G.muted }}>event: </span>{r.event_type}
                 {r.description && <div style={{ color: G.muted, marginTop: 6 }}>{r.description}</div>}
               </div>

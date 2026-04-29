@@ -80,7 +80,7 @@ export default function CsmsTab({ api, onChanged }) {
           CUSTOMER SUCCESS MANAGERS ({visible.length}{visible.length !== csms.length ? ` of ${csms.length}` : ""})
         </CardHeader>
         <div style={{ padding: "10px 18px", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid " + G.border }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "DM Mono,monospace", fontSize: 11, color: G.muted, cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter,system-ui,sans-serif", fontSize: 11, color: G.muted, cursor: "pointer" }}>
             <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)} /> Show inactive
           </label>
         </div>
@@ -237,7 +237,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
   };
 
   const sectionLabel = { fontFamily:"Syne, sans-serif", fontSize:13, fontWeight:700, color:G.text, letterSpacing:"0.05em", textTransform:"uppercase" };
-  const helperText   = { fontSize:10, color:G.faint, fontFamily:"DM Mono,monospace", marginTop:4 };
+  const helperText   = { fontSize:10, color:G.faint, fontFamily:"Inter,system-ui,sans-serif", marginTop:4 };
 
   return (
     <Modal title={mode === "create" ? "Add User" : "Edit CSM"} onClose={onClose} width={560}>
@@ -257,7 +257,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
           <Select value={form.role} onChange={v => set("role", v)} options={(roles || []).filter(r => r.is_active).map(r => r.name)} />
         </div>
         <div style={{ display:"flex", alignItems:"flex-end" }}>
-          <label style={{ display:"flex", alignItems:"center", gap:8, fontFamily:"DM Mono,monospace", fontSize:12, color: G.text, cursor:"pointer" }}>
+          <label style={{ display:"flex", alignItems:"center", gap:8, fontFamily:"Inter,system-ui,sans-serif", fontSize:12, color: G.text, cursor:"pointer" }}>
             <input type="checkbox" checked={!!form.is_active} onChange={e => set("is_active", e.target.checked)} /> Active
           </label>
         </div>
@@ -269,7 +269,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
             <>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: 12 }}>
                 <div style={sectionLabel}>App Login (Optional)</div>
-                <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontFamily:"DM Mono,monospace", fontSize:11, color:G.muted }}>
+                <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontFamily:"Inter,system-ui,sans-serif", fontSize:11, color:G.muted }}>
                   <input type="checkbox" checked={showLogin} onChange={e => setShowLogin(e.target.checked)} /> Provision login
                 </label>
               </div>
@@ -296,7 +296,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
                     <Input value={confirmPw} onChange={setConfirmPw} type="password" autoComplete="new-password" />
                     <FieldError error={errors.confirmPw} />
                   </div>
-                  <div style={{ gridColumn:"span 2", fontSize:11, color:G.muted, fontFamily:"DM Mono,monospace" }}>
+                  <div style={{ gridColumn:"span 2", fontSize:11, color:G.muted, fontFamily:"Inter,system-ui,sans-serif" }}>
                     {describePolicy(policy)}.
                   </div>
                 </div>
@@ -322,12 +322,12 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
                     <Input value={confirmPw} onChange={setConfirmPw} type="password" autoComplete="new-password" />
                     <FieldError error={errors.confirmPw} />
                   </div>
-                  <div style={{ gridColumn:"span 2", fontSize:11, color:G.muted, fontFamily:"DM Mono,monospace" }}>
+                  <div style={{ gridColumn:"span 2", fontSize:11, color:G.muted, fontFamily:"Inter,system-ui,sans-serif" }}>
                     {describePolicy(policy)}. Leave blank to keep the current password.
                   </div>
                 </div>
               ) : (
-                <div style={{ padding: "10px 12px", background: "#0a1420", border: "1px solid " + G.border, borderRadius: 8, fontSize: 11, color: G.muted, fontFamily: "DM Mono,monospace" }}>
+                <div style={{ padding: "10px 12px", background: "#ffffff", border: "1px solid " + G.border, borderRadius: 8, fontSize: 11, color: G.muted, fontFamily: "Inter,system-ui,sans-serif" }}>
                   No login account is linked to this CSM&apos;s email. Provision one from the App Users tab.
                 </div>
               )}
@@ -337,7 +337,7 @@ function CsmModal({ api, roles, initial, mode, onClose, onSaved }) {
       )}
 
       {errors._root && (
-        <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{errors._root}</div>
+        <div style={{ marginTop: 14, padding: "9px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{errors._root}</div>
       )}
       <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop: 20 }}>
         <Button onClick={onClose} variant="ghost">Cancel</Button>
@@ -431,10 +431,10 @@ function RolesModal({ api, roles, onClose, onChanged }) {
         <Button variant="primary" onClick={add} disabled={saving || !newName.trim()}>Add</Button>
       </div>
       {err && (
-        <div style={{ marginBottom: 12, padding: "8px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "DM Mono,monospace", fontSize: 12 }}>{err}</div>
+        <div style={{ marginBottom: 12, padding: "8px 12px", background: G.redBg, border: "1px solid " + G.red + "55", borderRadius: 8, color: G.red, fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>{err}</div>
       )}
       <div style={{ border: "1px solid " + G.border, borderRadius: 8, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "DM Mono,monospace", fontSize: 12 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "Inter,system-ui,sans-serif", fontSize: 12 }}>
           <thead style={{ background: G.surface }}>
             <tr style={{ borderBottom: "1px solid " + G.border }}>
               <th style={{ padding: "8px 12px", textAlign: "left", color: G.muted, letterSpacing: "0.05em" }}>TITLE</th>
