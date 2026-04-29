@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { G } from "../lib/theme.js";
 import CustomersTab from "./CustomersTab.jsx";
-import CsmsTab from "./CsmsTab.jsx";
 import AssignmentsTab from "./AssignmentsTab.jsx";
 import IntegrationsTab from "./IntegrationsTab.jsx";
 import NotificationsTab from "./NotificationsTab.jsx";
@@ -14,7 +13,7 @@ import TaskTemplatesTab from "./TaskTemplatesTab.jsx";
 // Sidebar nav grouped by domain. The flat horizontal tab strip stopped scaling
 // once we added users + task templates + compliance — too many siblings, no
 // hierarchy. The groups below mirror the way an admin actually thinks about
-// settings ("I need to add a user" → People; "I need to wire up Salesforce"
+// settings ("I need to add a user" → Users; "I need to wire up Salesforce"
 // → Operations).
 const SECTIONS = [
   {
@@ -27,12 +26,11 @@ const SECTIONS = [
     ],
   },
   {
-    id: "people",
-    label: "People",
-    desc: "CSMs, app users, and account assignments.",
+    id: "users",
+    label: "Users",
+    desc: "Sign-in accounts, roles, and account assignments.",
     items: [
-      { id: "csms",        label: "CSMs",        desc: "The customer success roster and roles." },
-      { id: "users",       label: "App Users",   desc: "Sign-in accounts that can access this platform." },
+      { id: "users",       label: "Users",       desc: "Sign-in accounts. Users with a Title also appear as CSMs and can own customer accounts." },
       { id: "roles",       label: "Roles",       desc: "Application roles and the views they unlock." },
       { id: "assignments", label: "Assignments", desc: "Which CSMs cover which accounts." },
     ],
@@ -64,10 +62,10 @@ export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
   const [tab, setTab] = useState(() => {
     const hash = (typeof window !== "undefined" && window.location.hash) || "";
     const m = hash.match(/^#config\/([\w-]+)/);
-    // Map the legacy "projects" hash to the new Customers tab so deep links
-    // bookmarked before the rename still resolve.
+    // Map legacy hashes ("projects" → Customers, "csms" → Users) so existing
+    // bookmarked deep links still resolve after renames/consolidations.
     const raw = m && m[1];
-    const id = raw === "projects" ? "customers" : raw;
+    const id = raw === "projects" ? "customers" : raw === "csms" ? "users" : raw;
     const fromHash = id && ALL_TABS.find(t => t.id === id)?.id;
     return fromHash || "customers";
   });
@@ -155,8 +153,7 @@ export default function ConfigPage({ api, csms: initialCsms, onCsmsChanged }) {
           <div style={{ animation: "fadein .2s ease" }}>
             {tab === "customers"      && <CustomersTab      api={api} csms={csms} onChanged={refreshCsms} />}
             {tab === "task-templates" && <TaskTemplatesTab  api={api} />}
-            {tab === "csms"           && <CsmsTab           api={api} onChanged={refreshCsms} />}
-            {tab === "users"          && <UsersTab          api={api} />}
+            {tab === "users"          && <UsersTab          api={api} csmRoles={csms} onCsmsChanged={refreshCsms} />}
             {tab === "roles"          && <RolesTab          api={api} />}
             {tab === "assignments"    && <AssignmentsTab    api={api} csms={csms} onChanged={refreshCsms} />}
             {tab === "integrations"   && <IntegrationsTab   api={api} />}

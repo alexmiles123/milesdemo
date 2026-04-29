@@ -46,7 +46,7 @@ export default function SecurityTab({ api }) {
     { family: "CC6 · Logical Access",
       items: [
         { label: "Authentication required for every route", state: "ok", detail: "JWT bearer token required by /api/db proxy and every admin endpoint. 12-hour TTL." },
-        { label: "Per-user accounts (app_users) with role-based access", state: "ok", detail: "Roles: admin / csm / viewer. Manage under People → App Users. Env-var bootstrap exists only for break-glass recovery." },
+        { label: "Per-user accounts (app_users) with role-based access", state: "ok", detail: "Roles: admin / csm / viewer. Manage under Users → Users. Env-var bootstrap exists only for break-glass recovery." },
         { label: "Password policy enforced server-side", state: "ok", detail: "12+ chars, mix of upper, lower, number, symbol. Validated in /api/admin/users before bcrypt." },
         { label: "Account lockout after repeated failures", state: "ok", detail: "Five failed sign-ins triggers a 15-minute lockout per account. Per-IP token-bucket rate limit on the login route." },
         { label: "Secrets stored by reference, never in DB rows", state: "ok", detail: "credential_ref column is the only link; actual values live in Vercel env / Supabase Vault." },
