@@ -165,9 +165,8 @@ INSERT INTO customers (id, name, contact_name, contact_email, contact_phone, add
   ('c2000000-0000-0000-0000-000000000148', 'National Self Storage LLC', 'Emma Lopez', 'emma.lopez@nationalselfstoragellc.com', '(699) 556-9339', '2761 Commerce Dr, Houston, TX 93781', '52-location chain transitioning from SiteLink to Monument.', '2027-02-18', true),
   ('c2000000-0000-0000-0000-000000000149', 'Riverside Storage Trust', 'Lucas Martinez', 'lucas.martinez@riversidestoragetrust.com', '(410) 726-8361', '8708 Warehouse Rd, Louisville, KY 67199', '53-facility operator with onsite resident managers at flagship sites.', '2027-05-08', true),
   ('c2000000-0000-0000-0000-000000000150', 'Navigator Storage Partners', 'Scarlett Moore', 'scarlett.moore@navigatorstoragepartners.com', '(259) 905-9707', '2789 Commerce Dr, Phoenix, AZ 10523', '24-location portfolio recently acquired from a private equity rollup.', '2027-08-19', true);
+UPDATE task_templates SET is_default = false WHERE is_default = true;
 INSERT INTO task_templates (id, name, description, is_default, is_active) VALUES ('a1b2c3d4-0000-0000-0000-000000000001', 'Monument Self-Storage ERP Implementation', 'Full implementation template for self-storage operators onboarding to Monument ERP. 190 tasks across 5 phases.', true, true);
-UPDATE task_templates SET is_default = false WHERE id <> 'a1b2c3d4-0000-0000-0000-000000000001';
-UPDATE task_templates SET is_default = true WHERE id = 'a1b2c3d4-0000-0000-0000-000000000001';
 INSERT INTO task_template_items (id, template_id, sort_order, name, phase, priority, estimated_hours, day_offset, notes) VALUES
   ('b1000000-0000-0000-0000-000000000001', 'a1b2c3d4-0000-0000-0000-000000000001', 1, 'Internal kickoff: review signed SOW and scope', 'Analysis', 'high', 2, 0, 'Internal CSM team aligns on customer goals, contract scope, and key contacts before customer kickoff.'),
   ('b1000000-0000-0000-0000-000000000002', 'a1b2c3d4-0000-0000-0000-000000000001', 2, 'External kickoff call with customer leadership', 'Analysis', 'critical', 2, 1, 'Live video kickoff with customer''s owners, ops director, and IT lead. Confirm timeline and roles.'),

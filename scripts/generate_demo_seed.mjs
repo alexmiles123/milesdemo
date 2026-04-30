@@ -452,9 +452,8 @@ part1.push(...batched("csms", ["id","name","email","role","is_active"], CSMS,
   (c) => `(${sqlStr(c.id)}, ${sqlStr(c.name)}, ${sqlStr(c.email)}, ${sqlStr(c.role)}, true)`));
 part1.push(...batched("customers", ["id","name","contact_name","contact_email","contact_phone","address","notes","renewal_date","is_active"], CUSTOMERS,
   (c) => `(${sqlStr(c.id)}, ${sqlStr(c.name)}, ${sqlStr(c.contact_name)}, ${sqlStr(c.contact_email)}, ${sqlStr(c.contact_phone)}, ${sqlStr(c.address)}, ${sqlStr(c.notes)}, ${sqlDate(c.renewal_date)}, true)`));
+part1.push("UPDATE task_templates SET is_default = false WHERE is_default = true;");
 part1.push(`INSERT INTO task_templates (id, name, description, is_default, is_active) VALUES (${sqlStr(TEMPLATE_ID)}, 'Monument Self-Storage ERP Implementation', 'Full implementation template for self-storage operators onboarding to Monument ERP. 190 tasks across 5 phases.', true, true);`);
-part1.push("UPDATE task_templates SET is_default = false WHERE id <> 'a1b2c3d4-0000-0000-0000-000000000001';");
-part1.push("UPDATE task_templates SET is_default = true WHERE id = 'a1b2c3d4-0000-0000-0000-000000000001';");
 const tplRows = TEMPLATE_TASKS.map((t, i) => ({ ...t, id: uuid("b1000000-0000-0000-0000", i + 1), sort_order: i + 1 }));
 part1.push(...batched("task_template_items", ["id","template_id","sort_order","name","phase","priority","estimated_hours","day_offset","notes"], tplRows,
   (t) => `(${sqlStr(t.id)}, ${sqlStr(TEMPLATE_ID)}, ${t.sort_order}, ${sqlStr(t.name)}, ${sqlStr(t.phase)}, ${sqlStr(t.priority)}, ${t.hrs}, ${t.dayOffset}, ${sqlStr(t.notes)})`));
