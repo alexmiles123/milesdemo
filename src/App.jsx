@@ -570,14 +570,23 @@ function ExecCapacityDashboard({api}) {
   const load=useCallback(async()=>{
     setLoading(true);setError(null);
     try{
-      const [cs,ce,cm,pr,tk]=await Promise.all([
+      const [cs,roles,ce,cm,pr,tk]=await Promise.all([
         api.get("csms",{is_active:"eq.true",select:"*"}),
+        // Active CSM titles ("CSM", "Senior CSM", etc.) — drives which csms
+        // rows count as actual CSMs on the capacity grid. A user with a
+        // non-CSM title (e.g. "VP - CS") may still have a csms row from an
+        // earlier role, but shouldn't appear in capacity planning.
+        api.get("csm_roles",{is_active:"eq.true",select:"name"}).catch(()=>[]),
         api.get("capacity_entries",{select:"*"}).catch(()=>[]),
         api.get("project_commitments",{select:"*"}).catch(()=>[]),
         api.get("projects",{select:"id,name,csm_id"}),
-        api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority,estimated_hours"}),
+        api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority,estimated_hours","limit":"100000"}),
       ]);
-      setCsmList(cs||[]);setCapEntries(ce||[]);setCommitments(cm||[]);setProjects(pr||[]);setTasks(tk||[]);
+      const validRoles = new Set((roles||[]).map(r=>r.name));
+      // If csm_roles isn't populated for some reason, fall back to the full
+      // list so we don't silently hide everyone.
+      const filteredCs = validRoles.size ? (cs||[]).filter(c => validRoles.has(c.role)) : (cs||[]);
+      setCsmList(filteredCs);setCapEntries(ce||[]);setCommitments(cm||[]);setProjects(pr||[]);setTasks(tk||[]);
     }catch(e){setError(e.message);}
     setLoading(false);
   },[api]);
@@ -800,7 +809,12 @@ function ExecDashboard({api}) {
     try {
       const [port, tsk, csmData, custData] = await Promise.all([
         api.get("vw_portfolio", {"select":"*"}),
-        api.get("tasks", {"select":"*", "order":"proj_date.asc"}),
+        // PostgREST defaults to a 1000-row cap. With a real production-size
+        // task table that truncates results to the *oldest* 1000 — all
+        // historic completed tasks — and the dashboard's status donut +
+        // late-task list both go to zero. Pass an explicit large limit so
+        // we always see the full set; counts come from this array.
+        api.get("tasks", {"select":"*", "order":"proj_date.asc", "limit":"100000"}),
         api.get("vw_csm_scorecard", {"select":"*"}),
         api.get("customers", {"select":"id,name,is_active"}),
       ]);

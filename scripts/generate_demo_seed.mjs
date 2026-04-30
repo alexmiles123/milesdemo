@@ -326,7 +326,13 @@ for (let i = 0; i < 100; i++) {
 }
 
 // ── Tasks ─────────────────────────────────────────────────────────────────
+// Late tasks are intentionally rare in the demo — we cap at MAX_LATE total
+// so the exec dashboard's "requires attention" widget stays meaningful. Any
+// in-current-phase task that *would* be late by date but exceeds the cap is
+// downgraded to "upcoming" with a future-dated proj_date instead.
 const phaseOrder = (p) => PHASES.indexOf(p);
+const MAX_LATE = 12;
+let lateCount = 0;
 const ACTIVE_TASKS = [];
 let atc = 1;
 ACTIVE.forEach((proj) => {
@@ -334,17 +340,21 @@ ACTIVE.forEach((proj) => {
   TEMPLATE_TASKS.forEach((t) => {
     const ti = phaseOrder(t.phase);
     let status, actualDate = null;
+    let projDate = addDays(proj.start, t.dayOffset);
     if (ti < ci) { status = "complete"; actualDate = addDays(proj.start, t.dayOffset + range(-3, 3)); }
     else if (ti === ci) {
       const r = rand();
       if (r < proj.completion / 100) { status = "complete"; actualDate = addDays(proj.start, t.dayOffset + range(-2, 4)); }
-      else { const pd = addDays(proj.start, t.dayOffset); status = pd < TODAY ? "late" : "upcoming"; }
+      else if (projDate < TODAY) {
+        if (lateCount < MAX_LATE) { status = "late"; lateCount++; }
+        else { status = "upcoming"; projDate = addDays(TODAY, range(2, 21)); }
+      } else { status = "upcoming"; }
     } else if (ti === ci + 1) { status = "upcoming"; }
     else return;
     ACTIVE_TASKS.push({
       id: uuid("ea000000-0000-0000-0000", atc++),
       project_id: proj.id, name: t.name, phase: t.phase, priority: t.priority, status,
-      proj_date: fmt(addDays(proj.start, t.dayOffset)),
+      proj_date: fmt(projDate),
       actual_date: actualDate ? fmt(actualDate) : null,
       assignee_name: proj.csm.name,
       estimated_hours: Math.round(t.hrs * proj.loadBias * 10) / 10,
