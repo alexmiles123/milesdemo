@@ -3,9 +3,6 @@ workflows:
     name: Monument iOS
     max_build_duration: 60
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.alexmiles.monument
       node: 20
       xcode: latest
       cocoapods: default
@@ -17,7 +14,10 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
       - name: Set up code signing
-        script: xcode-project use-profiles
+        script: |
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
