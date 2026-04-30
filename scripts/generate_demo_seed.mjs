@@ -467,33 +467,37 @@ part1.push(...batched("project_notes", ["id","project_id","csm_id","author","bod
   (n) => `(${sqlStr(n.id)}, ${sqlStr(n.project_id)}, ${sqlStr(n.csm_id)}, ${sqlStr(n.author)}, ${sqlStr(n.body)})`));
 part1.push("COMMIT;");
 
-// 021b — active tasks
-const part2 = ["-- 021b_demo_active_tasks.sql — Run AFTER 021a.", "BEGIN;"];
-part2.push(...batched("tasks", ["id","project_id","name","phase","priority","status","proj_date","actual_date","assignee_type","assignee_name","estimated_hours","notes"], ACTIVE_TASKS,
-  (t) => `(${sqlStr(t.id)}, ${sqlStr(t.project_id)}, ${sqlStr(t.name)}, ${sqlStr(t.phase)}, ${sqlStr(t.priority)}, ${sqlStr(t.status)}, ${sqlStr(t.proj_date)}, ${sqlDate(t.actual_date)}, 'csm', ${sqlStr(t.assignee_name)}, ${t.estimated_hours}, ${sqlStr(t.notes)})`));
-part2.push("COMMIT;");
+// Task files — split into chunks of CHUNK_PER_FILE so each file fits the
+// Supabase SQL editor (~1MB request limit). 3000 tasks ≈ 800KB/file.
+const CHUNK_PER_FILE = 3000;
+const taskRow = (t) => `(${sqlStr(t.id)}, ${sqlStr(t.project_id)}, ${sqlStr(t.name)}, ${sqlStr(t.phase)}, ${sqlStr(t.priority)}, ${sqlStr(t.status)}, ${sqlStr(t.proj_date)}, ${sqlDate(t.actual_date)}, 'csm', ${sqlStr(t.assignee_name)}, ${t.estimated_hours}, ${sqlStr(t.notes)})`;
+const TASK_COLS = ["id","project_id","name","phase","priority","status","proj_date","actual_date","assignee_type","assignee_name","estimated_hours","notes"];
 
-// 021c & 021d — completed tasks halves
-const halfC = Math.ceil(COMPLETED_TASKS.length / 2);
-const part3 = ["-- 021c_demo_completed_tasks_p1.sql — Run AFTER 021b.", "BEGIN;"];
-part3.push(...batched("tasks", ["id","project_id","name","phase","priority","status","proj_date","actual_date","assignee_type","assignee_name","estimated_hours","notes"], COMPLETED_TASKS.slice(0, halfC),
-  (t) => `(${sqlStr(t.id)}, ${sqlStr(t.project_id)}, ${sqlStr(t.name)}, ${sqlStr(t.phase)}, ${sqlStr(t.priority)}, ${sqlStr(t.status)}, ${sqlStr(t.proj_date)}, ${sqlStr(t.actual_date)}, 'csm', ${sqlStr(t.assignee_name)}, ${t.estimated_hours}, ${sqlStr(t.notes)})`));
-part3.push("COMMIT;");
+const buildTaskParts = (tasks, label) => {
+  const parts = [];
+  const total = Math.ceil(tasks.length / CHUNK_PER_FILE);
+  for (let i = 0; i < total; i++) {
+    const slice = tasks.slice(i * CHUNK_PER_FILE, (i + 1) * CHUNK_PER_FILE);
+    const lines = [`-- ${label} part ${i + 1}/${total} — ${slice.length} tasks.`, "BEGIN;",
+      ...batched("tasks", TASK_COLS, slice, taskRow), "COMMIT;"];
+    parts.push({ idx: i + 1, total, lines });
+  }
+  return parts;
+};
 
-const part4 = ["-- 021d_demo_completed_tasks_p2.sql — Run AFTER 021c.", "BEGIN;"];
-part4.push(...batched("tasks", ["id","project_id","name","phase","priority","status","proj_date","actual_date","assignee_type","assignee_name","estimated_hours","notes"], COMPLETED_TASKS.slice(halfC),
-  (t) => `(${sqlStr(t.id)}, ${sqlStr(t.project_id)}, ${sqlStr(t.name)}, ${sqlStr(t.phase)}, ${sqlStr(t.priority)}, ${sqlStr(t.status)}, ${sqlStr(t.proj_date)}, ${sqlStr(t.actual_date)}, 'csm', ${sqlStr(t.assignee_name)}, ${t.estimated_hours}, ${sqlStr(t.notes)})`));
-part4.push("COMMIT;");
+const activeParts = buildTaskParts(ACTIVE_TASKS, "active tasks");
+const completedParts = buildTaskParts(COMPLETED_TASKS, "completed tasks");
 
-// Remove old single file if it exists
-const oldFile = join(process.cwd(), "migrations", "021_demo_seed.sql");
-if (existsSync(oldFile)) unlinkSync(oldFile);
+// Clean up old / superseded files
+for (const old of ["021_demo_seed.sql","021b_demo_active_tasks.sql","021c_demo_completed_tasks_p1.sql","021d_demo_completed_tasks_p2.sql"]) {
+  const p = join(process.cwd(), "migrations", old);
+  if (existsSync(p)) unlinkSync(p);
+}
 
-const p1 = writeOut("a", "setup", part1);
-const p2 = writeOut("b", "active_tasks", part2);
-const p3 = writeOut("c", "completed_tasks_p1", part3);
-const p4 = writeOut("d", "completed_tasks_p2", part4);
-console.log(`Wrote 4 files:\n  ${p1}\n  ${p2}\n  ${p3}\n  ${p4}`);
+const written = [writeOut("a", "setup", part1)];
+activeParts.forEach((p) => written.push(writeOut(`b${p.idx}`, "active_tasks", p.lines)));
+completedParts.forEach((p) => written.push(writeOut(`c${p.idx}`, "completed_tasks", p.lines)));
+console.log(`Wrote ${written.length} files:\n  ${written.join("\n  ")}`);
 console.log(`  ${CSMS.length} CSMs / ${CUSTOMERS.length} customers / ${TEMPLATE_TASKS.length} template items`);
 console.log(`  ${ACTIVE.length} active + ${COMPLETED.length} completed projects`);
 console.log(`  ${ACTIVE_TASKS.length} active tasks + ${COMPLETED_TASKS.length} completed tasks`);
