@@ -470,8 +470,10 @@ part1.push("COMMIT;");
 // Task files — split into chunks of CHUNK_PER_FILE so each file fits the
 // Supabase SQL editor (~1MB request limit). 3000 tasks ≈ 800KB/file.
 const CHUNK_PER_FILE = 3000;
-const taskRow = (t) => `(${sqlStr(t.id)}, ${sqlStr(t.project_id)}, ${sqlStr(t.name)}, ${sqlStr(t.phase)}, ${sqlStr(t.priority)}, ${sqlStr(t.status)}, ${sqlStr(t.proj_date)}, ${sqlDate(t.actual_date)}, 'csm', ${sqlStr(t.assignee_name)}, ${t.estimated_hours}, ${sqlStr(t.notes)})`;
-const TASK_COLS = ["id","project_id","name","phase","priority","status","proj_date","actual_date","assignee_type","assignee_name","estimated_hours","notes"];
+// assignee_type omitted: DB has tasks_assignee_type_check whose values
+// are project-specific. Leaving it NULL matches api/admin/apply-template.js.
+const taskRow = (t) => `(${sqlStr(t.id)}, ${sqlStr(t.project_id)}, ${sqlStr(t.name)}, ${sqlStr(t.phase)}, ${sqlStr(t.priority)}, ${sqlStr(t.status)}, ${sqlStr(t.proj_date)}, ${sqlDate(t.actual_date)}, ${sqlStr(t.assignee_name)}, ${t.estimated_hours}, ${sqlStr(t.notes)})`;
+const TASK_COLS = ["id","project_id","name","phase","priority","status","proj_date","actual_date","assignee_name","estimated_hours","notes"];
 
 const buildTaskParts = (tasks, label) => {
   const parts = [];
