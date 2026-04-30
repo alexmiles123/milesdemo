@@ -582,10 +582,13 @@ function ExecCapacityDashboard({api}) {
         api.get("projects",{select:"id,name,csm_id"}),
         api.get("tasks",{status:"neq.complete",select:"id,project_id,name,phase,proj_date,priority,estimated_hours","limit":"100000"}),
       ]);
-      const validRoles = new Set((roles||[]).map(r=>r.name));
-      // If csm_roles isn't populated for some reason, fall back to the full
-      // list so we don't silently hide everyone.
-      const filteredCs = validRoles.size ? (cs||[]).filter(c => validRoles.has(c.role)) : (cs||[]);
+      // Canonical CSM titles only. csm_roles contains every "title" any
+      // user has been given — including non-CSM titles like "VP - CS" or
+      // "CEO" — so we can't trust it as a CSM-vs-not test. The 5 below are
+      // the canonical CSM job titles seeded in 004_csm_roles.sql.
+      const CANONICAL_CSM_TITLES = new Set(["CSM","Senior CSM","Lead CSM","CSM Manager","Director"]);
+      const filteredCs = (cs||[]).filter(c => CANONICAL_CSM_TITLES.has(c.role));
+      void roles; // intentionally unused — kept the fetch for future flag-based filtering
       setCsmList(filteredCs);setCapEntries(ce||[]);setCommitments(cm||[]);setProjects(pr||[]);setTasks(tk||[]);
     }catch(e){setError(e.message);}
     setLoading(false);
@@ -770,7 +773,6 @@ const EXEC_WIDGETS = [
   { id:"portfolio-health", label:"Portfolio Health" },
   { id:"task-status",      label:"Task Status Across Portfolio" },
   { id:"arr-distribution", label:"ARR Distribution" },
-  { id:"csm-scorecard",    label:"CSM Performance Scorecard" },
   { id:"csm-book",         label:"CSM Book Breakdown" },
   { id:"late-tasks",       label:"Late Tasks (Exec Attention)" },
   { id:"upcoming-go-lives",label:"Upcoming Go-Lives" },
@@ -823,13 +825,14 @@ function ExecDashboard({api}) {
         api.get("csm_roles", {"select":"name","is_active":"eq.true"}).catch(()=>[]),
         api.get("csms", {"select":"id,role","is_active":"eq.true"}).catch(()=>[]),
       ]);
-      const validRoles = new Set((csmRoleRows||[]).map(r=>r.name));
-      const validCsmIds = validRoles.size
-        ? new Set((csmRows||[]).filter(c=>validRoles.has(c.role)).map(c=>c.id))
-        : null; // fall through — show everyone if csm_roles empty
-      const filteredScorecard = validCsmIds
-        ? (csmData||[]).filter(c => validCsmIds.has(c.csm_id))
-        : (csmData||[]);
+      // We use a CANONICAL list of CSM titles rather than the customizable
+      // csm_roles table. The UI requires every "user with a title" to pick
+      // from csm_roles, so admins who weren't really CSMs (e.g. "VP - CS",
+      // "CEO") wound up with rows in that table. Filtering by the
+      // canonical 5 ensures only actual CSMs show on the scorecard.
+      const CANONICAL_CSM_TITLES = new Set(["CSM","Senior CSM","Lead CSM","CSM Manager","Director"]);
+      const validCsmIds = new Set((csmRows||[]).filter(c=>CANONICAL_CSM_TITLES.has(c.role)).map(c=>c.id));
+      const filteredScorecard = (csmData||[]).filter(c => validCsmIds.has(c.csm_id));
       setPortfolio(port||[]);
       setTasks(tsk||[]);
       setCsms(filteredScorecard);
@@ -906,15 +909,14 @@ function ExecDashboard({api}) {
     else if (p.health === "yellow") h.at_risk++;
     else if (p.health === "red") h.critical++;
   });
-  const csmsWithHealth = csms.map(c => ({ ...c, ...(csmHealth[c.csm_id] || {on_track:0,at_risk:0,critical:0}) }));
-
-  const csmArrData = csmsWithHealth.map((c,i)=>({
-    name:c.csm.split(" ")[0],
-    arr:Math.round((c.total_arr||0)/1000),
-    accounts:c.total_accounts||0,
-    late:c.late_tasks||0,
-    fill:CSM_COLORS[i%CSM_COLORS.length],
-  }));
+  // Restrict the CSM Book Breakdown to CSMs who actually have a book —
+  // i.e., at least one assigned project. A user with a CSM-style title
+  // but zero accounts (e.g. an admin like "Alex" or a viewer like "Cinco"
+  // who got linked into csms historically) shouldn't show on the
+  // breakdown alongside real CSMs with active books.
+  const csmsWithHealth = csms
+    .filter(c => (c.total_accounts||0) > 0)
+    .map(c => ({ ...c, ...(csmHealth[c.csm_id] || {on_track:0,at_risk:0,critical:0}) }));
 
   // Bucket labels match the actual filter bounds. The lowest bucket is
   // open-ended ("anything <$40K") since demo ARR starts at $15K, and the
@@ -1125,27 +1127,6 @@ function ExecDashboard({api}) {
 
       {/* ── SECTION: Charts Row 2 ── */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(360px,1fr))",gap:12,marginBottom:12}}>
-
-        {/* CSM Scorecard bar */}
-        {shown('csm-scorecard') && (
-        <Card>
-          <CardHeader>CSM PERFORMANCE SCORECARD</CardHeader>
-          <div style={{padding:"14px 16px"}}>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={csmArrData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke={G.border}/>
-                <XAxis dataKey="name" tick={{fill:G.muted,fontSize:10,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
-                <YAxis tick={{fill:G.muted,fontSize:10,fontFamily:"Inter,system-ui,sans-serif"}} axisLine={false} tickLine={false}/>
-                <Tooltip content={<Tip/>}/>
-                <Bar dataKey="arr" name="ARR $K" radius={[3,3,0,0]} barSize={12}>
-                  {csmArrData.map((d,i)=><Cell key={i} fill={d.fill}/>)}
-                </Bar>
-                <Bar dataKey="accounts" name="Accounts" fill={G.faint} radius={[3,3,0,0]} barSize={10}/>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-        )}
 
         {/* CSM Detail table */}
         {shown('csm-book') && (
