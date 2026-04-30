@@ -807,7 +807,7 @@ function ExecDashboard({api}) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [port, tsk, csmData, custData] = await Promise.all([
+      const [port, tsk, csmData, custData, csmRoleRows, csmRows] = await Promise.all([
         api.get("vw_portfolio", {"select":"*"}),
         // PostgREST defaults to a 1000-row cap. With a real production-size
         // task table that truncates results to the *oldest* 1000 — all
@@ -817,10 +817,22 @@ function ExecDashboard({api}) {
         api.get("tasks", {"select":"*", "order":"proj_date.asc", "limit":"100000"}),
         api.get("vw_csm_scorecard", {"select":"*"}),
         api.get("customers", {"select":"id,name,is_active"}),
+        // Filter the CSM book down to actual CSMs. A user with a non-CSM
+        // title (e.g. "VP - CS", "CEO") can have a csms row from an earlier
+        // role, but they shouldn't show up on exec scorecards.
+        api.get("csm_roles", {"select":"name","is_active":"eq.true"}).catch(()=>[]),
+        api.get("csms", {"select":"id,role","is_active":"eq.true"}).catch(()=>[]),
       ]);
+      const validRoles = new Set((csmRoleRows||[]).map(r=>r.name));
+      const validCsmIds = validRoles.size
+        ? new Set((csmRows||[]).filter(c=>validRoles.has(c.role)).map(c=>c.id))
+        : null; // fall through — show everyone if csm_roles empty
+      const filteredScorecard = validCsmIds
+        ? (csmData||[]).filter(c => validCsmIds.has(c.csm_id))
+        : (csmData||[]);
       setPortfolio(port||[]);
       setTasks(tsk||[]);
-      setCsms(csmData||[]);
+      setCsms(filteredScorecard);
       setCustomers(custData||[]);
     } catch(e){ console.error("ExecDashboard load error:", e.message); }
     setLoading(false);
