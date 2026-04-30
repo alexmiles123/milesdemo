@@ -23,7 +23,12 @@ workflows:
         script: |
           keychain initialize
           keychain add-certificates
-          xcode-project use-profiles
+          # List what got uploaded so the build log shows which cert + profile
+          # Codemagic resolved. Helps debug "requires a provisioning profile"
+          # errors caused by team-id / bundle-id mismatches.
+          keychain list-certificates
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
+          xcode-project use-profiles --verbose
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
