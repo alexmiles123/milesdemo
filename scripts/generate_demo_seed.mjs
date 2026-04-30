@@ -457,10 +457,10 @@ part1.push(`INSERT INTO task_templates (id, name, description, is_default, is_ac
 const tplRows = TEMPLATE_TASKS.map((t, i) => ({ ...t, id: uuid("b1000000-0000-0000-0000", i + 1), sort_order: i + 1 }));
 part1.push(...batched("task_template_items", ["id","template_id","sort_order","name","phase","priority","estimated_hours","day_offset","notes"], tplRows,
   (t) => `(${sqlStr(t.id)}, ${sqlStr(TEMPLATE_ID)}, ${t.sort_order}, ${sqlStr(t.name)}, ${sqlStr(t.phase)}, ${sqlStr(t.priority)}, ${t.hrs}, ${t.dayOffset}, ${sqlStr(t.notes)})`));
-part1.push(...batched("projects", ["id","name","customer","customer_id","csm_id","stage","health","arr","target_date","completion_pct"], ACTIVE,
-  (p) => `(${sqlStr(p.id)}, ${sqlStr(p.customer.name + " Implementation")}, ${sqlStr(p.customer.name)}, ${sqlStr(p.customer.id)}, ${sqlStr(p.csm.id)}, ${sqlStr(p.stage)}, ${sqlStr(p.health)}, ${p.arr}, ${sqlStr(fmt(p.target))}, ${p.completion})`));
-part1.push(...batched("projects", ["id","name","customer","customer_id","csm_id","stage","health","arr","target_date","completion_pct"], COMPLETED,
-  (p) => `(${sqlStr(p.id)}, ${sqlStr(p.customer.name + " Implementation")}, ${sqlStr(p.customer.name)}, ${sqlStr(p.customer.id)}, ${sqlStr(p.csm.id)}, ${sqlStr(p.stage)}, ${sqlStr(p.health)}, ${p.arr}, ${sqlStr(fmt(p.target))}, ${p.completion})`));
+part1.push(...batched("projects", ["id","name","customer","customer_id","csm_id","stage","health","arr","start_date","target_date","completion_pct"], ACTIVE,
+  (p) => `(${sqlStr(p.id)}, ${sqlStr(p.customer.name + " Implementation")}, ${sqlStr(p.customer.name)}, ${sqlStr(p.customer.id)}, ${sqlStr(p.csm.id)}, ${sqlStr(p.stage)}, ${sqlStr(p.health)}, ${p.arr}, ${sqlStr(fmt(p.start))}, ${sqlStr(fmt(p.target))}, ${p.completion})`));
+part1.push(...batched("projects", ["id","name","customer","customer_id","csm_id","stage","health","arr","start_date","target_date","completion_pct"], COMPLETED,
+  (p) => `(${sqlStr(p.id)}, ${sqlStr(p.customer.name + " Implementation")}, ${sqlStr(p.customer.name)}, ${sqlStr(p.customer.id)}, ${sqlStr(p.csm.id)}, ${sqlStr(p.stage)}, ${sqlStr(p.health)}, ${p.arr}, ${sqlStr(fmt(p.start))}, ${sqlStr(fmt(p.target))}, ${p.completion})`));
 part1.push(...batched("csm_assignments", ["id","csm_id","project_id","role","allocation_pct","start_date","end_date"], ASSIGNMENTS,
   (a) => `(${sqlStr(a.id)}, ${sqlStr(a.csm_id)}, ${sqlStr(a.project_id)}, ${sqlStr(a.role)}, ${a.allocation_pct}, ${sqlStr(a.start_date)}, ${sqlDate(a.end_date)})`));
 part1.push(...batched("project_notes", ["id","project_id","csm_id","author","body"], PROJECT_NOTES,
