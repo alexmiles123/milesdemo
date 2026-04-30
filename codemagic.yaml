@@ -6,6 +6,8 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.alexmiles.monument
+      integrations:
+        app_store_connect: Codemagic
       node: 20
       xcode: latest
       cocoapods: default
