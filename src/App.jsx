@@ -909,6 +909,20 @@ function ExecDashboard({api}) {
     else if (p.health === "yellow") h.at_risk++;
     else if (p.health === "red") h.critical++;
   });
+  // Late-tasks per CSM, computed from the same `visibleTasks` array the
+  // KPI strip uses — so the CSM Book Breakdown's "Late Tasks" column
+  // sums to exactly the KPI's "Late Tasks" total. Previously the column
+  // came from vw_csm_scorecard.late_tasks (no disabled-customer filter,
+  // potentially different cache age), causing KPI=99 / book sum=620
+  // discrepancies.
+  const projCsmMap = {};
+  visiblePortfolio.forEach(p => { if (p.csm_id) projCsmMap[p.id] = p.csm_id; });
+  const csmLate = {};
+  visibleTasks.forEach(t => {
+    if (t.status !== "late") return;
+    const cid = projCsmMap[t.project_id];
+    if (cid) csmLate[cid] = (csmLate[cid]||0) + 1;
+  });
   // Restrict the CSM Book Breakdown to CSMs who actually have a book —
   // i.e., at least one assigned project. A user with a CSM-style title
   // but zero accounts (e.g. an admin like "Alex" or a viewer like "Cinco"
@@ -916,7 +930,11 @@ function ExecDashboard({api}) {
   // breakdown alongside real CSMs with active books.
   const csmsWithHealth = csms
     .filter(c => (c.total_accounts||0) > 0)
-    .map(c => ({ ...c, ...(csmHealth[c.csm_id] || {on_track:0,at_risk:0,critical:0}) }));
+    .map(c => ({
+      ...c,
+      ...(csmHealth[c.csm_id] || {on_track:0,at_risk:0,critical:0}),
+      late_tasks: csmLate[c.csm_id] || 0,
+    }));
 
   // Bucket labels match the actual filter bounds. The lowest bucket is
   // open-ended ("anything <$40K") since demo ARR starts at $15K, and the
