@@ -869,7 +869,11 @@ function ExecDashboard({api}) {
   const _now = new Date();
   const _monthStart = new Date(_now.getFullYear(), _now.getMonth(), 1);
   const _monthEnd   = new Date(_now.getFullYear(), _now.getMonth()+1, 0, 23,59,59,999);
+  // Match the "Upcoming Go-Lives" widget convention — only Deploy-stage
+  // projects count as a real go-live. Without this, an Analysis-phase
+  // project with target_date in the current month inflated the KPI.
   const goLivesSoon  = visiblePortfolio.filter(p=>{
+    if (p.stage !== "Deploy") return false;
     if (!p.target_date) return false;
     const td = new Date(p.target_date);
     return td >= _monthStart && td <= _monthEnd;
@@ -890,7 +894,21 @@ function ExecDashboard({api}) {
     fill:PHASE_COLOR[ph],
   })).filter(d=>d.count>0);
 
-  const csmArrData = csms.map((c,i)=>({
+  // Health counts per CSM — vw_csm_scorecard doesn't expose these so we
+  // group visiblePortfolio client-side. Keeps the CSM Book Breakdown
+  // numerically consistent with the rest of the dashboard (same source,
+  // same disabled-customer filter).
+  const csmHealth = {};
+  visiblePortfolio.forEach(p => {
+    if (!p.csm_id) return;
+    const h = csmHealth[p.csm_id] || (csmHealth[p.csm_id] = { on_track:0, at_risk:0, critical:0 });
+    if (p.health === "green") h.on_track++;
+    else if (p.health === "yellow") h.at_risk++;
+    else if (p.health === "red") h.critical++;
+  });
+  const csmsWithHealth = csms.map(c => ({ ...c, ...(csmHealth[c.csm_id] || {on_track:0,at_risk:0,critical:0}) }));
+
+  const csmArrData = csmsWithHealth.map((c,i)=>({
     name:c.csm.split(" ")[0],
     arr:Math.round((c.total_arr||0)/1000),
     accounts:c.total_accounts||0,
@@ -898,11 +916,15 @@ function ExecDashboard({api}) {
     fill:CSM_COLORS[i%CSM_COLORS.length],
   }));
 
+  // Bucket labels match the actual filter bounds. The lowest bucket is
+  // open-ended ("anything <$40K") since demo ARR starts at $15K, and the
+  // highest is open-ended on the upper side. Using accurate labels avoids
+  // the misleading "$20-40K" header that hid <$20K customers.
   const arrBuckets = [
-    {range:"$20-40K",value:visiblePortfolio.filter(p=>p.arr<40000).length,color:"#6366f1"},
-    {range:"$40-60K",value:visiblePortfolio.filter(p=>p.arr>=40000&&p.arr<60000).length,color:"#3b82f6"},
-    {range:"$60-80K",value:visiblePortfolio.filter(p=>p.arr>=60000&&p.arr<80000).length,color:"#06b6d4"},
-    {range:"$80-100K",value:visiblePortfolio.filter(p=>p.arr>=80000).length,color:"#22c55e"},
+    {range:"<$40K",  value:visiblePortfolio.filter(p=>p.arr<40000).length,                          color:"#6366f1"},
+    {range:"$40-60K",value:visiblePortfolio.filter(p=>p.arr>=40000&&p.arr<60000).length,            color:"#3b82f6"},
+    {range:"$60-80K",value:visiblePortfolio.filter(p=>p.arr>=60000&&p.arr<80000).length,            color:"#06b6d4"},
+    {range:"$80K+",  value:visiblePortfolio.filter(p=>p.arr>=80000).length,                         color:"#22c55e"},
   ];
 
   const taskStatusData = [
@@ -1046,7 +1068,7 @@ function ExecDashboard({api}) {
                   <span style={{width:8,height:8,borderRadius:2,background:h.color}}/>
                   <span style={{fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",flex:1}}>{h.name}</span>
                   <span style={{fontSize:15,fontWeight:800,color:h.color,fontFamily:"Syne,sans-serif"}}>{h.value}</span>
-                  <span style={{fontSize:10,color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif"}}>{pct(h.value,portfolio.length)}%</span>
+                  <span style={{fontSize:10,color:"#5a7a94",fontFamily:"Inter,system-ui,sans-serif"}}>{pct(h.value,visiblePortfolio.length)}%</span>
                 </div>
               ))}
             </div>
@@ -1138,8 +1160,8 @@ function ExecDashboard({api}) {
               </tr>
             </thead>
             <tbody>
-              {csms.map((c,i)=>(
-                <tr key={i} style={{borderBottom:i<csms.length-1?"1px solid "+G.faint:"none"}}>
+              {csmsWithHealth.map((c,i)=>(
+                <tr key={i} style={{borderBottom:i<csmsWithHealth.length-1?"1px solid "+G.faint:"none"}}>
                   <td style={{padding:"8px 10px"}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       <div style={{width:22,height:22,borderRadius:"50%",background:CSM_COLORS[i%CSM_COLORS.length],display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:"#fff",flexShrink:0}}>{c.csm[0]}</div>
@@ -1258,7 +1280,7 @@ function ExecDashboard({api}) {
                   </tr>
                 </thead>
                 <tbody>
-                  {portfolio.filter(p=>p.health==="red").map((p,i,arr)=>(
+                  {visiblePortfolio.filter(p=>p.health==="red").map((p,i,arr)=>(
                     <tr key={p.id} style={{borderBottom:i<arr.length-1?"1px solid "+G.faint:"none",background:G.redSoft}}>
                       <td style={{padding:"7px 10px",fontSize:14,fontWeight:700,color:G.red}}>{p.customer}</td>
                       <td style={{padding:"7px 10px",fontSize:13,color:G.muted}}>{p.csm?.split(" ")[0]}</td>
@@ -1267,7 +1289,7 @@ function ExecDashboard({api}) {
                       <td style={{padding:"7px 10px",fontSize:14,fontFamily:"Inter,system-ui,sans-serif",fontWeight:800,color:G.red}}>{p.tasks_late||0}!</td>
                     </tr>
                   ))}
-                  {portfolio.filter(p=>p.health==="red").length===0 && <tr><td colSpan={5} style={{padding:16,textAlign:"center",color:G.green,fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>✓ No critical accounts</td></tr>}
+                  {visiblePortfolio.filter(p=>p.health==="red").length===0 && <tr><td colSpan={5} style={{padding:16,textAlign:"center",color:G.green,fontFamily:"Inter,system-ui,sans-serif",fontSize:11}}>✓ No critical accounts</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1277,12 +1299,15 @@ function ExecDashboard({api}) {
         )}
       </div>
 
-      {/* ── SECTION: Full Portfolio Table ── */}
+      {/* ── SECTION: Full Portfolio Table ──
+          Renders visiblePortfolio (one row per project, with disabled
+          customers excluded). Header counts distinct customers separately
+          from project rows so the label is honest. */}
       {shown('full-portfolio') && (
       <Card style={{marginBottom:12}}>
         <div style={{padding:"11px 16px",borderBottom:"1px solid "+G.border,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"Inter,system-ui,sans-serif"}}>FULL PORTFOLIO — ALL CUSTOMERS</span>
-          <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:"#5a7a94"}}>{portfolio.length} customers · {fmtFull(totalArr)} total ARR</span>
+          <span style={{fontSize:15,fontWeight:700,color:G.muted,letterSpacing:"0.05em",fontFamily:"Inter,system-ui,sans-serif"}}>FULL PORTFOLIO — ALL PROJECTS</span>
+          <span style={{fontSize:14,fontFamily:"Inter,system-ui,sans-serif",color:"#5a7a94"}}>{visiblePortfolio.length} projects · {new Set(visiblePortfolio.map(p=>p.customer_id||p.customer)).size} customers · {fmtFull(totalArr)} total ARR</span>
         </div>
         <div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",minWidth:900}}>
@@ -1294,11 +1319,11 @@ function ExecDashboard({api}) {
               </tr>
             </thead>
             <tbody>
-              {portfolio.map((p,i)=>{
+              {visiblePortfolio.map((p,i)=>{
                 const hc = HEALTH_COLOR[p.health]||G.green;
                 const daysToTarget = p.days_to_target!=null ? Math.round(p.days_to_target) : null;
                 return (
-                  <tr key={p.id} className="rh" style={{borderBottom:i<portfolio.length-1?"1px solid "+G.faint:"none",
+                  <tr key={p.id} className="rh" style={{borderBottom:i<visiblePortfolio.length-1?"1px solid "+G.faint:"none",
                     background:p.health==="red"?G.redSoft:p.health==="yellow"?G.yellowSoft:"transparent"}}>
                     <td style={{padding:"9px 12px",fontSize:15,fontWeight:700}}>{p.customer}</td>
                     <td style={{padding:"9px 12px",fontSize:13,color:G.muted,fontFamily:"Inter,system-ui,sans-serif",whiteSpace:"nowrap"}}>{p.csm}</td>
