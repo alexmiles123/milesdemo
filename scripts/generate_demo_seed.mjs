@@ -278,7 +278,7 @@ while (CUSTOMERS.length < 150 && attempts < 5000) {
   const [city, state] = pick(CITY);
   const fc = range(3, 65);
   CUSTOMERS.push({
-    id: uuid("cu000000-0000-0000-0000", i),
+    id: uuid("c2000000-0000-0000-0000", i),
     name: n,
     contact_name: `${fn} ${ln}`,
     contact_email: `${fn.toLowerCase()}.${ln.toLowerCase()}@${slug}.com`,
@@ -342,7 +342,7 @@ ACTIVE.forEach((proj) => {
     } else if (ti === ci + 1) { status = "upcoming"; }
     else return;
     ACTIVE_TASKS.push({
-      id: uuid("ta000000-0000-0000-0000", atc++),
+      id: uuid("ea000000-0000-0000-0000", atc++),
       project_id: proj.id, name: t.name, phase: t.phase, priority: t.priority, status,
       proj_date: fmt(addDays(proj.start, t.dayOffset)),
       actual_date: actualDate ? fmt(actualDate) : null,
@@ -358,7 +358,7 @@ let ctc = 1;
 COMPLETED.forEach((proj) => {
   TEMPLATE_TASKS.forEach((t) => {
     COMPLETED_TASKS.push({
-      id: uuid("tc000000-0000-0000-0000", ctc++),
+      id: uuid("ec000000-0000-0000-0000", ctc++),
       project_id: proj.id, name: t.name, phase: t.phase, priority: t.priority, status: "complete",
       proj_date: fmt(addDays(proj.start, t.dayOffset)),
       actual_date: fmt(addDays(proj.start, t.dayOffset + range(-2, 4))),
@@ -393,7 +393,7 @@ ACTIVE.forEach((proj) => {
   const n = range(2, 4);
   for (let i = 0; i < n; i++) {
     PROJECT_NOTES.push({
-      id: uuid("pn000000-0000-0000-0000", nc++),
+      id: uuid("bd000000-0000-0000-0000", nc++),
       project_id: proj.id, csm_id: proj.csm.id,
       author: proj.csm.name, body: pick(NOTE_BODIES),
     });
@@ -401,7 +401,7 @@ ACTIVE.forEach((proj) => {
 });
 COMPLETED.slice(0, 30).forEach((proj) => {
   PROJECT_NOTES.push({
-    id: uuid("pn000000-0000-0000-0000", nc++),
+    id: uuid("bd000000-0000-0000-0000", nc++),
     project_id: proj.id, csm_id: proj.csm.id,
     author: proj.csm.name,
     body: "Project closed successfully. Customer transitioned to ongoing CSM relationship.",
@@ -413,7 +413,7 @@ const ASSIGNMENTS = [];
 let ac = 1;
 [...ACTIVE, ...COMPLETED].forEach((proj) => {
   ASSIGNMENTS.push({
-    id: uuid("as000000-0000-0000-0000", ac++),
+    id: uuid("bc000000-0000-0000-0000", ac++),
     csm_id: proj.csm.id, project_id: proj.id,
     role: "primary", allocation_pct: 100,
     start_date: fmt(proj.start),
@@ -439,11 +439,11 @@ const writeOut = (n, label, lines) => {
 
 // 021a — setup
 const part1 = ["-- 021a_demo_setup.sql — Run FIRST.", "BEGIN;",
-  "DELETE FROM project_notes WHERE id::text LIKE 'pn000000-%';",
-  "DELETE FROM csm_assignments WHERE id::text LIKE 'as000000-%';",
-  "DELETE FROM tasks WHERE id::text LIKE 'ta000000-%' OR id::text LIKE 'tc000000-%';",
+  "DELETE FROM project_notes WHERE id::text LIKE 'bd000000-%';",
+  "DELETE FROM csm_assignments WHERE id::text LIKE 'bc000000-%';",
+  "DELETE FROM tasks WHERE id::text LIKE 'ea000000-%' OR id::text LIKE 'ec000000-%';",
   "DELETE FROM projects WHERE id::text LIKE 'a0000000-%' OR id::text LIKE 'd0000000-%';",
-  "DELETE FROM customers WHERE id::text LIKE 'cu000000-%';",
+  "DELETE FROM customers WHERE id::text LIKE 'c2000000-%';",
   "DELETE FROM task_template_items WHERE id::text LIKE 'b1000000-%';",
   "DELETE FROM task_templates WHERE id = 'a1b2c3d4-0000-0000-0000-000000000001';",
   "DELETE FROM csms WHERE id::text LIKE 'c1000000-%';",
